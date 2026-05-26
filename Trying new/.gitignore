@@ -1,0 +1,28 @@
+# Express Server (Original project ignores)
+node_modules/
+package-lock.json
+.env
+.env.production
+uploads/
+Thumbs.db
+
+# socialflow Ignores
+socialflow/.next/
+socialflow/uploads/
+socialflow/data/accounts.json
+socialflow/data/settings.json
+socialflow/data/posts.json
+
+# committree Ignores
+committree/dist/
+
+# Generic Logs
+*.log
+npm-debug.log*
+
+# OS / Editor Files
+.DS_Store
+.vscode/
+.idea/
+*.suo
+*.sln
