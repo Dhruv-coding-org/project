@@ -1,5 +1,8 @@
-// API URL
-const API = '/api';
+// API URL (Replace with your actual Render URL after deploying)
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : 'https://YOUR-RENDER-APP-NAME.onrender.com/api';
+
 
 
 // Helper function to show alerts
