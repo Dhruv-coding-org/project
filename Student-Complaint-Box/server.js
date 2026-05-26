@@ -44,12 +44,18 @@ mongoose.connect(MONGODB_URI, {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-  console.log('\n📋 Login credentials:');
-  console.log('  👨‍🎓 Student: Register your account');
-  console.log('  👨‍🏫 Teacher: HOD@gmail.com / teacher123');
-  console.log('  👑 Principal: director@gmail.com / principal123');
-  console.log('\n✨ System ready!');
-});
+if (!process.env.FUNCTION_TARGET) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`\n🚀 Server running on http://localhost:${PORT}`);
+    console.log('\n📋 Login credentials:');
+    console.log('  👨‍🎓 Student: Register your account');
+    console.log('  👨‍🏫 Teacher: HOD@gmail.com / teacher123');
+    console.log('  👑 Principal: director@gmail.com / principal123');
+    console.log('\n✨ System ready!');
+  });
+}
+
+// Export for Firebase Cloud Functions
+const functions = require('firebase-functions');
+exports.api = functions.https.onRequest(app);

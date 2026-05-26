@@ -1,5 +1,6 @@
 // API URL
-const API = 'http://localhost:5000/api';
+const API = '/api';
+
 
 // Helper function to show alerts
 function showAlert(message, type) {
