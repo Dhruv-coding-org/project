@@ -1,0 +1,151 @@
+.room {
+  display: flex;
+  flex-direction: column;
+  height: 100svh;           /* Fixed to viewport height - no overflow */
+  overflow: hidden;
+  background: var(--bg-base);
+}
+
+/* ── Header ───────────────────────────────────────── */
+.room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 10;
+  gap: 12px;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.room-header-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.room-header-name {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: var(--accent-grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.room-header-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.room-header-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.room-status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.room-status-dot.connected    { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.room-status-dot.disconnected { background: var(--error); }
+
+.room-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.room-source-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* ── Body layout (fills remaining viewport after header) ── */
+.room-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;            /* Critical: allows flex children to shrink */
+  overflow: hidden;
+}
+
+/* ── Main (video area) ────────────────────────────── */
+.room-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;      /* Center video vertically */
+  justify-content: center;
+  padding: 12px;
+  background: var(--bg-base);
+  overflow: hidden;
+}
+
+/* ── Sidebar ──────────────────────────────────────── */
+.room-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Responsive: tablet (900-1200px) ─────────────────── */
+@media (max-width: 1200px) {
+  .room-sidebar { width: 280px; }
+}
+
+/* ── Responsive: mobile (<= 768px) ─────────────────── */
+@media (max-width: 768px) {
+  .room {
+    height: 100dvh;
+  }
+  .room-body {
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .room-main {
+    padding: 8px;
+    flex: 0 0 auto;   /* Don't grow — video is naturally sized */
+    min-height: 0;
+    align-items: flex-start;
+  }
+  .room-sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    flex: 1;
+    min-height: 380px;
+    overflow: hidden;
+  }
+  .room-header-name {
+    display: none; /* save space on mobile */
+  }
+}
+
+/* ── Responsive: very small (<= 480px) ─────────────── */
+@media (max-width: 480px) {
+  .room-header {
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .room-source-btn span {
+    display: none;
+  }
+}

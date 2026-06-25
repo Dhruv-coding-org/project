@@ -1,0 +1,200 @@
+.vp-container {
+  position: relative;
+  /* FIX: Use max-height:100% so the video fits within the available room-main height.
+     With aspect-ratio + max-height, CSS auto-adjusts width to maintain the 16:9 ratio
+     without ever overflowing the parent. */
+  width: 100%;
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Video ────────────────────────────────────────── */
+.vp-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+/* ── Placeholder ──────────────────────────────────── */
+.vp-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #0a0014 0%, #0a0a1a 100%);
+}
+
+.vp-placeholder-icon {
+  opacity: 0.6;
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.vp-placeholder-text {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 280px;
+  line-height: 1.6;
+}
+
+.vp-waiting-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--accent-light);
+  border-radius: 50%;
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+/* ── Controls overlay ─────────────────────────────── */
+.vp-controls {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.85) 0%,
+    rgba(0,0,0,0.3) 35%,
+    transparent 60%
+  );
+  transition: opacity var(--transition);
+  opacity: 1;
+}
+
+.vp-container.hide-controls .vp-controls {
+  opacity: 0;
+}
+.vp-container.hide-controls {
+  cursor: none;
+}
+
+/* ── Guest notice ─────────────────────────────────── */
+.vp-guest-notice {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  background: rgba(0,0,0,0.4);
+  padding: 5px 10px;
+  border-radius: 99px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* ── Progress bar ─────────────────────────────────── */
+.vp-progress-area {
+  padding: 0 14px 8px;
+}
+
+.vp-progress-track {
+  position: relative;
+  height: 4px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 99px;
+  cursor: pointer;
+}
+.vp-progress-track:hover { height: 6px; margin-bottom: -1px; }
+.vp-progress-track:hover .vp-progress-input { height: 16px; }
+
+.vp-progress-buffered {
+  position: absolute;
+  height: 100%;
+  background: rgba(255,255,255,0.2);
+  border-radius: 99px;
+  pointer-events: none;
+  transition: width 0.5s linear;
+}
+
+.vp-progress-fill {
+  position: absolute;
+  height: 100%;
+  background: var(--accent-grad);
+  border-radius: 99px;
+  pointer-events: none;
+}
+
+.vp-progress-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 12px;
+  top: 50%; transform: translateY(-50%);
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+.vp-progress-input:disabled { cursor: not-allowed; }
+
+/* ── Bottom bar ───────────────────────────────────── */
+.vp-bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px 12px;
+  gap: 8px;
+}
+
+.vp-left-controls,
+.vp-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vp-btn {
+  color: rgba(255,255,255,0.85) !important;
+  padding: 6px;
+}
+.vp-btn:hover { color: #fff !important; background: rgba(255,255,255,0.1) !important; }
+.vp-btn:disabled { opacity: 0.4 !important; cursor: not-allowed !important; }
+
+/* ── Volume ───────────────────────────────────────── */
+.vp-volume-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vp-volume-slider {
+  width: 70px;
+  height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 99px;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  cursor: pointer;
+}
+.vp-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+
+/* ── Time ─────────────────────────────────────────── */
+.vp-time {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.7);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding: 0 4px;
+}

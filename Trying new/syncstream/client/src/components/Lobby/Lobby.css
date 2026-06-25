@@ -1,0 +1,179 @@
+.lobby {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Animated background orbs ─────────────────────── */
+.lobby-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  animation: float 8s ease-in-out infinite;
+}
+.lobby-orb-1 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(124,58,237,0.25), transparent 70%);
+  top: -80px; left: -80px;
+  animation-delay: 0s;
+}
+.lobby-orb-2 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(168,85,247,0.2), transparent 70%);
+  bottom: -60px; right: -60px;
+  animation-delay: -3s;
+}
+.lobby-orb-3 {
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(99,102,241,0.15), transparent 70%);
+  top: 50%; left: 60%;
+  animation-delay: -5s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(20px, -20px) scale(1.05); }
+  66%       { transform: translate(-15px, 15px) scale(0.97); }
+}
+
+/* ── Card ─────────────────────────────────────────── */
+.lobby-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 36px;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), var(--shadow-glow);
+}
+
+/* ── Logo ─────────────────────────────────────────── */
+.lobby-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 32px;
+}
+.lobby-logo-icon {
+  width: 52px; height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+.lobby-logo-name {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: var(--accent-grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+.lobby-logo-tagline {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+  letter-spacing: 0.01em;
+}
+
+/* ── Tabs ─────────────────────────────────────────── */
+.lobby-tabs {
+  display: flex;
+  background: var(--bg-glass-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  margin-bottom: 24px;
+  gap: 4px;
+}
+.lobby-tab {
+  flex: 1;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-radius: calc(var(--radius-md) - 2px);
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.lobby-tab:hover { color: var(--text-secondary); }
+.lobby-tab.active {
+  background: var(--accent-grad);
+  color: #fff;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+/* ── Form ─────────────────────────────────────────── */
+.lobby-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.lobby-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lobby-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.lobby-code-input {
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  font-weight: 700;
+  font-size: 16px;
+  text-align: center;
+}
+
+.lobby-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.lobby-submit {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  margin-top: 4px;
+}
+
+.lobby-spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ── Footer ───────────────────────────────────────── */
+.lobby-footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 20px;
+}
