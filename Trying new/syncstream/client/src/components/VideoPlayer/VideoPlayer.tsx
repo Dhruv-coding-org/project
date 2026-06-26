@@ -62,6 +62,7 @@ export function VideoPlayer({
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const usingObjectStream = useRef(false);
   const streamCaptured = useRef(false);
+  const audioCaptureRetry = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isUrl = videoSource?.sourceType === 'url';
   const isFile = videoSource?.sourceType === 'file';
@@ -278,31 +279,78 @@ export function VideoPlayer({
     video.muted = muted;
     setIsLoading(false);
     
-    console.log('[VideoPlayer] loadeddata — volume:', video.volume, 'muted:', video.muted);
+    console.log('[VideoPlayer] loadeddata — volume:', video.volume, 'muted:', video.muted, 'duration:', d);
+  }
+
+  // FIX for large videos: Capture stream on canplaythrough instead of play.
+  // For large files (1+ hour), the audio decoder isn't ready during the `play` event.
+  // `canplaythrough` guarantees the browser has decoded enough audio+video.
+  function handleNativeCanPlayThrough() {
+    if (!isHost || !isFile) return;
+    const video = videoRef.current as VideoEl | null;
+    if (!video || streamCaptured.current) return;
+
+    console.log('[VideoPlayer] canplaythrough fired — attempting stream capture');
+    attemptStreamCapture(video);
+  }
+
+  function attemptStreamCapture(video: VideoEl) {
+    const stream = captureVideoStream(video);
+    if (!stream) {
+      console.warn('[VideoPlayer] captureStream() returned null');
+      return;
+    }
+
+    const audioTracks = stream.getAudioTracks();
+    const videoTracks = stream.getVideoTracks();
+    console.log('[VideoPlayer] captureStream — audio:', audioTracks.length, 'video:', videoTracks.length);
+
+    if (videoTracks.length > 0) {
+      onLocalStream(stream);
+      streamCaptured.current = true;
+
+      // If we got video but no audio, start a retry loop to re-capture with audio
+      // This is critical for large files where audio decoding starts later
+      if (audioTracks.length === 0) {
+        console.log('[VideoPlayer] No audio tracks yet — starting retry loop for large file');
+        let retries = 0;
+        const maxRetries = 20;
+        if (audioCaptureRetry.current) clearInterval(audioCaptureRetry.current);
+        audioCaptureRetry.current = setInterval(() => {
+          retries++;
+          const freshStream = captureVideoStream(video);
+          if (freshStream) {
+            const freshAudio = freshStream.getAudioTracks();
+            if (freshAudio.length > 0) {
+              console.log('[VideoPlayer] Audio tracks now available (retry', retries, ') — re-sending stream');
+              streamCaptured.current = true;
+              onLocalStream(freshStream);
+              if (audioCaptureRetry.current) clearInterval(audioCaptureRetry.current);
+              audioCaptureRetry.current = null;
+            }
+          }
+          if (retries >= maxRetries) {
+            console.warn('[VideoPlayer] Max audio retries reached — file may not have an audio track');
+            if (audioCaptureRetry.current) clearInterval(audioCaptureRetry.current);
+            audioCaptureRetry.current = null;
+          }
+        }, 500);
+      }
+    }
   }
 
   function handleNativePlay() {
     setPlaying(true);
-    if (isHost && isFile) {
+    // Fallback: if canplaythrough hasn't fired yet, try capturing on play
+    if (isHost && isFile && !streamCaptured.current) {
       const video = videoRef.current as VideoEl | null;
-      if (!video || streamCaptured.current) return;
-      
-      // FIX: Use a small delay to ensure audio tracks are available in the capture
+      if (!video) return;
       setTimeout(() => {
-        if (!video) return;
-        const stream = captureVideoStream(video);
-        if (stream) {
-          const tracks = stream.getTracks();
-          const audioTracks = stream.getAudioTracks();
-          const videoTracks = stream.getVideoTracks();
-          console.log('[VideoPlayer] captureStream — total:', tracks.length, 'audio:', audioTracks.length, 'video:', videoTracks.length);
-          
-          if (tracks.length > 0) {
-            streamCaptured.current = true;
-            onLocalStream(stream);
-          }
+        if (!streamCaptured.current && video) {
+          console.log('[VideoPlayer] Fallback: attempting capture on play event');
+          attemptStreamCapture(video);
         }
-      }, 200);
+      }, 500);
     }
   }
 
@@ -465,6 +513,7 @@ export function VideoPlayer({
     return () => {
       document.removeEventListener('fullscreenchange', onFsChange);
       if (hideTimer.current) clearTimeout(hideTimer.current);
+      if (audioCaptureRetry.current) clearInterval(audioCaptureRetry.current);
     };
   }, []);
 
@@ -490,6 +539,7 @@ export function VideoPlayer({
           onTimeUpdate={handleNativeTimeUpdate}
           onDurationChange={handleNativeDurationChange}
           onLoadedData={handleNativeLoadedData}
+          onCanPlayThrough={handleNativeCanPlayThrough}
           onPlay={handleNativePlay}
           onPause={handleNativePause}
           onEnded={handleNativeEnded}

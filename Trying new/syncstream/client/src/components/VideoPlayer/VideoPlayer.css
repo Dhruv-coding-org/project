@@ -1,8 +1,5 @@
 .vp-container {
   position: relative;
-  /* FIX: Use max-height:100% so the video fits within the available room-main height.
-     With aspect-ratio + max-height, CSS auto-adjusts width to maintain the 16:9 ratio
-     without ever overflowing the parent. */
   width: 100%;
   max-height: 100%;
   aspect-ratio: 16 / 9;
@@ -10,8 +7,13 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
   flex-shrink: 0;
-  box-shadow: var(--shadow-lg);
-  outline: none; /* keyboard focus handled via tabindex */
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.04);
+  outline: none;
+  transition: box-shadow var(--transition-slow);
+}
+
+.vp-container:focus-visible {
+  box-shadow: var(--shadow-lg), 0 0 0 2px var(--accent);
 }
 
 /* ── Video ────────────────────────────────────────── */
@@ -30,29 +32,46 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  background: linear-gradient(135deg, #0a0014 0%, #0a0a1a 100%);
+  gap: 18px;
+  background: linear-gradient(135deg, #08001a 0%, #060612 50%, #0a0518 100%);
+}
+
+/* subtle grid overlay on placeholder */
+.vp-placeholder::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .vp-placeholder-icon {
-  opacity: 0.6;
+  opacity: 0.55;
   animation: pulse-glow 3s ease-in-out infinite;
+  position: relative;
+  z-index: 1;
 }
 
 .vp-placeholder-text {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-muted);
   text-align: center;
   max-width: 280px;
   line-height: 1.6;
+  position: relative;
+  z-index: 1;
 }
 
 .vp-waiting-dot {
   display: inline-block;
   width: 6px; height: 6px;
-  background: var(--accent-light);
+  background: var(--accent-bright);
   border-radius: 50%;
-  animation: pulse-glow 1.5s ease-in-out infinite;
+  animation: pulse-dot 1.5s ease-in-out infinite;
 }
 
 /* ── Loading overlay ─────────────────────────────── */
@@ -64,27 +83,28 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 5;
   animation: fadeIn 0.3s var(--ease) both;
 }
 
 .vp-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(124, 58, 237, 0.2);
-  border-top-color: #a855f7;
+  width: 42px;
+  height: 42px;
+  border: 3px solid rgba(124, 58, 237, 0.15);
+  border-top-color: var(--accent-bright);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin 0.75s linear infinite;
 }
 
 .vp-loading-text {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 /* ── Error overlay ───────────────────────────────── */
@@ -96,16 +116,16 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 6;
   animation: fadeIn 0.3s var(--ease) both;
 }
 
 .vp-error-text {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.75);
   text-align: center;
   max-width: 300px;
   line-height: 1.5;
@@ -114,8 +134,8 @@
 .vp-error-retry {
   margin-top: 4px;
   font-size: 12px;
-  padding: 6px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 7px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 /* ── Controls overlay ─────────────────────────────── */
@@ -127,9 +147,9 @@
   justify-content: flex-end;
   background: linear-gradient(
     to top,
-    rgba(0,0,0,0.85) 0%,
-    rgba(0,0,0,0.3) 35%,
-    transparent 60%
+    rgba(0,0,0,0.88) 0%,
+    rgba(0,0,0,0.35) 30%,
+    transparent 55%
   );
   transition: opacity var(--transition);
   opacity: 1;
@@ -150,13 +170,15 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
-  color: rgba(255,255,255,0.6);
-  background: rgba(0,0,0,0.4);
-  padding: 5px 10px;
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.55);
+  background: rgba(0,0,0,0.45);
+  padding: 5px 12px;
   border-radius: 99px;
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+  letter-spacing: 0.02em;
 }
 
 /* ── Progress bar ─────────────────────────────────── */
@@ -167,17 +189,18 @@
 .vp-progress-track {
   position: relative;
   height: 4px;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.12);
   border-radius: 99px;
   cursor: pointer;
+  transition: height 0.15s var(--ease);
 }
 .vp-progress-track:hover { height: 6px; margin-bottom: -1px; }
-.vp-progress-track:hover .vp-progress-input { height: 16px; }
+.vp-progress-track:hover .vp-progress-input { height: 18px; }
 
 .vp-progress-buffered {
   position: absolute;
   height: 100%;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.18);
   border-radius: 99px;
   pointer-events: none;
   transition: width 0.5s linear;
@@ -186,9 +209,11 @@
 .vp-progress-fill {
   position: absolute;
   height: 100%;
-  background: var(--accent-grad);
+  background: var(--accent-grad-h);
+  background-size: 200% auto;
   border-radius: 99px;
   pointer-events: none;
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.3);
 }
 
 .vp-progress-input {
@@ -201,6 +226,8 @@
   cursor: pointer;
   margin: 0;
   padding: 0;
+  -webkit-appearance: none;
+  appearance: none;
 }
 .vp-progress-input:disabled { cursor: not-allowed; }
 
@@ -209,7 +236,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 12px 12px;
+  padding: 4px 12px 14px;
   gap: 8px;
 }
 
@@ -217,15 +244,27 @@
 .vp-right-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .vp-btn {
-  color: rgba(255,255,255,0.85) !important;
-  padding: 6px;
+  color: rgba(255,255,255,0.82) !important;
+  padding: 7px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
 }
-.vp-btn:hover { color: #fff !important; background: rgba(255,255,255,0.1) !important; }
-.vp-btn:disabled { opacity: 0.4 !important; cursor: not-allowed !important; }
+.vp-btn:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,0.1) !important;
+}
+.vp-btn:active {
+  transform: scale(0.92);
+}
+.vp-btn:disabled {
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
 
 /* ── Volume ───────────────────────────────────────── */
 .vp-volume-group {
@@ -235,30 +274,51 @@
 }
 
 .vp-volume-slider {
-  width: 70px;
+  width: 72px;
   height: 4px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.18);
   border-radius: 99px;
   -webkit-appearance: none;
   appearance: none;
   outline: none;
   cursor: pointer;
+  transition: opacity var(--transition-fast);
 }
+.vp-volume-group:hover .vp-volume-slider { opacity: 1; }
 .vp-volume-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px; height: 12px;
+  width: 13px; height: 13px;
   background: #fff;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  transition: transform var(--transition-fast);
+}
+.vp-volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
 }
 
 /* ── Time ─────────────────────────────────────────── */
 .vp-time {
   font-size: 12px;
   font-weight: 500;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255,255,255,0.6);
   font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
   white-space: nowrap;
-  padding: 0 4px;
+  padding: 0 6px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Mobile touch area ────────────────────────────── */
+@media (max-width: 768px) {
+  .vp-bottom-bar {
+    padding: 4px 8px 10px;
+  }
+  .vp-volume-slider {
+    width: 50px;
+  }
+  .vp-time {
+    font-size: 11px;
+  }
 }

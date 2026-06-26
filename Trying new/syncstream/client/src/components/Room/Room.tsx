@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import type { RoomState, VideoSource } from '../../hooks/useRoom';
 import { useWebRTC } from '../../hooks/useWebRTC';
 import { VideoPlayer } from '../VideoPlayer/VideoPlayer';
@@ -28,8 +28,8 @@ export function Room({
   onEmitSeek,
 }: RoomProps) {
   const [showSourcePicker, setShowSourcePicker] = useState(false);
-  // FIX: Use useState instead of useRef so useWebRTC re-renders with the new stream
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [copiedToast, setCopiedToast] = useState(false);
 
   const { requestStream, remoteStream } = useWebRTC({
     isHost: state.isHost,
@@ -47,32 +47,86 @@ export function Room({
     setShowSourcePicker(false);
   }
 
+  // Host clicks logo → reload room (re-sync everything)
+  const handleLogoClick = useCallback(() => {
+    if (!state.isHost) return;
+    // Force re-sync: reset video source to trigger re-load for all users
+    if (state.videoSource) {
+      onChangeSource({ ...state.videoSource });
+    }
+  }, [state.isHost, state.videoSource, onChangeSource]);
+
+  // Copy room code with toast feedback
+  const handleCopyCode = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(state.roomCode ?? '');
+      setCopiedToast(true);
+      setTimeout(() => setCopiedToast(false), 2000);
+    } catch { /* fallback — ignore */ }
+  }, [state.roomCode]);
+
   return (
     <div className="room animate-fade-in">
+      {/* Toast notification */}
+      {copiedToast && (
+        <div className="toast-container">
+          <div className="toast toast-success animate-slide-up">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M3 7l3 3 5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Room code copied!
+          </div>
+        </div>
+      )}
+
       {/* Top header bar */}
       <header className="room-header">
-        <div className="room-header-logo">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="9" stroke="url(#gh)" strokeWidth="1.5"/>
-            <path d="M7.5 6.5L14 10L7.5 13.5V6.5Z" fill="url(#gh)"/>
-            <defs>
-              <linearGradient id="gh" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#7c3aed"/><stop offset="1" stopColor="#a855f7"/>
-              </linearGradient>
-            </defs>
-          </svg>
+        <div
+          className={`room-header-logo ${state.isHost ? 'clickable' : ''}`}
+          onClick={handleLogoClick}
+          title={state.isHost ? 'Click to refresh room sync' : 'SyncStream'}
+        >
+          <div className="room-logo-icon">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="9" stroke="url(#gh)" strokeWidth="1.5"/>
+              <path d="M7.5 6.5L14 10L7.5 13.5V6.5Z" fill="url(#gh)"/>
+              <defs>
+                <linearGradient id="gh" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#7c3aed"/><stop offset="1" stopColor="#c084fc"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
           <span className="room-header-name">SyncStream</span>
         </div>
 
         <div className="room-header-center">
+          {/* Room code inline */}
+          <button
+            className="room-code-chip"
+            onClick={handleCopyCode}
+            title="Click to copy room code"
+            id="room-code-chip"
+          >
+            <span className="room-code-label">ROOM</span>
+            <span className="room-code-value">{state.roomCode}</span>
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+              <rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M2 10V2h8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          <div className="room-header-divider" />
+
           {state.isHost && (
             <span className="badge badge-accent">
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
                 <path d="M5 1L6.5 3.5H9L7 5.5L7.5 8.5L5 7L2.5 8.5L3 5.5L1 3.5H3.5L5 1Z" fill="currentColor"/>
               </svg>
               Host
             </span>
           )}
+
           <span className="room-header-status">
             <span className={`room-status-dot ${state.connected ? 'connected' : 'disconnected'}`} />
             {state.connected ? 'Connected' : 'Reconnecting…'}
@@ -93,6 +147,18 @@ export function Room({
               Load Video
             </button>
           )}
+          <button
+            className="btn btn-ghost room-leave-btn"
+            onClick={onLeave}
+            id="leave-room-btn"
+            title="Leave room"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M9.5 7H2M2 7L4.5 4.5M2 7L4.5 9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M6 2h5a1 1 0 011 1v8a1 1 0 01-1 1H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            </svg>
+            Leave
+          </button>
         </div>
       </header>
 
