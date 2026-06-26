@@ -69,7 +69,7 @@ export function VideoPlayer({
 
   // ── (1) SOURCE MANAGEMENT ────────────────────────────────────────
   useEffect(() => {
-    // Reset state when source changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlaying(false);
     setCurrentTime(0);
     setDuration(0);
@@ -192,12 +192,9 @@ export function VideoPlayer({
     if (!isHost || !videoSource) return;
 
     const interval = setInterval(() => {
-      let t = 0;
-      if (isUrl) {
-        t = reactPlayerRef.current?.getCurrentTime?.() ?? 0;
-      } else {
-        t = videoRef.current?.currentTime ?? 0;
-      }
+      const t = isUrl 
+        ? (reactPlayerRef.current?.getCurrentTime?.() ?? 0)
+        : (videoRef.current?.currentTime ?? 0);
       socket.emit('sync-heartbeat', { currentTime: t, playing });
     }, 5000);
 
@@ -419,25 +416,22 @@ export function VideoPlayer({
     // ReactPlayer volume is handled via its `volume` prop reactively
   }
 
-  function toggleMute() {
-    const newMuted = !muted;
-    setMuted(newMuted);
-    if (!isUrl) {
+  const toggleMute = useCallback(() => {
+    setMuted((prev: boolean) => {
+      const next = !prev;
       const video = videoRef.current;
-      if (video) video.muted = newMuted;
-    }
-    // ReactPlayer mute is handled via its `volume` prop (set to 0 when muted)
-  }
+      if (video) video.muted = next;
+      return next;
+    });
+  }, []);
 
-  function toggleFullscreen() {
-    const el = containerRef.current;
-    if (!el) return;
+  const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
-      el.requestFullscreen();
+      containerRef.current?.requestFullscreen().catch(() => {});
     } else {
-      document.exitFullscreen();
+      document.exitFullscreen().catch(() => {});
     }
-  }
+  }, []);
 
   function resetHideTimer() {
     setShowControls(true);
@@ -505,7 +499,7 @@ export function VideoPlayer({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, isHost, currentTime, duration, isUrl, onSeek]);
+  }, [togglePlay, toggleMute, toggleFullscreen, isHost, currentTime, duration, isUrl, onSeek]);
 
   useEffect(() => {
     const onFsChange = () => setFullscreen(!!document.fullscreenElement);

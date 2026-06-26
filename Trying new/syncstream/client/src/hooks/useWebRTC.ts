@@ -159,9 +159,10 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
 
   // ── Cleanup on unmount ────────────────────────────────────────────
   useEffect(() => {
+    const currentPeers = peers.current;
     return () => {
-      peers.current.forEach(pc => pc.close());
-      peers.current.clear();
+      currentPeers.forEach(pc => pc.close());
+      currentPeers.clear();
     };
   }, []);
 

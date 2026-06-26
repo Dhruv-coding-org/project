@@ -57,6 +57,21 @@ export function useRoom() {
   });
 
   // ── Socket event listeners ──────────────────────────────────────────
+  // ── Helpers ─────────────────────────────────────────────────────────
+  const addSystemMessage = (message: string) => {
+    setState(s => ({
+      ...s,
+      chatMessages: [...s.chatMessages, {
+        id: `sys-${Date.now()}`,
+        username: 'System',
+        message,
+        timestamp: Date.now(),
+        senderId: 'system',
+        isMine: false,
+      }],
+    }));
+  };
+
   useEffect(() => {
     socket.on('connect', () => setState(s => ({ ...s, connected: true, error: null })));
     socket.on('disconnect', () => setState(s => ({ ...s, connected: false })));
@@ -114,20 +129,6 @@ export function useRoom() {
     };
   }, []);
 
-  // ── Helpers ─────────────────────────────────────────────────────────
-  const addSystemMessage = (message: string) => {
-    setState(s => ({
-      ...s,
-      chatMessages: [...s.chatMessages, {
-        id: `sys-${Date.now()}`,
-        username: 'System',
-        message,
-        timestamp: Date.now(),
-        senderId: 'system',
-        isMine: false,
-      }],
-    }));
-  };
 
   // ── Actions ─────────────────────────────────────────────────────────
   const createRoom = useCallback(({ username }: CreateRoomOptions): Promise<string> => {
