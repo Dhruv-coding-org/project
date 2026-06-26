@@ -131,6 +131,16 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Periodic heartbeat from host — keeps guests in sync over long sessions
+  socket.on('sync-heartbeat', ({ currentTime, playing }) => {
+    const room = rooms.get(socket.roomCode);
+    if (room) {
+      if (room.hostId !== socket.id) return; // SECURITY: Only host can heartbeat
+      room.playbackState = { playing, currentTime };
+      socket.to(socket.roomCode).emit('sync-heartbeat', { currentTime, playing });
+    }
+  });
+
   // ─── Source Management ─────────────────────────────────────────
 
   socket.on('change-source', ({ sourceType, url }) => {

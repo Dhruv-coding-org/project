@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   useRef, useEffect, useState, useCallback
 } from 'react';
@@ -47,6 +46,7 @@ export function VideoPlayer({
   onRequestStream,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const reactPlayerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying]           = useState(false);
@@ -57,8 +57,11 @@ export function VideoPlayer({
   const [fullscreen, setFullscreen]     = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [buffered, setBuffered]         = useState(0);
+  const [isLoading, setIsLoading]       = useState(false);
+  const [videoError, setVideoError]     = useState<string | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const usingObjectStream = useRef(false);
+  const streamCaptured = useRef(false);
 
   const isUrl = videoSource?.sourceType === 'url';
   const isFile = videoSource?.sourceType === 'file';
@@ -70,9 +73,12 @@ export function VideoPlayer({
     setCurrentTime(0);
     setDuration(0);
     setBuffered(0);
+    setVideoError(null);
+    streamCaptured.current = false;
 
     if (!videoSource) {
       usingObjectStream.current = false;
+      setIsLoading(false);
       if (videoRef.current) {
         if (videoRef.current.srcObject) videoRef.current.srcObject = null;
         videoRef.current.removeAttribute('src');
@@ -82,21 +88,22 @@ export function VideoPlayer({
     }
 
     if (isUrl) {
-      // ReactPlayer handles URLs directly. No native video src needed.
+      // ReactPlayer handles URLs directly. Show loading until onReady fires.
       usingObjectStream.current = false;
+      setIsLoading(true);
     } else if (isFile) {
       const video = videoRef.current;
       if (!video) return;
       
       if (isHost) {
         usingObjectStream.current = false;
+        setIsLoading(true);
         if (video.srcObject) video.srcObject = null;
         video.src = videoSource.url;
-        video.volume = volume;
-        video.muted = muted;
         video.load();
       } else {
         usingObjectStream.current = false;
+        setIsLoading(true);
         if (video.srcObject) video.srcObject = null;
         video.removeAttribute('src');
         video.load();
@@ -105,14 +112,14 @@ export function VideoPlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoSource, isHost]);
 
-  // ── (2) VOLUME & MUTED SYNC ON MOUNT ────────────────────────────
+  // ── (2) VOLUME & MUTED — apply immediately and on source change ──
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
-      video.volume = 1;
-      video.muted = false;
+      video.volume = volume;
+      video.muted = muted;
     }
-  }, []);
+  }, [volume, muted, videoSource]);
 
   // ── (3) GUEST SYNC EVENTS FROM SERVER ───────────────────────────
   useEffect(() => {
@@ -140,16 +147,61 @@ export function VideoPlayer({
       }
     }
 
-    socket.on('sync-play',  ({ currentTime }: { currentTime: number }) => applySync('play',  currentTime));
-    socket.on('sync-pause', ({ currentTime }: { currentTime: number }) => applySync('pause', currentTime));
-    socket.on('sync-seek',  ({ currentTime }: { currentTime: number }) => applySync('seek',  currentTime));
+    socket.on('sync-play',  ({ currentTime: t }: { currentTime: number }) => applySync('play',  t));
+    socket.on('sync-pause', ({ currentTime: t }: { currentTime: number }) => applySync('pause', t));
+    socket.on('sync-seek',  ({ currentTime: t }: { currentTime: number }) => applySync('seek',  t));
+
+    // Periodic heartbeat sync — correct drift > 2 seconds
+    socket.on('sync-heartbeat', ({ currentTime: hostTime, playing: hostPlaying }: { currentTime: number; playing: boolean }) => {
+      if (videoSource?.sourceType === 'url') {
+        const rp = reactPlayerRef.current;
+        if (rp) {
+          const guestTime = rp.getCurrentTime?.() ?? 0;
+          if (Math.abs(guestTime - hostTime) > 2) {
+            rp.seekTo(hostTime, 'seconds');
+          }
+        }
+        setPlaying(hostPlaying);
+      } else {
+        const video = videoRef.current;
+        if (video && isFinite(video.currentTime)) {
+          if (Math.abs(video.currentTime - hostTime) > 2) {
+            video.currentTime = hostTime;
+          }
+          if (hostPlaying && video.paused) {
+            video.play().catch(() => {});
+          } else if (!hostPlaying && !video.paused) {
+            video.pause();
+          }
+          setPlaying(hostPlaying);
+        }
+      }
+    });
 
     return () => {
       socket.off('sync-play');
       socket.off('sync-pause');
       socket.off('sync-seek');
+      socket.off('sync-heartbeat');
     };
   }, [isHost, videoSource]);
+
+  // ── (3b) HOST: send periodic heartbeat every 5 seconds ──────────
+  useEffect(() => {
+    if (!isHost || !videoSource) return;
+
+    const interval = setInterval(() => {
+      let t = 0;
+      if (isUrl) {
+        t = reactPlayerRef.current?.getCurrentTime?.() ?? 0;
+      } else {
+        t = videoRef.current?.currentTime ?? 0;
+      }
+      socket.emit('sync-heartbeat', { currentTime: t, playing });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isHost, videoSource, isUrl, playing]);
 
   // ── (4) GUEST WEBRTC STREAM — only for file-type sources ────────
   useEffect(() => {
@@ -163,14 +215,32 @@ export function VideoPlayer({
       if (!video) return;
       if (remoteStreamRef.current && !usingObjectStream.current) {
         console.log('[VideoPlayer] Remote stream arrived, applying to video element');
+        const stream = remoteStreamRef.current;
+        const audioTracks = stream.getAudioTracks();
+        const videoTracks = stream.getVideoTracks();
+        console.log('[VideoPlayer] Stream tracks — audio:', audioTracks.length, 'video:', videoTracks.length);
+        
         usingObjectStream.current = true;
         video.removeAttribute('src');
-        video.srcObject = remoteStreamRef.current;
+        video.srcObject = stream;
+        // FIX: Explicitly set volume and unmute for WebRTC stream
         video.volume = volume;
-        video.muted = muted;
+        video.muted = false;
+        setMuted(false);
         video.play().catch(err => {
           console.warn('[VideoPlayer] Autoplay blocked:', err.message);
+          // If autoplay is blocked, try muted autoplay first then unmute
+          video.muted = true;
+          video.play().then(() => {
+            // After playing muted, unmute after a short delay
+            setTimeout(() => {
+              video.muted = false;
+              video.volume = volume;
+              setMuted(false);
+            }, 100);
+          }).catch(() => {});
         });
+        setIsLoading(false);
         clearInterval(interval);
       }
     }, 300);
@@ -196,24 +266,54 @@ export function VideoPlayer({
     if (isFinite(d)) setDuration(d);
   }
 
+  function handleNativeLoadedData() {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    const d = video.duration;
+    if (isFinite(d)) setDuration(d);
+    
+    // FIX: Apply volume settings once the video data is actually loaded
+    video.volume = volume;
+    video.muted = muted;
+    setIsLoading(false);
+    
+    console.log('[VideoPlayer] loadeddata — volume:', video.volume, 'muted:', video.muted);
+  }
+
   function handleNativePlay() {
     setPlaying(true);
     if (isHost && isFile) {
       const video = videoRef.current as VideoEl | null;
-      if (!video) return;
-      const stream = captureVideoStream(video);
-      if (stream) {
-        const tracks = stream.getTracks();
-        console.log('[VideoPlayer] captureStream on play:', tracks.map(t => t.kind));
-        if (tracks.length > 0) {
-          onLocalStream(stream);
+      if (!video || streamCaptured.current) return;
+      
+      // FIX: Use a small delay to ensure audio tracks are available in the capture
+      setTimeout(() => {
+        if (!video) return;
+        const stream = captureVideoStream(video);
+        if (stream) {
+          const tracks = stream.getTracks();
+          const audioTracks = stream.getAudioTracks();
+          const videoTracks = stream.getVideoTracks();
+          console.log('[VideoPlayer] captureStream — total:', tracks.length, 'audio:', audioTracks.length, 'video:', videoTracks.length);
+          
+          if (tracks.length > 0) {
+            streamCaptured.current = true;
+            onLocalStream(stream);
+          }
         }
-      }
+      }, 200);
     }
   }
 
   function handleNativePause()  { setPlaying(false); }
   function handleNativeEnded()  { setPlaying(false); }
+
+  // FIX: Handle video loading errors
+  function handleNativeError() {
+    setIsLoading(false);
+    setVideoError('Failed to load video file. Please check the file format.');
+  }
 
   // ── (6) CONTROLS ─────────────────────────────────────────────────
   const togglePlay = useCallback(() => {
@@ -260,18 +360,25 @@ export function VideoPlayer({
     const v = Number(e.target.value);
     setVolume(v);
     setMuted(v === 0);
-    const video = videoRef.current;
-    if (video) {
-      video.volume = v;
-      video.muted = v === 0;
+    // FIX: Only set on native video element when it exists and we're using it
+    if (!isUrl) {
+      const video = videoRef.current;
+      if (video) {
+        video.volume = v;
+        video.muted = v === 0;
+      }
     }
+    // ReactPlayer volume is handled via its `volume` prop reactively
   }
 
   function toggleMute() {
     const newMuted = !muted;
     setMuted(newMuted);
-    const video = videoRef.current;
-    if (video) video.muted = newMuted;
+    if (!isUrl) {
+      const video = videoRef.current;
+      if (video) video.muted = newMuted;
+    }
+    // ReactPlayer mute is handled via its `volume` prop (set to 0 when muted)
   }
 
   function toggleFullscreen() {
@@ -291,6 +398,66 @@ export function VideoPlayer({
       setShowControls(false);
     }, 3000);
   }
+
+  // ── (7) KEYBOARD SHORTCUTS ──────────────────────────────────────
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Don't trigger shortcuts when typing in inputs
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+      switch (e.key) {
+        case ' ':
+        case 'k':
+          e.preventDefault();
+          togglePlay();
+          break;
+        case 'm':
+        case 'M':
+          e.preventDefault();
+          toggleMute();
+          break;
+        case 'f':
+        case 'F':
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+        case 'ArrowLeft':
+          if (!isHost) return;
+          e.preventDefault();
+          {
+            const newTime = Math.max(0, currentTime - 10);
+            setCurrentTime(newTime);
+            onSeek(newTime);
+            if (isUrl) {
+              reactPlayerRef.current?.seekTo(newTime, 'seconds');
+            } else {
+              const video = videoRef.current;
+              if (video) video.currentTime = newTime;
+            }
+          }
+          break;
+        case 'ArrowRight':
+          if (!isHost) return;
+          e.preventDefault();
+          {
+            const newTime = Math.min(duration, currentTime + 10);
+            setCurrentTime(newTime);
+            onSeek(newTime);
+            if (isUrl) {
+              reactPlayerRef.current?.seekTo(newTime, 'seconds');
+            } else {
+              const video = videoRef.current;
+              if (video) video.currentTime = newTime;
+            }
+          }
+          break;
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [togglePlay, isHost, currentTime, duration, isUrl, onSeek]);
 
   useEffect(() => {
     const onFsChange = () => setFullscreen(!!document.fullscreenElement);
@@ -313,6 +480,7 @@ export function VideoPlayer({
       onMouseMove={resetHideTimer}
       onMouseLeave={() => { if (playing) setShowControls(false); }}
       onTouchStart={resetHideTimer}
+      tabIndex={0}
     >
       {/* Native Video element (for Local Files) */}
       {(!hasSource || isFile) && (
@@ -321,28 +489,40 @@ export function VideoPlayer({
           className="vp-video"
           onTimeUpdate={handleNativeTimeUpdate}
           onDurationChange={handleNativeDurationChange}
-          onLoadedData={handleNativeDurationChange}
+          onLoadedData={handleNativeLoadedData}
           onPlay={handleNativePlay}
           onPause={handleNativePause}
           onEnded={handleNativeEnded}
+          onError={handleNativeError}
           onClick={isHost ? togglePlay : undefined}
           playsInline
+          muted={false}
         />
       )}
 
       {/* ReactPlayer (for YouTube, Vimeo, direct URLs) */}
       {hasSource && isUrl && (
         <div className="vp-video" onClick={isHost ? togglePlay : undefined}>
-          {/* @ts-ignore - react-player types clash with standard video element types in this setup */}
           <ReactPlayer
             ref={reactPlayerRef}
             url={videoSource.url}
             playing={playing}
             volume={muted ? 0 : volume}
+            muted={muted}
             width="100%"
             height="100%"
             controls={false}
-            onProgress={(state: any) => {
+            onReady={() => {
+              console.log('[VideoPlayer] ReactPlayer ready');
+              setIsLoading(false);
+              setVideoError(null);
+            }}
+            onError={(err: unknown) => {
+              console.error('[VideoPlayer] ReactPlayer error:', err);
+              setIsLoading(false);
+              setVideoError('Failed to load video. Please check the URL and try again.');
+            }}
+            onProgress={(state: { playedSeconds: number; loadedSeconds: number }) => {
               setCurrentTime(state.playedSeconds);
               setBuffered(state.loadedSeconds);
             }}
@@ -350,8 +530,50 @@ export function VideoPlayer({
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}
             onEnded={() => setPlaying(false)}
-            style={{ pointerEvents: 'none' }} // Prevents iframe from stealing clicks
+            onBuffer={() => setIsLoading(true)}
+            onBufferEnd={() => setIsLoading(false)}
+            style={{ pointerEvents: 'none' }}
+            config={{
+              youtube: {
+                playerVars: {
+                  autoplay: 0,
+                  modestbranding: 1,
+                  rel: 0,
+                  showinfo: 0,
+                  iv_load_policy: 3,
+                  fs: 0,
+                  disablekb: 1,
+                  origin: window.location.origin,
+                },
+              },
+            }}
           />
+        </div>
+      )}
+
+      {/* Loading overlay */}
+      {isLoading && hasSource && (
+        <div className="vp-loading-overlay">
+          <div className="vp-spinner" />
+          <p className="vp-loading-text">
+            {isUrl ? 'Loading stream…' : 'Loading video…'}
+          </p>
+        </div>
+      )}
+
+      {/* Error overlay */}
+      {videoError && (
+        <div className="vp-error-overlay">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="18" stroke="#ef4444" strokeWidth="2"/>
+            <path d="M20 12v10M20 26v2" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round"/>
+          </svg>
+          <p className="vp-error-text">{videoError}</p>
+          {isHost && (
+            <button className="btn btn-ghost vp-error-retry" onClick={() => setVideoError(null)}>
+              Dismiss
+            </button>
+          )}
         </div>
       )}
 
