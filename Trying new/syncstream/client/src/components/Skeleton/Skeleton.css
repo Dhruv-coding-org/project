@@ -1,0 +1,329 @@
+/* ─────────────────────────────────────────────────────────
+   Skeleton & Splash Styles
+   ───────────────────────────────────────────────────────── */
+
+/* ── Skeleton Text Group ──────────────────────────── */
+.skeleton-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Lobby Card Skeleton ──────────────────────────── */
+.skeleton-lobby-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: var(--shadow-xl), var(--shadow-glow);
+  border: 1px solid rgba(168, 85, 247, 0.12);
+}
+
+.skeleton-lobby-logo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.skeleton-lobby-logo > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-lobby-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Video Player Skeleton ────────────────────────── */
+.skeleton-video-player {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.skeleton-video-screen {
+  flex: 1;
+  border-radius: 0;
+  background: linear-gradient(135deg, 
+    rgba(124, 58, 237, 0.03) 0%, 
+    rgba(255,255,255,0.02) 50%, 
+    rgba(124, 58, 237, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.skeleton-video-controls {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.skeleton-video-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.skeleton-video-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Chat Skeleton ────────────────────────────────── */
+.skeleton-chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.skeleton-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.skeleton-chat-messages {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skeleton-chat-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.skeleton-chat-msg.incoming {
+  align-items: flex-start;
+}
+
+.skeleton-chat-msg.outgoing {
+  align-items: flex-end;
+}
+
+.skeleton-chat-input {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── UserList Skeleton ────────────────────────────── */
+.skeleton-userlist {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border);
+}
+
+.skeleton-userlist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.skeleton-userlist-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeleton-userlist-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 6px;
+}
+
+.skeleton-userlist-items {
+  padding: 4px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.skeleton-userlist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  animation: fadeIn 0.3s var(--ease) both;
+}
+
+/* ── Room Skeleton ────────────────────────────────── */
+.skeleton-room {
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--bg-base);
+}
+
+.skeleton-room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 54px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-glass);
+}
+
+.skeleton-room-header-left,
+.skeleton-room-header-center,
+.skeleton-room-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skeleton-room-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.skeleton-room-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+
+.skeleton-room-sidebar {
+  width: 330px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  overflow: hidden;
+}
+
+/* ── Splash Screen ────────────────────────────────── */
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+  overflow: hidden;
+}
+
+.splash-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  animation: float 8s ease-in-out infinite;
+}
+
+.splash-orb-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.2), transparent 70%);
+  top: -100px;
+  left: -100px;
+}
+
+.splash-orb-2 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.12), transparent 70%);
+  bottom: -80px;
+  right: -80px;
+  animation-delay: -3s;
+}
+
+.splash-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  z-index: 1;
+}
+
+.splash-logo-icon {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: 20px;
+  box-shadow: 0 0 40px var(--accent-glow);
+  animation: breathe 3s ease-in-out infinite;
+}
+
+.splash-name {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  background: var(--accent-grad-h);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 3s ease-in-out infinite;
+}
+
+.splash-loader {
+  width: 200px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.splash-loader-bar {
+  width: 40%;
+  height: 100%;
+  background: var(--accent-grad-h);
+  border-radius: 99px;
+  animation: shimmer-sweep 1.2s ease-in-out infinite;
+}
+
+.splash-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+/* ── Splash fade-out ──────────────────────────────── */
+.splash-screen.fade-out {
+  animation: fadeOut 0.4s var(--ease) forwards;
+  pointer-events: none;
+}

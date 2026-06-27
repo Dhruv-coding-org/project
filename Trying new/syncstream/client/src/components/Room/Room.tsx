@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { RoomState, VideoSource } from '../../hooks/useRoom';
 import { useWebRTC } from '../../hooks/useWebRTC';
 import { VideoPlayer } from '../VideoPlayer/VideoPlayer';
 import { UserList } from '../UserList/UserList';
 import { Chat } from '../Chat/Chat';
 import { SourcePicker } from '../SourcePicker/SourcePicker';
+import { RoomSkeleton } from '../Skeleton/Skeleton';
 import { socket } from '../../socket';
 import './Room.css';
 
@@ -30,12 +31,46 @@ export function Room({
   const [showSourcePicker, setShowSourcePicker] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [copiedToast, setCopiedToast] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(true);
 
   const { requestStream, remoteStream } = useWebRTC({
     isHost: state.isHost,
     hostId: state.hostId,
     localStream,
   });
+
+  // Show skeleton briefly on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSkeleton(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Host responds to guest's sync request with current playback position
+  useEffect(() => {
+    if (!state.isHost) return;
+
+    function handleSyncRequest(e: Event) {
+      const detail = (e as CustomEvent).detail;
+      // Get current time from whichever player element is active
+      const videoEl = document.querySelector('.vp-video') as HTMLVideoElement | null;
+      let currentTime = 0;
+      let playing = false;
+
+      if (videoEl && videoEl.tagName === 'VIDEO') {
+        currentTime = videoEl.currentTime || 0;
+        playing = !videoEl.paused;
+      }
+
+      socket.emit('sync-response', {
+        guestId: detail.guestId,
+        currentTime,
+        playing,
+      });
+    }
+
+    window.addEventListener('sync-request-from-guest', handleSyncRequest);
+    return () => window.removeEventListener('sync-request-from-guest', handleSyncRequest);
+  }, [state.isHost]);
 
   function handleLocalStream(stream: MediaStream) {
     console.log('[Room] Captured local stream. Tracks:', stream.getTracks().map(t => `${t.kind}(${t.label})`));
@@ -50,7 +85,6 @@ export function Room({
   // Host clicks logo → reload room (re-sync everything)
   const handleLogoClick = useCallback(() => {
     if (!state.isHost) return;
-    // Force re-sync: reset video source to trigger re-load for all users
     if (state.videoSource) {
       onChangeSource({ ...state.videoSource });
     }
@@ -64,6 +98,10 @@ export function Room({
       setTimeout(() => setCopiedToast(false), 2000);
     } catch { /* fallback — ignore */ }
   }, [state.roomCode]);
+
+  if (showSkeleton) {
+    return <RoomSkeleton />;
+  }
 
   return (
     <div className="room animate-fade-in">

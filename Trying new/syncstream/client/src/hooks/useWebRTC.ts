@@ -21,11 +21,54 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
   const onRemoteStreamRef = useRef<((stream: MediaStream) => void) | null>(null);
 
   // ── Keep a ref to localStream that's always current ──────────────
-  // This avoids stale closures in socket handlers without re-registering
   const localStreamRef = useRef<MediaStream | null>(localStream);
   useEffect(() => {
     localStreamRef.current = localStream;
-  }, [localStream]);
+
+    // If stream changes and we have existing peers, re-negotiate with new stream
+    if (isHost && localStream && peers.current.size > 0) {
+      console.log('[WebRTC] Stream updated — re-negotiating with existing peers');
+      const peerIds = Array.from(peers.current.keys());
+      for (const peerId of peerIds) {
+        const pc = peers.current.get(peerId);
+        if (!pc) continue;
+        
+        // Replace tracks on existing peer connection
+        const senders = pc.getSenders();
+        localStream.getTracks().forEach(track => {
+          const existingSender = senders.find(s => s.track?.kind === track.kind);
+          if (existingSender) {
+            existingSender.replaceTrack(track).catch(err => {
+              console.warn('[WebRTC] Failed to replace track:', err);
+            });
+          } else {
+            // New track type (e.g., audio track arriving late) — add it
+            pc.addTrack(track, localStream);
+            console.log('[WebRTC] Added new', track.kind, 'track to existing peer', peerId);
+          }
+        });
+
+        // If new tracks were added, we need to re-negotiate
+        const newTrackCount = localStream.getTracks().length;
+        const senderCount = senders.filter(s => s.track).length;
+        if (newTrackCount > senderCount) {
+          renegotiate(peerId, pc);
+        }
+      }
+    }
+  }, [localStream, isHost]);
+
+  // Re-negotiate a peer connection after adding new tracks
+  async function renegotiate(peerId: string, pc: RTCPeerConnection) {
+    try {
+      const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+      await pc.setLocalDescription(offer);
+      socket.emit('webrtc-offer', { targetId: peerId, offer });
+      console.log('[WebRTC] Re-negotiation offer sent to', peerId);
+    } catch (err) {
+      console.warn('[WebRTC] Re-negotiation failed:', err);
+    }
+  }
 
   const setOnRemoteStream = useCallback((cb: (stream: MediaStream) => void) => {
     onRemoteStreamRef.current = cb;
@@ -56,6 +99,17 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
       }
     };
 
+    // Handle re-negotiation from remote side
+    pc.onnegotiationneeded = async () => {
+      try {
+        const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+        await pc.setLocalDescription(offer);
+        socket.emit('webrtc-offer', { targetId: peerId, offer });
+      } catch (err) {
+        console.warn('[WebRTC] onnegotiationneeded failed:', err);
+      }
+    };
+
     const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
     await pc.setLocalDescription(offer);
     socket.emit('webrtc-offer', { targetId: peerId, offer });
@@ -71,6 +125,7 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
 
     // Use the streams from the event — preserves audio+video together
     pc.ontrack = (e) => {
+      console.log('[WebRTC] Received track:', e.track.kind, 'from', senderId);
       if (e.streams && e.streams[0]) {
         remoteStream.current = e.streams[0];
       } else {
@@ -104,7 +159,6 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
     // Host: a guest wants the stream
     socket.on('peer-needs-stream', async ({ peerId }: { peerId: string }) => {
       if (!isHost) return;
-      // Use ref so we always have the latest stream even if state changed
       const stream = localStreamRef.current;
       if (!stream || stream.getTracks().length === 0) {
         console.warn('[WebRTC] Host has no stream yet — guest will retry');
@@ -114,11 +168,28 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
       await createHostPeer(peerId, stream);
     });
 
-    // Guest: receiving offer from host
+    // Guest: receiving offer from host (initial or re-negotiation)
     socket.on('webrtc-offer', async ({ senderId, offer }: { senderId: string; offer: RTCSessionDescriptionInit }) => {
       if (isHost) return;
       console.log('[WebRTC] Received offer from', senderId);
-      const pc = createGuestPeer(senderId);
+
+      // Check if we already have a peer — if so, just update the description (re-negotiation)
+      let pc = peers.current.get(senderId);
+      if (pc && pc.signalingState !== 'closed') {
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(offer));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          socket.emit('webrtc-answer', { targetId: senderId, answer });
+          console.log('[WebRTC] Re-negotiation answer sent');
+          return;
+        } catch (err) {
+          console.warn('[WebRTC] Re-negotiation failed, creating new peer:', err);
+        }
+      }
+
+      // Create new guest peer
+      pc = createGuestPeer(senderId);
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);

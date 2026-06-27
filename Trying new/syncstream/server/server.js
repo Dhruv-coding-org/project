@@ -141,6 +141,24 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ─── Manual Re-sync Request ────────────────────────────────────
+  // Guest can request the host's exact current time on demand
+  socket.on('request-sync', () => {
+    const room = rooms.get(socket.roomCode);
+    if (room) {
+      // Ask the host for their current playback state
+      io.to(room.hostId).emit('sync-request-from-guest', { guestId: socket.id });
+    }
+  });
+
+  // Host responds with their current playback state
+  socket.on('sync-response', ({ guestId, currentTime, playing }) => {
+    const room = rooms.get(socket.roomCode);
+    if (room && room.hostId === socket.id) {
+      io.to(guestId).emit('sync-response', { currentTime, playing });
+    }
+  });
+
   // ─── Source Management ─────────────────────────────────────────
 
   socket.on('change-source', ({ sourceType, url }) => {

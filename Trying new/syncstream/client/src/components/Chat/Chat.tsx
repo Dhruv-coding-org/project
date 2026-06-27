@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import type { ChatMessage } from '../../hooks/useRoom';
+import { ChatSkeleton } from '../Skeleton/Skeleton';
 import './Chat.css';
 
 interface ChatProps {
@@ -11,7 +12,14 @@ interface ChatProps {
 
 export function Chat({ messages, onSend, mySocketId }: ChatProps) {
   const [input, setInput] = useState('');
+  const [showSkeleton, setShowSkeleton] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Show skeleton briefly
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSkeleton(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -30,8 +38,12 @@ export function Chat({ messages, onSend, mySocketId }: ChatProps) {
     return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
+  if (showSkeleton) {
+    return <ChatSkeleton />;
+  }
+
   return (
-    <div className="chat">
+    <div className="chat animate-fade-in">
       <div className="chat-header">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M2 2h10a1 1 0 011 1v6a1 1 0 01-1 1H5L2 13V3a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>

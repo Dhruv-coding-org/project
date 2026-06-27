@@ -1,3 +1,7 @@
+/* ─────────────────────────────────────────────────────────
+   UserList v3.0 — Animated avatars + gradient ring
+   ───────────────────────────────────────────────────────── */
+
 .userlist {
   display: flex;
   flex-direction: column;
@@ -49,8 +53,12 @@
 .userlist-copy-btn {
   color: var(--text-muted);
   padding: 4px;
+  transition: all var(--transition-fast);
 }
-.userlist-copy-btn:hover { color: var(--accent-bright); }
+.userlist-copy-btn:hover {
+  color: var(--accent-bright);
+  transform: scale(1.1);
+}
 
 .userlist-leave-btn {
   padding: 5px 12px;
@@ -110,17 +118,20 @@
   padding: 8px 10px;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
-  animation: fadeIn 0.3s var(--ease) both;
+  animation: slideUp 0.3s var(--ease) both;
   flex-shrink: 0;
 }
-.userlist-user:hover { background: var(--bg-glass-2); }
+.userlist-user:hover {
+  background: var(--bg-glass-2);
+  transform: translateX(2px);
+}
 .userlist-user.is-me {
   background: var(--accent-soft);
   border: 1px solid var(--accent-border);
 }
 
 .userlist-avatar {
-  width: 32px; height: 32px;
+  width: 34px; height: 34px;
   border-radius: 50%;
   background: var(--accent-grad);
   display: flex;
@@ -130,8 +141,22 @@
   font-weight: 800;
   color: #fff;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
   text-transform: uppercase;
+  position: relative;
+}
+
+/* Animated gradient ring around avatar */
+.userlist-user.is-me .userlist-avatar::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: var(--accent-grad-h);
+  background-size: 200% auto;
+  animation: gradient-shift 3s ease-in-out infinite;
+  z-index: -1;
+  opacity: 0.6;
 }
 
 .userlist-username {
@@ -156,4 +181,5 @@
   align-items: center;
   flex-shrink: 0;
   filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.3));
+  animation: breathe 3s ease-in-out infinite;
 }

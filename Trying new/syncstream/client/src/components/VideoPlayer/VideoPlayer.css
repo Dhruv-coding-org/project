@@ -1,3 +1,7 @@
+/* ─────────────────────────────────────────────────────────
+   VideoPlayer v3.0 — Premium Netflix-style controls
+   ───────────────────────────────────────────────────────── */
+
 .vp-container {
   position: relative;
   width: 100%;
@@ -24,6 +28,27 @@
   object-fit: contain;
 }
 
+/* ── Plyr embed wrapper ───────────────────────────── */
+.vp-plyr-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+.vp-plyr-wrapper .plyr {
+  width: 100%;
+  height: 100%;
+}
+
+/* Hide Plyr's default controls since we use our own */
+.vp-plyr-wrapper .plyr__controls,
+.vp-plyr-wrapper .plyr__control--overlaid {
+  display: none !important;
+}
+
+.vp-plyr-wrapper .plyr--video {
+  background: transparent;
+}
+
 /* ── Placeholder ──────────────────────────────────── */
 .vp-placeholder {
   position: absolute;
@@ -36,7 +61,6 @@
   background: linear-gradient(135deg, #08001a 0%, #060612 50%, #0a0518 100%);
 }
 
-/* subtle grid overlay on placeholder */
 .vp-placeholder::before {
   content: '';
   position: absolute;
@@ -51,7 +75,7 @@
 
 .vp-placeholder-icon {
   opacity: 0.55;
-  animation: pulse-glow 3s ease-in-out infinite;
+  animation: breathe 3s ease-in-out infinite;
   position: relative;
   z-index: 1;
 }
@@ -82,21 +106,41 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  background: rgba(0, 0, 0, 0.78);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  gap: 18px;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   z-index: 5;
   animation: fadeIn 0.3s var(--ease) both;
 }
 
-.vp-spinner {
-  width: 42px;
-  height: 42px;
-  border: 3px solid rgba(124, 58, 237, 0.15);
-  border-top-color: var(--accent-bright);
-  border-radius: 50%;
-  animation: spin 0.75s linear infinite;
+/* Animated ring spinner */
+.vp-loading-ring {
+  width: 56px;
+  height: 56px;
+}
+
+.vp-loading-ring svg {
+  width: 100%;
+  height: 100%;
+  transform-origin: center;
+}
+
+.vp-ring-bg {
+  fill: none;
+  stroke: rgba(124, 58, 237, 0.12);
+  stroke-width: 4;
+}
+
+.vp-ring-progress {
+  fill: none;
+  stroke: url(#ring-gradient);
+  stroke: var(--accent-bright);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 276;
+  animation: ring-spin 1.5s ease-in-out infinite;
+  transform-origin: center;
 }
 
 .vp-loading-text {
@@ -105,6 +149,39 @@
   font-weight: 500;
   letter-spacing: 0.03em;
   text-transform: uppercase;
+}
+
+.vp-loading-tracks {
+  display: flex;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.vp-track-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.vp-track-status.ready {
+  color: var(--success);
+}
+
+.vp-track-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.vp-track-status.ready .vp-track-dot {
+  background: var(--success);
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
 }
 
 /* ── Error overlay ───────────────────────────────── */
@@ -116,11 +193,15 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
-  background: rgba(0, 0, 0, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   z-index: 6;
   animation: fadeIn 0.3s var(--ease) both;
+}
+
+.vp-error-icon {
+  animation: breathe 2s ease-in-out infinite;
 }
 
 .vp-error-text {
@@ -138,6 +219,45 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+/* ── Sync Banner ──────────────────────────────────── */
+@keyframes animate-slide-down {
+  from { opacity: 0; transform: translateY(-100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.vp-sync-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(251, 146, 60, 0.1));
+  border-bottom: 1px solid rgba(251, 191, 36, 0.25);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: animate-slide-down 0.35s var(--ease) both;
+}
+
+.vp-sync-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--warning);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.vp-sync-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  gap: 6px;
+  border-radius: var(--radius-sm);
+}
+
 /* ── Controls overlay ─────────────────────────────── */
 .vp-controls {
   position: absolute;
@@ -147,8 +267,8 @@
   justify-content: flex-end;
   background: linear-gradient(
     to top,
-    rgba(0,0,0,0.88) 0%,
-    rgba(0,0,0,0.35) 30%,
+    rgba(0,0,0,0.92) 0%,
+    rgba(0,0,0,0.4) 25%,
     transparent 55%
   );
   transition: opacity var(--transition);
@@ -173,7 +293,7 @@
   font-size: 10px;
   font-weight: 500;
   color: rgba(255,255,255,0.55);
-  background: rgba(0,0,0,0.45);
+  background: rgba(0,0,0,0.5);
   padding: 5px 12px;
   border-radius: 99px;
   backdrop-filter: blur(12px);
@@ -183,7 +303,7 @@
 
 /* ── Progress bar ─────────────────────────────────── */
 .vp-progress-area {
-  padding: 0 14px 8px;
+  padding: 0 14px 6px;
 }
 
 .vp-progress-track {
@@ -192,10 +312,9 @@
   background: rgba(255,255,255,0.12);
   border-radius: 99px;
   cursor: pointer;
-  transition: height 0.15s var(--ease);
+  transition: height 0.2s var(--ease);
 }
 .vp-progress-track:hover { height: 6px; margin-bottom: -1px; }
-.vp-progress-track:hover .vp-progress-input { height: 18px; }
 
 .vp-progress-buffered {
   position: absolute;
@@ -214,13 +333,33 @@
   border-radius: 99px;
   pointer-events: none;
   box-shadow: 0 0 8px rgba(124, 58, 237, 0.3);
+  animation: progress-glow 3s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.vp-progress-thumb {
+  width: 0px;
+  height: 0px;
+  background: #fff;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all 0.2s var(--ease);
+  box-shadow: 0 0 6px rgba(124, 58, 237, 0.5);
+  transform: translateX(50%);
+}
+
+.vp-progress-track:hover .vp-progress-thumb {
+  width: 14px;
+  height: 14px;
 }
 
 .vp-progress-input {
   position: absolute;
   inset: 0;
   width: 100%;
-  height: 12px;
+  height: 16px;
   top: 50%; transform: translateY(-50%);
   opacity: 0;
   cursor: pointer;
@@ -249,13 +388,14 @@
 
 .vp-btn {
   color: rgba(255,255,255,0.82) !important;
-  padding: 7px;
+  padding: 8px;
   border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
 }
 .vp-btn:hover {
   color: #fff !important;
   background: rgba(255,255,255,0.1) !important;
+  transform: scale(1.08);
 }
 .vp-btn:active {
   transform: scale(0.92);
@@ -264,6 +404,11 @@
   opacity: 0.3 !important;
   cursor: not-allowed !important;
   transform: none !important;
+}
+
+.vp-play-btn {
+  width: 40px;
+  height: 40px;
 }
 
 /* ── Volume ───────────────────────────────────────── */
@@ -306,8 +451,17 @@
   font-variant-numeric: tabular-nums;
   font-family: var(--font-mono);
   white-space: nowrap;
-  padding: 0 6px;
+  padding: 0 8px;
   letter-spacing: 0.02em;
+}
+
+/* ── Audio status indicator ───────────────────────── */
+.vp-audio-status {
+  display: flex;
+  align-items: center;
+  color: var(--warning);
+  animation: pulse-dot 2s ease-in-out infinite;
+  margin-right: 4px;
 }
 
 /* ── Mobile touch area ────────────────────────────── */
@@ -320,5 +474,9 @@
   }
   .vp-time {
     font-size: 11px;
+  }
+  .vp-play-btn {
+    width: 36px;
+    height: 36px;
   }
 }

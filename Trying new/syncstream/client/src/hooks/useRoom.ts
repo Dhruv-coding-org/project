@@ -117,6 +117,13 @@ export function useRoom() {
       }));
     });
 
+    // Host: respond to guest's manual re-sync request
+    socket.on('sync-request-from-guest', ({ guestId }: { guestId: string }) => {
+      // The VideoPlayer will handle sending the actual response
+      // We emit a custom event that the VideoPlayer listens for
+      window.dispatchEvent(new CustomEvent('sync-request-from-guest', { detail: { guestId } }));
+    });
+
     return () => {
       socket.off('connect');
       socket.off('disconnect');
@@ -126,6 +133,7 @@ export function useRoom() {
       socket.off('host-changed');
       socket.off('source-changed');
       socket.off('chat-message');
+      socket.off('sync-request-from-guest');
     };
   }, []);
 

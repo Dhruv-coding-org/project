@@ -1,25 +1,27 @@
 /* ─────────────────────────────────────────────────────────
-   SyncStream Design System — Global CSS v2.0
-   Premium dark theme · Electric violet accent · Glassmorphism
+   SyncStream Design System — Global CSS v3.0
+   Premium dark theme · Violet-Cyan-Rose · Glassmorphism 2.0
    ───────────────────────────────────────────────────────── */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
   /* ── Color Palette ────────────────────────────────── */
-  --bg-base:       #05060f;
-  --bg-surface:    #0c0d1a;
-  --bg-elevated:   #111225;
-  --bg-glass:      rgba(12, 13, 28, 0.72);
-  --bg-glass-2:    rgba(255, 255, 255, 0.035);
-  --bg-glass-3:    rgba(255, 255, 255, 0.055);
-  --bg-card:       rgba(14, 15, 30, 0.85);
+  --bg-base:       #030711;
+  --bg-surface:    #0a0e1a;
+  --bg-elevated:   #0f1322;
+  --bg-glass:      rgba(10, 14, 28, 0.78);
+  --bg-glass-2:    rgba(255, 255, 255, 0.04);
+  --bg-glass-3:    rgba(255, 255, 255, 0.065);
+  --bg-card:       rgba(12, 16, 32, 0.88);
 
-  /* ── Accent — Electric Violet + Rose ──────────────── */
+  /* ── Accent — Electric Violet + Cyan + Rose ────────── */
   --accent:        #7c3aed;
   --accent-light:  #a78bfa;
   --accent-bright: #c084fc;
   --accent-rose:   #e879f9;
+  --accent-cyan:   #22d3ee;
+  --accent-cyan-2: #67e8f9;
   --accent-glow:   rgba(124, 58, 237, 0.35);
   --accent-glow-2: rgba(168, 85, 247, 0.20);
   --accent-soft:   rgba(124, 58, 237, 0.10);
@@ -27,6 +29,7 @@
   --accent-grad:   linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%);
   --accent-grad-2: linear-gradient(135deg, #6d28d9, #7c3aed, #a855f7);
   --accent-grad-h: linear-gradient(90deg, #7c3aed, #a855f7, #e879f9);
+  --accent-grad-3: linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #22d3ee 100%);
 
   /* ── Text ──────────────────────────────────────────── */
   --text-primary:   #f0edff;
@@ -47,6 +50,7 @@
   --shadow-xl:  0 32px 80px rgba(0,0,0,0.8);
   --shadow-glow: 0 0 40px rgba(124, 58, 237, 0.15);
   --shadow-glow-strong: 0 0 60px rgba(124, 58, 237, 0.25);
+  --shadow-glow-cyan: 0 0 40px rgba(34, 211, 238, 0.1);
   --shadow-inset: inset 0 1px 0 rgba(255,255,255,0.05);
 
   /* ── Status ────────────────────────────────────────── */
@@ -72,6 +76,7 @@
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --transition: 0.25s var(--ease);
   --transition-fast: 0.15s var(--ease);
   --transition-slow: 0.4s var(--ease);
@@ -132,7 +137,7 @@ h1, h2, h3, h4 {
   color: var(--text-primary);
   font-weight: 700;
   line-height: 1.2;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
 }
 
 /* ─── Button Base ─────────────────────────────────────── */
@@ -192,7 +197,7 @@ h1, h2, h3, h4 {
 .btn-ghost:hover {
   background: var(--bg-glass-3);
   color: var(--text-primary);
-  border-color: var(--border-accent);
+  border-color: var(--accent-border);
   transform: translateY(-1px);
 }
 .btn-ghost:active { transform: translateY(0); }
@@ -259,6 +264,11 @@ h1, h2, h3, h4 {
   to   { opacity: 1; }
 }
 
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -269,9 +279,25 @@ h1, h2, h3, h4 {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
 @keyframes scaleIn {
   from { opacity: 0; transform: scale(0.95); }
   to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes scaleSpring {
+  0%   { opacity: 0; transform: scale(0.8); }
+  60%  { transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 @keyframes pulse-glow {
@@ -294,6 +320,11 @@ h1, h2, h3, h4 {
   100% { background-position: 200% center; }
 }
 
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 @keyframes float {
   0%, 100% { transform: translate(0, 0) scale(1); }
   33%       { transform: translate(20px, -20px) scale(1.05); }
@@ -311,9 +342,45 @@ h1, h2, h3, h4 {
   50%      { opacity: 0.8; }
 }
 
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50%      { transform: scale(1.05); opacity: 1; }
+}
+
+@keyframes ripple {
+  0%   { transform: scale(0); opacity: 0.5; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+@keyframes progress-glow {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 4px rgba(124, 58, 237, 0.3)); }
+  50%      { filter: brightness(1.2) drop-shadow(0 0 8px rgba(124, 58, 237, 0.5)); }
+}
+
+@keyframes ring-spin {
+  0%   { stroke-dashoffset: 280; transform: rotate(-90deg); }
+  50%  { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 280; transform: rotate(270deg); }
+}
+
+@keyframes border-flow {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
 .animate-fade-in  { animation: fadeIn  0.4s var(--ease) both; }
 .animate-slide-up { animation: slideUp 0.45s var(--ease) both; }
 .animate-scale-in { animation: scaleIn 0.35s var(--ease) both; }
+.animate-scale-spring { animation: scaleSpring 0.5s var(--ease-spring) both; }
+.animate-slide-left  { animation: slideInLeft  0.4s var(--ease) both; }
+.animate-slide-right { animation: slideInRight 0.4s var(--ease) both; }
+
+/* Staggered animation delays */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
 
 /* ─── Badge ───────────────────────────────────────────── */
 .badge {
@@ -403,3 +470,28 @@ h1, h2, h3, h4 {
 .toast-success { border-left: 3px solid var(--success); }
 .toast-error   { border-left: 3px solid var(--error); }
 .toast-info    { border-left: 3px solid var(--accent-light); }
+
+/* ─── Skeleton Base ───────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, 
+    rgba(255,255,255,0.04) 25%, 
+    rgba(255,255,255,0.08) 50%, 
+    rgba(255,255,255,0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-text {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.skeleton-avatar {
+  border-radius: 50%;
+}
+
+.skeleton-box {
+  border-radius: var(--radius-md);
+}

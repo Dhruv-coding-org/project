@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import type { RoomUser } from '../../hooks/useRoom';
 import { socket } from '../../socket';
+import { UserListSkeleton } from '../Skeleton/Skeleton';
 import './UserList.css';
 
 interface UserListProps {
@@ -11,6 +13,12 @@ interface UserListProps {
 
 export function UserList({ users, hostId, roomCode, onLeave }: UserListProps) {
   const myId = socket.id;
+  const [showSkeleton, setShowSkeleton] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSkeleton(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   async function copyCode() {
     try {
@@ -18,8 +26,12 @@ export function UserList({ users, hostId, roomCode, onLeave }: UserListProps) {
     } catch { /* fallback — just ignore */ }
   }
 
+  if (showSkeleton) {
+    return <UserListSkeleton />;
+  }
+
   return (
-    <div className="userlist">
+    <div className="userlist animate-fade-in">
       {/* Room code header */}
       <div className="userlist-header">
         <div className="userlist-room-info">
@@ -61,11 +73,15 @@ export function UserList({ users, hostId, roomCode, onLeave }: UserListProps) {
       </div>
 
       <ul className="userlist-users" role="list">
-        {users.map(user => {
+        {users.map((user, index) => {
           const isMe = user.socketId === myId;
           const isHost = user.socketId === hostId;
           return (
-            <li key={user.socketId} className={`userlist-user ${isMe ? 'is-me' : ''}`}>
+            <li
+              key={user.socketId}
+              className={`userlist-user ${isMe ? 'is-me' : ''}`}
+              style={{ animationDelay: `${index * 0.06}s` }}
+            >
               <div className="userlist-avatar">
                 {user.username.charAt(0).toUpperCase()}
               </div>
