@@ -2,6 +2,7 @@ import {
   useRef, useEffect, useState, useCallback
 } from 'react';
 import type { ChangeEvent } from 'react';
+// @ts-ignore - Plyr types sometimes incorrectly report missing default export in IDEs
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 import { socket } from '../../socket';
