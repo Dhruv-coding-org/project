@@ -8,7 +8,7 @@ interface CommandCardData {
   id: string;
   name: string;
   syntax: string;
-  category: 'Snapshots' | 'Branches' | 'History' | 'Undoing' | 'Remotes';
+  category: 'Setup & Config' | 'Staging & Status' | 'Snapshots' | 'Branches' | 'History' | 'Undoing' | 'Remotes';
   icon: string;
   badgeColor: string;
   description: string;
@@ -19,6 +19,97 @@ interface CommandCardData {
 }
 
 const COMMAND_CARDS: CommandCardData[] = [
+  {
+    id: 'init',
+    name: 'Initialize Repository',
+    syntax: 'git init',
+    category: 'Setup & Config',
+    icon: '🌱',
+    badgeColor: '#6366F1',
+    description: 'Creates a new empty Git repository or reinitializes an existing one in the current workspace directory.',
+    proTip: 'Run this command only once at the beginning of a new project folder to start tracking files with Git.',
+    diagramBefore: '[No .git folder in workspace]',
+    diagramAfter:  '[workspace/.git repository initialized]',
+    exampleCommand: 'git init',
+  },
+  {
+    id: 'clone',
+    name: 'Clone Repository',
+    syntax: 'git clone <url>',
+    category: 'Setup & Config',
+    icon: '📥',
+    badgeColor: '#6366F1',
+    description: 'Downloads a complete repository from GitHub or a server onto your local machine, including all branches and history.',
+    proTip: 'Automatically configures a remote connection named "origin" pointing back to the server URL!',
+    diagramBefore: 'Remote: C0 ───> C1 (origin/main)',
+    diagramAfter:  'Local:  C0 ───> C1 (HEAD, main)',
+    exampleCommand: 'git clone https://github.com/committree/demo-repo.git',
+  },
+  {
+    id: 'config',
+    name: 'Configure Identity',
+    syntax: 'git config --global user.name "<name>"',
+    category: 'Setup & Config',
+    icon: '⚙️',
+    badgeColor: '#6366F1',
+    description: 'Sets your developer name and email address that will be permanently attached to all your commit timestamps.',
+    proTip: 'Check your current identity anytime by typing "git config --global user.name" without quotes.',
+    diagramBefore: 'Author: Unknown Developer <unknown@git>',
+    diagramAfter:  'Author: Dhruv <dhruv@committree.git>',
+    exampleCommand: 'git config --global user.name "Dhruv"',
+  },
+  {
+    id: 'add',
+    name: 'Stage Files',
+    syntax: 'git add . / git add <file>',
+    category: 'Staging & Status',
+    icon: '➕',
+    badgeColor: '#F59E0B',
+    description: 'Moves modified files from your working directory into the Git Staging Area (Index) so they are ready to be committed.',
+    proTip: 'Use "git add ." to stage all modified files at once, or specify individual file names for surgical snapshots.',
+    diagramBefore: '[Working Tree: index.html modified]',
+    diagramAfter:  '[Staging Area: index.html staged]',
+    exampleCommand: 'git add .',
+  },
+  {
+    id: 'status',
+    name: 'Check Status',
+    syntax: 'git status',
+    category: 'Staging & Status',
+    icon: '📋',
+    badgeColor: '#F59E0B',
+    description: 'Displays the state of your working tree and staging area: which files are modified, staged, or untracked.',
+    proTip: 'Run git status frequently before and after committing to make sure you never accidentally commit unwanted files!',
+    diagramBefore: '❓ Unknown working tree state',
+    diagramAfter:  '🟢 Changes to be committed: index.html',
+    exampleCommand: 'git status',
+  },
+  {
+    id: 'diff',
+    name: 'View Code Differences',
+    syntax: 'git diff',
+    category: 'Staging & Status',
+    icon: '🔍',
+    badgeColor: '#F59E0B',
+    description: 'Shows line-by-line additions and deletions between your working directory and the staging area.',
+    proTip: 'Use "git diff --staged" to inspect exact lines that are currently in the staging area waiting to be committed.',
+    diagramBefore: '--- a/index.html (old version)',
+    diagramAfter:  '+++ b/index.html (+ <h1>Welcome</h1>)',
+    exampleCommand: 'git diff',
+  },
+  {
+    id: 'restore',
+    name: 'Restore / Unstage Files',
+    syntax: 'git restore [--staged] <file>',
+    category: 'Staging & Status',
+    icon: '🔄',
+    badgeColor: '#F59E0B',
+    description: 'Unstages a file from the staging area back to modified, or discards local changes in your working directory.',
+    proTip: 'Much safer and cleaner than using old commands like "git reset HEAD <file>" or "git checkout -- <file>"!',
+    diagramBefore: '[Staged: app.js ready for commit]',
+    diagramAfter:  '[Unstaged: app.js back in working tree]',
+    exampleCommand: 'git restore --staged index.html',
+  },
   {
     id: 'commit',
     name: 'Create Snapshot',
@@ -44,6 +135,19 @@ const COMMAND_CARDS: CommandCardData[] = [
     diagramBefore: 'C0 ───> C1 (HEAD, main)',
     diagramAfter:  'C0 ───> C1\' (HEAD, main) [Amended]',
     exampleCommand: 'git commit --amend -m "Fix typo in header"',
+  },
+  {
+    id: 'rm',
+    name: 'Remove Tracked File',
+    syntax: 'git rm <file>',
+    category: 'Snapshots',
+    icon: '🗑️',
+    badgeColor: '#10B981',
+    description: 'Deletes a file from both your working directory and Git index, scheduling the deletion for the next commit.',
+    proTip: 'If you only want to stop tracking a file without deleting it from disk, use "git rm --cached <file>".',
+    diagramBefore: '[Tracked: old-script.js in repository]',
+    diagramAfter:  '[Scheduled for deletion in next commit]',
+    exampleCommand: 'git rm old-script.js',
   },
   {
     id: 'branch',
@@ -121,7 +225,46 @@ const COMMAND_CARDS: CommandCardData[] = [
     proTip: 'Unlike branches, release tags never move when new commits are created!',
     diagramBefore: 'C3 (HEAD, main)',
     diagramAfter:  'C3 (HEAD, main) [🏷️ v1.0]',
-    exampleCommand: 'git tag v1.0.0',
+    exampleCommand: 'git tag v1.0.0 C1',
+  },
+  {
+    id: 'log',
+    name: 'View Commit Log',
+    syntax: 'git log',
+    category: 'History',
+    icon: '📜',
+    badgeColor: '#8B5CF6',
+    description: 'Prints the chronological history of commit hashes, authors, dates, and messages leading up to your current HEAD.',
+    proTip: 'Try "git log --oneline --graph --all" in your terminal for a condensed ASCII tree view of all branches!',
+    diagramBefore: 'C0 ───> C1 ───> C2 (HEAD, main)',
+    diagramAfter:  'commit C2 (HEAD -> main)\nAuthor: player\nDate: 12:02:00',
+    exampleCommand: 'git log',
+  },
+  {
+    id: 'show',
+    name: 'Show Commit Details',
+    syntax: 'git show <hash>',
+    category: 'History',
+    icon: '👁️',
+    badgeColor: '#8B5CF6',
+    description: 'Displays author metadata, timestamp, commit message, and exact line-by-line code diffs of a specific commit.',
+    proTip: 'You can also pass a branch name or HEAD~1 to inspect parent commits!',
+    diagramBefore: 'Commit C1 in ancestry graph',
+    diagramAfter:  'diff --git ... + console.log("Added line");',
+    exampleCommand: 'git show C1',
+  },
+  {
+    id: 'reflog',
+    name: 'Reference Log (Reflog)',
+    syntax: 'git reflog',
+    category: 'History',
+    icon: '🛟',
+    badgeColor: '#8B5CF6',
+    description: 'Records every single time the HEAD pointer moves in your repository—even after resets, rebases, or deleted branches!',
+    proTip: 'The ultimate lifesaver: if you ever accidentally reset or delete commits, find their hash in reflog and reset back to them!',
+    diagramBefore: 'Lost commit C3 after accidental reset',
+    diagramAfter:  'C3 HEAD@{1}: commit: my feature [Recovered!]',
+    exampleCommand: 'git reflog',
   },
   {
     id: 'stash',
@@ -201,14 +344,27 @@ const COMMAND_CARDS: CommandCardData[] = [
     diagramAfter:  'origin/main advanced to match local C3',
     exampleCommand: 'git push origin main',
   },
+  {
+    id: 'remote',
+    name: 'Manage Remote URLs',
+    syntax: 'git remote -v / add origin <url>',
+    category: 'Remotes',
+    icon: '🌐',
+    badgeColor: '#EC4899',
+    description: 'Connects your local repository to a remote server URL (like GitHub) under a shorthand name like "origin".',
+    proTip: 'Run "git remote -v" to verify your connected fetch and push URLs anytime!',
+    diagramBefore: '[Local Repo Only, no connections]',
+    diagramAfter:  'origin -> https://github.com/Dhruv/project.git',
+    exampleCommand: 'git remote -v',
+  },
 ];
 
-const CATEGORIES: ('All' | 'Snapshots' | 'Branches' | 'History' | 'Undoing' | 'Remotes')[] = [
-  'All', 'Snapshots', 'Branches', 'History', 'Undoing', 'Remotes'
+const CATEGORIES: ('All' | 'Setup & Config' | 'Staging & Status' | 'Snapshots' | 'Branches' | 'History' | 'Undoing' | 'Remotes')[] = [
+  'All', 'Setup & Config', 'Staging & Status', 'Snapshots', 'Branches', 'History', 'Undoing', 'Remotes'
 ];
 
 export const CommandVisualizer3D: React.FC<CommandVisualizer3DProps> = ({ onInsertCommand }) => {
-  const [selectedCategory, setSelectedCategory] = useState<'All' | 'Snapshots' | 'Branches' | 'History' | 'Undoing' | 'Remotes'>('All');
+  const [selectedCategory, setSelectedCategory] = useState<'All' | 'Setup & Config' | 'Staging & Status' | 'Snapshots' | 'Branches' | 'History' | 'Undoing' | 'Remotes'>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredCards = COMMAND_CARDS.filter((card) => {
@@ -230,7 +386,7 @@ export const CommandVisualizer3D: React.FC<CommandVisualizer3DProps> = ({ onInse
           </p>
         </div>
         <div className="hero-stats">
-          <div className="stat-pill">⚡ 14 Master Commands</div>
+          <div className="stat-pill">⚡ 26 Master Commands</div>
           <div className="stat-pill">✨ Interactive 3D Visuals</div>
         </div>
       </div>

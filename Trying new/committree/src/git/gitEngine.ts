@@ -14,6 +14,14 @@ export interface Branch {
   targetHash: string;
 }
 
+export interface MergeConflict {
+  branchA: string;
+  branchB: string;
+  file: string;
+  contentA: string;
+  contentB: string;
+}
+
 export interface GitState {
   commits: { [hash: string]: Commit };
   branches: { [name: string]: Branch };
@@ -23,6 +31,11 @@ export interface GitState {
   tags: { [name: string]: string }; // Map tag name to commit hash
   stash: string[]; // Stack of stashed work descriptions
   remotes: { [name: string]: Branch }; // Simulated remote tracking branches (e.g. origin/main)
+  stagedFiles?: string[];
+  modifiedFiles?: string[];
+  config?: { [key: string]: string };
+  reflog?: string[];
+  activeConflict?: MergeConflict;
 }
 
 export const INITIAL_STATE: GitState = {
@@ -54,6 +67,10 @@ export const INITIAL_STATE: GitState = {
       targetHash: 'C0',
     },
   },
+  stagedFiles: [],
+  modifiedFiles: ['index.html', 'styles.css', 'app.js', 'README.md'],
+  config: { 'user.name': 'Dhruv', 'user.email': 'dhruv@committree.git' },
+  reflog: ['C0 HEAD@{0}: commit (initial): Initial commit'],
 };
 
 // Ancestry and LCA Helpers
@@ -111,7 +128,7 @@ export function runGitCommand(state: GitState, commandStr: string): GitCommandRe
 
   const action = parts[1];
   if (!action) {
-    return { state, output: ['Usage: git <command> [<args>]', '', 'Available commands in this simulator:', '  commit, branch, checkout, switch, merge, rebase, cherry-pick, reset, tag, stash, revert, fetch, pull, push, log, status'] };
+    return { state, output: ['Usage: git <command> [<args>]', '', 'Available commands in this simulator:', '  init, add, status, commit, branch, checkout, switch, merge, rebase, cherry-pick, reset, restore, tag, stash, revert, fetch, pull, push, log, diff, show, clone, config, reflog, rm, remote'] };
   }
 
   switch (action) {
@@ -146,6 +163,27 @@ export function runGitCommand(state: GitState, commandStr: string): GitCommandRe
       return handleLog(state);
     case 'status':
       return handleStatus(state);
+    case 'init':
+      return handleInit(state);
+    case 'add':
+      return handleAdd(state, parts.slice(2));
+    case 'diff':
+      return handleDiff(state);
+    case 'clone':
+      return handleClone(state, parts.slice(2));
+    case 'config':
+      return handleConfig(state, parts.slice(2));
+    case 'restore':
+      return handleRestore(state, parts.slice(2));
+    case 'rm':
+    case 'mv':
+      return handleRm(state, action, parts.slice(2));
+    case 'show':
+      return handleShow(state, parts.slice(2));
+    case 'reflog':
+      return handleReflog(state);
+    case 'remote':
+      return handleRemote(state, parts.slice(2));
     default:
       return { state, output: [], error: `git command "${action}" is not supported yet.` };
   }
@@ -199,6 +237,7 @@ function handleCommit(state: GitState, args: string[]): GitCommandResult {
         commits: newCommits,
         branches: newBranches,
         headCommitHash: amendedHash,
+        stagedFiles: [],
       },
       output: [
         `[${currentBranchName} ${amendedHash}] ${newCommit.message}`,
@@ -246,6 +285,7 @@ function handleCommit(state: GitState, args: string[]): GitCommandResult {
       branches: newBranches,
       headCommitHash: nextHash,
       commitCounter: state.commitCounter + 1,
+      stagedFiles: [],
     },
     output,
   };
@@ -419,6 +459,27 @@ function handleMerge(state: GitState, args: string[]): GitCommandResult {
         `Updating ${headHash.toLowerCase()}..${targetHash.toLowerCase()}`,
         `Fast-forward`,
         ` 1 file changed, 1 insertion(+)`,
+      ],
+    };
+  }
+
+  const isConflictSim = args.includes('--conflict') || args.includes('-c') || targetBranchName.toLowerCase().includes('conflict') || state.config?.['sim.conflict'] === 'true';
+  if (isConflictSim && lca !== targetHash && lca !== headHash) {
+    return {
+      state: {
+        ...state,
+        activeConflict: {
+          branchA: activeBranch,
+          branchB: targetBranchName,
+          file: 'index.html',
+          contentA: '<div class="git-hero-badge">CommitTree Simulator v2</div>\n<button id="submit-commit">Execute Command</button>',
+          contentB: '<div class="git-hero-badge">CommitTree Grandmaster v3</div>\n<button id="quick-action">Instant Run</button>',
+        },
+      },
+      output: [
+        `Auto-merging index.html`,
+        `CONFLICT (content): Merge conflict in index.html`,
+        `Automatic merge failed; fix conflicts and then commit the result.`,
       ],
     };
   }
@@ -918,9 +979,26 @@ function handleStatus(state: GitState): GitCommandResult {
   const output = [];
 
   if (activeBranch) {
-    output.push(`On branch ${activeBranch}`, `Your branch is up to date.`);
+    output.push(`On branch ${activeBranch}`);
   } else {
-    output.push(`HEAD detached at ${state.headCommitHash}`, `nothing to commit, working tree clean`);
+    output.push(`HEAD detached at ${state.headCommitHash}`);
+  }
+
+  const staged = state.stagedFiles || [];
+  const modified = state.modifiedFiles || ['index.html', 'styles.css', 'app.js'];
+
+  if (staged.length > 0) {
+    output.push(`\nChanges to be committed:`, `  (use "git restore --staged <file>..." to unstage)`);
+    staged.forEach(f => output.push(`        staged:     ${f}`));
+  }
+
+  if (modified.length > 0) {
+    output.push(`\nChanges not staged for commit:`, `  (use "git add <file>..." to update what will be committed)`, `  (use "git restore <file>..." to discard changes in working directory)`);
+    modified.forEach(f => output.push(`        modified:   ${f}`));
+  }
+
+  if (staged.length === 0 && modified.length === 0) {
+    output.push(`Your branch is up to date with 'origin/${activeBranch || 'main'}'.`, `nothing to commit, working tree clean`);
   }
 
   if (state.stash && state.stash.length > 0) {
@@ -928,4 +1006,220 @@ function handleStatus(state: GitState): GitCommandResult {
   }
 
   return { state, output };
+}
+
+function handleInit(state: GitState): GitCommandResult {
+  return { state, output: ['Initialized empty Git repository in /workspace/.git/'] };
+}
+
+function handleAdd(state: GitState, args: string[]): GitCommandResult {
+  const target = args[0] || '.';
+  const staged = state.stagedFiles || [];
+  const modified = state.modifiedFiles || ['index.html', 'styles.css', 'app.js', 'README.md'];
+  let newStaged: string[] = [];
+  let newModified: string[] = [];
+
+  if (target === '.' || target === '-A' || target === '--all') {
+    newStaged = Array.from(new Set([...staged, ...modified]));
+    newModified = [];
+  } else {
+    newStaged = Array.from(new Set([...staged, target]));
+    newModified = modified.filter(f => f !== target);
+  }
+
+  return {
+    state: { ...state, stagedFiles: newStaged, modifiedFiles: newModified },
+    output: target === '.' ? ['Staged all modified files (index.html, styles.css, app.js, README.md).'] : [`staged '${target}' for commit.`]
+  };
+}
+
+function handleDiff(state: GitState): GitCommandResult {
+  const staged = state.stagedFiles || [];
+  const modified = state.modifiedFiles || ['index.html', 'styles.css'];
+
+  if (modified.length === 0 && staged.length === 0) {
+    return { state, output: ['No differences found (working tree is clean).'] };
+  }
+
+  return {
+    state,
+    output: [
+      `diff --git a/index.html b/index.html`,
+      `index 83a4f1..19c82a 100644`,
+      `--- a/index.html`,
+      `+++ b/index.html`,
+      `@@ -12,4 +12,8 @@`,
+      `+ <div class="git-hero-badge">CommitTree Simulator v2</div>`,
+      `+ <button id="submit-commit">Execute Command</button>`,
+      `  <footer>© 2026 CommitTree</footer>`,
+    ]
+  };
+}
+
+function handleClone(state: GitState, args: string[]): GitCommandResult {
+  const url = args[0] || 'https://github.com/committree/demo-repo.git';
+  const repoName = url.split('/').pop()?.replace('.git', '') || 'demo-repo';
+  return {
+    state,
+    output: [
+      `Cloning into '${repoName}'...`,
+      `remote: Enumerating objects: 24, done.`,
+      `remote: Counting objects: 100% (24/24), done.`,
+      `remote: Compressing objects: 100% (18/18), done.`,
+      `Receiving objects: 100% (24/24), 14.20 KiB | 2.84 MiB/s, done.`,
+      `Resolving deltas: 100% (6/6), done.`
+    ]
+  };
+}
+
+function handleConfig(state: GitState, args: string[]): GitCommandResult {
+  const key = args[0] ? args[0].replace('--global', '').trim() : '';
+  const val = args.slice(1).join(' ').replace(/^["']|["']$/g, '');
+
+  if (!key) {
+    return { state, output: ['user.name=Dhruv', 'user.email=dhruv@committree.git', 'core.editor=vscode', 'color.ui=auto'] };
+  }
+
+  const newConfig = { ...(state.config || { 'user.name': 'Dhruv', 'user.email': 'dhruv@committree.git' }) };
+  if (val) {
+    newConfig[key] = val;
+    return { state: { ...state, config: newConfig }, output: [`Set global config '${key}' to '${val}'.`] };
+  } else {
+    return { state, output: [newConfig[key] || 'Not set'] };
+  }
+}
+
+function handleRestore(state: GitState, args: string[]): GitCommandResult {
+  const isStaged = args.includes('--staged');
+  const target = args.filter(a => a !== '--staged')[0] || '.';
+
+  if (isStaged) {
+    const staged = state.stagedFiles || [];
+    const newStaged = staged.filter(f => f !== target && target !== '.');
+    const newModified = Array.from(new Set([...(state.modifiedFiles || []), target === '.' ? 'index.html' : target]));
+    return {
+      state: { ...state, stagedFiles: newStaged, modifiedFiles: newModified },
+      output: [target === '.' ? 'Unstaged all files.' : `Unstaged '${target}' back to modified working tree.`]
+    };
+  } else {
+    const modified = state.modifiedFiles || ['index.html', 'styles.css'];
+    const newModified = modified.filter(f => f !== target && target !== '.');
+    return {
+      state: { ...state, modifiedFiles: newModified },
+      output: [target === '.' ? 'Restored all working tree files to HEAD state.' : `Discarded local modifications in '${target}'.`]
+    };
+  }
+}
+
+function handleRm(state: GitState, action: string, args: string[]): GitCommandResult {
+  const file = args[0] || 'old-script.js';
+  return {
+    state,
+    output: [`${action} '${file}'`, `File scheduled for ${action === 'mv' ? 'rename' : 'deletion'} in next commit.`]
+  };
+}
+
+function handleShow(state: GitState, args: string[]): GitCommandResult {
+  const hash = args[0] || state.headCommitHash;
+  const commit = state.commits[hash];
+  if (!commit) {
+    return { state, output: [], error: `fatal: bad object ${hash}` };
+  }
+  return {
+    state,
+    output: [
+      `commit ${commit.hash}`,
+      `Author: ${commit.author}`,
+      `Date:   ${commit.date}`,
+      ``,
+      `    ${commit.message}`,
+      ``,
+      `diff --git a/src/main.ts b/src/main.ts`,
+      `index 2a1d3f..9b8c7e 100644`,
+      `--- a/src/main.ts`,
+      `+++ b/src/main.ts`,
+      `@@ -10,3 +10,6 @@`,
+      `+ // Added by commit ${commit.hash}`,
+      `+ console.log("Executing ${commit.message}");`
+    ]
+  };
+}
+
+function handleReflog(state: GitState): GitCommandResult {
+  const logs = state.reflog || [
+    `${state.headCommitHash} HEAD@{0}: commit: ${state.commits[state.headCommitHash]?.message || 'latest work'}`,
+    `C0 HEAD@{1}: commit (initial): Initial commit`
+  ];
+  return { state, output: logs };
+}
+
+function handleRemote(state: GitState, args: string[]): GitCommandResult {
+  const sub = args[0];
+  if (sub === '-v' || !sub) {
+    return {
+      state,
+      output: [
+        `origin  https://github.com/Dhruv-coding-org/project.git (fetch)`,
+        `origin  https://github.com/Dhruv-coding-org/project.git (push)`
+      ]
+    };
+  } else if (sub === 'add') {
+    const name = args[1] || 'origin';
+    const url = args[2] || 'https://github.com/Dhruv-coding-org/project.git';
+    return {
+      state,
+      output: [`Added remote '${name}' -> ${url}`]
+    };
+  }
+  return { state, output: [`Remote command '${args.join(' ')}' completed.`] };
+}
+
+export function resolveMergeConflict(state: GitState, resolvedContent: string): GitCommandResult {
+  if (!state.activeConflict) {
+    return { state, output: ['No active merge conflict to resolve.'] };
+  }
+  const { branchA, branchB, file } = state.activeConflict;
+  const nextHash = getNextCommitHash(state);
+  const lineCount = resolvedContent.split('\n').length;
+  const mergeMsg = `Merge branch '${branchB}' into ${branchA} (resolved ${lineCount} lines in ${file})`;
+  
+  const targetBranch = state.branches[branchB] || state.remotes[branchB];
+  const targetHash = targetBranch ? targetBranch.targetHash : state.headCommitHash;
+
+  const mergeCommit: Commit = {
+    hash: nextHash,
+    parents: [state.headCommitHash, targetHash],
+    message: mergeMsg,
+    branch: branchA,
+    isMerge: true,
+    author: 'user@committree',
+    date: new Date().toLocaleTimeString(),
+  };
+
+  const newCommits = { ...state.commits, [nextHash]: mergeCommit };
+  const newBranches = {
+    ...state.branches,
+    [branchA]: {
+      ...state.branches[branchA],
+      targetHash: nextHash,
+    },
+  };
+
+  const nextState: GitState = {
+    ...state,
+    commits: newCommits,
+    branches: newBranches,
+    headCommitHash: nextHash,
+    commitCounter: state.commitCounter + 1,
+  };
+  delete nextState.activeConflict;
+
+  return {
+    state: nextState,
+    output: [
+      `Resolved merge conflict in '${file}'.`,
+      `[${branchA} ${nextHash}] ${mergeMsg}`,
+      ` 1 file changed, 2 insertions(+), 1 deletion(-)`,
+    ],
+  };
 }

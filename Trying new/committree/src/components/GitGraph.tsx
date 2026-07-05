@@ -6,30 +6,32 @@ interface GitGraphProps {
   selectedCommitHash: string | null;
   onSelectCommit: (hash: string | null) => void;
   isGoalView?: boolean;
+  theme?: string;
 }
 
-const TRACK_COLORS = [
-  '#10B981', // emerald
-  '#06B6D4', // cyan
-  '#8B5CF6', // violet
-  '#F59E0B', // amber
-  '#F43F5E', // rose
-  '#6366F1', // indigo
-];
+const THEME_TRACK_COLORS: { [key: string]: string[] } = {
+  default: ['#10B981', '#06B6D4', '#8B5CF6', '#F59E0B', '#F43F5E', '#6366F1'],
+  cyberpunk: ['#00F0FF', '#FF007F', '#FFD700', '#39FF14', '#9D00FF', '#FF3F00'],
+  github: ['#2EA043', '#58A6FF', '#D29922', '#A371F7', '#F85149', '#3FB950'],
+  retro: ['#FFB000', '#00FF66', '#00FFFF', '#FF3300', '#FFFF00', '#33FF00'],
+  pastel: ['#C084FC', '#6EE7B7', '#FDE047', '#FCA5A5', '#93C5FD', '#F9A8D4'],
+};
 
 export const GitGraph: React.FC<GitGraphProps> = ({
   gitState,
   selectedCommitHash,
   onSelectCommit,
   isGoalView = false,
+  theme = 'default',
 }) => {
+  const trackColors = THEME_TRACK_COLORS[theme] || THEME_TRACK_COLORS.default;
   const { commits, branches, headCommitHash, activeBranch, tags = {}, remotes = {} } = gitState;
 
   const branchList = Object.keys(branches);
   const sortedBranches = ['main', ...branchList.filter((b) => b !== 'main')];
   const branchTracks: { [name: string]: number } = {};
   sortedBranches.forEach((b, idx) => {
-    branchTracks[b] = idx % TRACK_COLORS.length;
+    branchTracks[b] = idx % trackColors.length;
   });
 
   const commitRows: { [hash: string]: number } = {};
@@ -98,7 +100,7 @@ export const GitGraph: React.FC<GitGraphProps> = ({
     const commit = commits[childHash];
     const childCoords = getCoords(childHash);
     const trackIdx = commitTracks[childHash] ?? 0;
-    const color = TRACK_COLORS[trackIdx];
+    const color = trackColors[trackIdx];
 
     commit.parents.forEach((parentHash, parentIdx) => {
       const parentCoords = getCoords(parentHash);
@@ -159,7 +161,7 @@ export const GitGraph: React.FC<GitGraphProps> = ({
   }
 
   return (
-    <div className={`graph-scroll-container ${isGoalView ? 'goal-view-active' : ''}`}>
+    <div className={`graph-scroll-container theme-${theme} ${isGoalView ? 'goal-view-active' : ''}`}>
       {isGoalView && <div className="goal-overlay-badge">🎯 TARGET GOAL</div>}
       <div className="graph-legend">
         <span className="legend-title">Branches:</span>
@@ -167,7 +169,7 @@ export const GitGraph: React.FC<GitGraphProps> = ({
           <span key={bName} className="legend-item">
             <span
               className="legend-color-dot"
-              style={{ backgroundColor: TRACK_COLORS[branchTracks[bName]] }}
+              style={{ backgroundColor: trackColors[branchTracks[bName]] }}
             />
             <span className={bName === activeBranch ? 'active-legend-text' : ''}>
               {bName}
@@ -235,7 +237,7 @@ export const GitGraph: React.FC<GitGraphProps> = ({
             const { x, y } = getCoords(hash);
             const commit = commits[hash];
             const trackIdx = commitTracks[hash] ?? 0;
-            const nodeColor = TRACK_COLORS[trackIdx];
+            const nodeColor = trackColors[trackIdx];
             const isHead = hash === headCommitHash;
             const isSelected = hash === selectedCommitHash;
             const isMergeNode = commit?.isMerge || (commit?.parents && commit.parents.length > 1);

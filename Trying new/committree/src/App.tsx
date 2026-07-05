@@ -8,6 +8,13 @@ import { NodeInspector } from './components/NodeInspector';
 import { CommandVisualizer3D } from './components/CommandVisualizer3D';
 import { ProfileModal } from './components/ProfileModal';
 import { getActiveProfile, completeLevelForActiveProfile, type UserProfile } from './store/profileStore';
+import { resolveMergeConflict } from './git/gitEngine';
+import { ThemeShopModal } from './components/ThemeShopModal';
+import { ConflictResolverModal } from './components/ConflictResolverModal';
+import { SpeedrunArena } from './components/SpeedrunArena';
+import { GitAssistantModal } from './components/GitAssistantModal';
+import { encodeSandboxUrl, decodeSandboxUrl, exportSandboxJson } from './utils/urlSharing';
+import { soundEngine } from './utils/soundEngine';
 import './App.css';
 
 interface CommandHistoryItem {
@@ -20,9 +27,12 @@ function App() {
   // Profile State
   const [activeProfile, setActiveProfile] = useState<UserProfile>(() => getActiveProfile());
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [showAssistantModal, setShowAssistantModal] = useState(false);
+  const [assistantError, setAssistantError] = useState<string | null>(null);
 
-  // Mode selection: 'campaign' | 'sandbox' | 'visualizer'
-  const [mode, setMode] = useState<'campaign' | 'sandbox' | 'visualizer'>('campaign');
+  // Mode selection: 'campaign' | 'sandbox' | 'visualizer' | 'speedrun'
+  const [mode, setMode] = useState<'campaign' | 'sandbox' | 'visualizer' | 'speedrun'>('campaign');
 
   // Toggle between Your Graph and Goal Graph
   const [graphView, setGraphView] = useState<'player' | 'goal'>('player');
@@ -82,6 +92,24 @@ function App() {
   useEffect(() => {
     localStorage.setItem('committree_curr_lvl', currentChallengeId.toString());
   }, [currentChallengeId]);
+
+  // Decode shared sandbox URL on startup
+  useEffect(() => {
+    const sharedCmds = decodeSandboxUrl();
+    if (sharedCmds && sharedCmds.length > 0) {
+      setMode('sandbox');
+      let currState = { ...INITIAL_STATE };
+      const newHist: CommandHistoryItem[] = [];
+      sharedCmds.forEach((cmd) => {
+        const res = runGitCommand(currState, cmd);
+        currState = res.state;
+        newHist.push({ command: cmd, output: res.output, isError: !!res.error });
+      });
+      setSandboxState(currState);
+      setSandboxHistory(newHist);
+      soundEngine.playSuccess();
+    }
+  }, []);
 
   // Check victory whenever campaign state changes
   useEffect(() => {
@@ -148,6 +176,9 @@ function App() {
 
     if (res.error) {
       historyItem.output = [res.error];
+      setAssistantError(res.error);
+    } else {
+      setAssistantError(null);
     }
 
     if (mode === 'sandbox') {
@@ -175,7 +206,7 @@ function App() {
   };
 
   // Switch Mode handler
-  const handleModeChange = (newMode: 'campaign' | 'sandbox' | 'visualizer') => {
+  const handleModeChange = (newMode: 'campaign' | 'sandbox' | 'visualizer' | 'speedrun') => {
     setMode(newMode);
     setSelectedCommitHash(null);
     setGraphView('player');
@@ -236,9 +267,35 @@ function App() {
             >
               🪐 3D Guide
             </button>
+            <button
+              className={`mode-btn ${mode === 'speedrun' ? 'active' : ''}`}
+              onClick={() => handleModeChange('speedrun')}
+            >
+              ⚡ Speedrun
+            </button>
           </div>
 
-          {mode !== 'visualizer' && (
+          <button
+            className="theme-shop-top-btn"
+            onClick={() => setShowThemeModal(true)}
+            title="Custom Graph Themes & Skins"
+            style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px', color: '#F8FAFC', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
+          >
+            🎨 Skins
+          </button>
+          <button
+            className="ai-mentor-top-btn"
+            onClick={() => {
+              setAssistantError(null);
+              setShowAssistantModal(true);
+            }}
+            title="Natural Language Git Assistant"
+            style={{ backgroundColor: 'rgba(59,130,246,0.15)', border: '1px solid #3B82F6', borderRadius: '8px', padding: '6px 12px', color: '#60A5FA', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
+          >
+            🤖 AI Mentor
+          </button>
+
+          {mode !== 'visualizer' && mode !== 'speedrun' && (
             <button className="global-reset-btn" onClick={handleReset}>
               🔄 Reset
             </button>
@@ -256,6 +313,10 @@ function App() {
                 handleExecuteCommand(cmd);
               }}
             />
+          </div>
+        ) : mode === 'speedrun' ? (
+          <div className="full-width-visualizer" style={{ width: '100%', overflowY: 'auto' }}>
+            <SpeedrunArena />
           </div>
         ) : (
           <>
@@ -337,6 +398,32 @@ function App() {
                     >
                       🪐 Open 3D Command Assistant & Guide
                     </button>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+                      <button
+                        className="open-3d-guide-btn"
+                        style={{ flex: 1, margin: 0, backgroundColor: '#3B82F6' }}
+                        onClick={() => {
+                          const cmds = sandboxHistory.map(h => h.command).filter(Boolean);
+                          const url = encodeSandboxUrl(cmds);
+                          navigator.clipboard.writeText(url);
+                          soundEngine.playSuccess();
+                          alert('🔗 Sandbox URL copied to clipboard!');
+                        }}
+                      >
+                        🔗 Share URL
+                      </button>
+                      <button
+                        className="open-3d-guide-btn"
+                        style={{ flex: 1, margin: 0, backgroundColor: '#10B981', color: '#030712' }}
+                        onClick={() => {
+                          const cmds = sandboxHistory.map(h => h.command).filter(Boolean);
+                          exportSandboxJson(cmds);
+                          soundEngine.playSuccess();
+                        }}
+                      >
+                        📥 Export JSON
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -394,6 +481,47 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Theme Shop Modal */}
+      {showThemeModal && (
+        <ThemeShopModal
+          activeProfile={activeProfile}
+          onThemeChange={(p) => setActiveProfile(p)}
+          onClose={() => setShowThemeModal(false)}
+        />
+      )}
+
+      {/* Interactive Merge Conflict Resolver */}
+      {activeGitState.activeConflict && (
+        <ConflictResolverModal
+          conflict={activeGitState.activeConflict}
+          onResolve={(resolvedContent) => {
+            const res = resolveMergeConflict(activeGitState, resolvedContent);
+            if (mode === 'sandbox') {
+              setSandboxState(res.state);
+              setSandboxHistory(prev => [...prev, { command: 'git merge --resolve', output: res.output }]);
+            } else {
+              setCampaignState(res.state);
+              setCampaignHistory(prev => [...prev, { command: 'git merge --resolve', output: res.output }]);
+            }
+          }}
+          onCancel={() => {
+            const clearedState = { ...activeGitState };
+            delete clearedState.activeConflict;
+            if (mode === 'sandbox') setSandboxState(clearedState);
+            else setCampaignState(clearedState);
+          }}
+        />
+      )}
+
+      {/* Natural Language Git Assistant & Mentor */}
+      {showAssistantModal && (
+        <GitAssistantModal
+          lastError={assistantError}
+          onExecuteCommand={(cmd) => handleExecuteCommand(cmd)}
+          onClose={() => setShowAssistantModal(false)}
+        />
       )}
     </div>
   );

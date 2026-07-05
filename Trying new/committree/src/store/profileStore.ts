@@ -6,6 +6,8 @@ export interface UserProfile {
   completedLevelIds: number[];
   title: string;
   createdAt: string;
+  theme?: 'default' | 'cyberpunk' | 'github' | 'retro' | 'pastel';
+  unlockedThemes?: string[];
 }
 
 const PROFILES_KEY = 'committree_profiles_v1';
@@ -20,6 +22,8 @@ const DEFAULT_PROFILES: UserProfile[] = [
     completedLevelIds: [],
     title: 'Novice Committer 🌱',
     createdAt: new Date().toLocaleDateString(),
+    theme: 'default',
+    unlockedThemes: ['default', 'cyberpunk', 'github', 'retro', 'pastel'],
   },
   {
     id: 'default-ninja',
@@ -29,6 +33,8 @@ const DEFAULT_PROFILES: UserProfile[] = [
     completedLevelIds: [1, 2, 3],
     title: 'Branch Adventurer 🌿',
     createdAt: new Date().toLocaleDateString(),
+    theme: 'cyberpunk',
+    unlockedThemes: ['default', 'cyberpunk', 'github', 'retro', 'pastel'],
   },
 ];
 
@@ -132,6 +138,23 @@ export function completeLevelForActiveProfile(levelId: number, totalLevels: numb
     completedLevelIds: newCompleted,
     unlockedLevelId: nextUnlock,
     title: newTitle,
+  };
+
+  profiles[index] = updatedProfile;
+  saveProfiles(profiles);
+  return updatedProfile;
+}
+
+export function updateProfileTheme(theme: 'default' | 'cyberpunk' | 'github' | 'retro' | 'pastel'): UserProfile {
+  const profiles = getProfiles();
+  const activeId = localStorage.getItem(ACTIVE_PROFILE_ID_KEY) || profiles[0]?.id;
+  const index = profiles.findIndex((p) => p.id === activeId);
+  if (index === -1) return profiles[0];
+
+  const current = profiles[index];
+  const updatedProfile: UserProfile = {
+    ...current,
+    theme,
   };
 
   profiles[index] = updatedProfile;
