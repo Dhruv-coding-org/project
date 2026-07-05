@@ -6,7 +6,7 @@ export interface Challenge {
   description: string;
   objective: string;
   startingCommands: string[];
-  startingState?: GitState;
+  startingState?: Partial<GitState>;
   solutionCommands: string[];
   hint: string;
   tutorial: {
@@ -370,7 +370,7 @@ export const CHALLENGES: Challenge[] = [
     beginnerTips: [
       'Always double check which branch you are checked out on before running `git reset`!',
       'In a real repository, if you accidentally reset too far, you can use a tool called `git reflog` to find orphaned commit hashes and recover them!',
-      'Congratulations on mastering all 9 challenges! You now understand Git pointers, DAGs, and workflows like a pro.'
+      'Great job understanding git reset! Get ready to learn about tags, stashing, reverting, and remote synchronization next.'
     ],
     checkWin: (state: GitState) => {
       return (
@@ -380,11 +380,243 @@ export const CHALLENGES: Challenge[] = [
       );
     },
   },
+  {
+    id: 10,
+    title: '10. Tagging Releases',
+    description: 'Release tags attach immutable, permanent milestones (like v1.0 or v2.5) to specific commit hashes.',
+    objective: 'Tag commit C1 as "v1.0.0".',
+    startingCommands: [
+      'git commit -m "feature A"',
+      'git commit -m "feature B"',
+    ],
+    solutionCommands: [
+      'git tag v1.0.0 C1',
+    ],
+    hint: 'Run "git tag v1.0.0 C1" in the terminal to attach a tag badge to commit C1.',
+    tutorial: {
+      conceptTitle: 'Permanent Milestone Markers with Tags',
+      explanation: [
+        'While branch pointers move forward every time you create a new commit, Release Tags are designed to never move!',
+        'When you release version 1.0 of your software, running `git tag v1.0.0 <hash>` attaches a permanent milestone badge to that exact commit.',
+        'This allows developers, automated CI/CD pipelines, and users to return to exact production builds months or years later without guessing commit hashes.'
+      ],
+      diagram: 'C0 ──> C1 [🏷️ v1.0.0] ──> C2 (HEAD, main)',
+    },
+    beginnerTips: [
+      'If you omit the commit hash (e.g. `git tag v1.0.0`), Git automatically tags your current HEAD commit!',
+      'You can delete a tag anytime with `git tag -d <tagname>`.',
+      'Look closely at the graph on the left: notice the golden badge attached to C1!'
+    ],
+    checkWin: (state: GitState) => {
+      return state.tags?.['v1.0.0'] === 'C1';
+    },
+  },
+  {
+    id: 11,
+    title: '11. Stashing Work',
+    description: 'Stashing temporarily shelves dirty working directory changes onto a clean stack so you can switch branches safely.',
+    objective: 'Stash your uncommitted work onto the shelf using "git stash".',
+    startingCommands: [
+      'git commit -m "base work"',
+    ],
+    solutionCommands: [
+      'git stash',
+    ],
+    hint: 'Type "git stash" in the terminal to shelve your uncommitted changes.',
+    tutorial: {
+      conceptTitle: 'The Magic Shelf: Git Stash',
+      explanation: [
+        'Imagine you are half-way through coding a messy feature when an urgent bug report comes in. You cannot commit broken code, but switching branches would overwrite your unfinished work!',
+        '`git stash` acts like a safe temporary shelf. It takes all your uncommitted modifications and slides them onto a clean stack, reverting your working tree to a clean state.',
+        'Once you finish fixing the urgent bug on another branch, you can switch back and run `git stash pop` to pull your unfinished work right back off the shelf!'
+      ],
+      diagram: '[Dirty Worktree]  ──git stash──>  [Clean Worktree] + Stash@{0}',
+    },
+    beginnerTips: [
+      'Run `git stash list` to see all items currently stored on your stash stack.',
+      'Unlike branch commits, stashed items are global to your workspace and can be popped onto any branch!',
+      'You can stash multiple times; Git stacks them like trays in a cafeteria.'
+    ],
+    checkWin: (state: GitState) => {
+      return (state.stash && state.stash.length > 0);
+    },
+  },
+  {
+    id: 12,
+    title: '12. Undoing with Revert',
+    description: 'Unlike reset which rewinds history, revert creates a brand new commit that safely reverses and inverts earlier changes.',
+    objective: 'Revert commit C1 to safely undo its changes without deleting shared commit history.',
+    startingCommands: [
+      'git commit -m "bad commit"',
+    ],
+    solutionCommands: [
+      'git revert C1',
+    ],
+    hint: 'Run "git revert C1" while on main to generate an inverting revert commit.',
+    tutorial: {
+      conceptTitle: 'Team-Friendly Undoing with Git Revert',
+      explanation: [
+        'In Level 6 and 9, you used `git reset` to erase commits. However, if you already pushed those commits to GitHub and coworkers pulled them, resetting causes massive sync conflicts!',
+        '`git revert <commit-hash>` is the professional, team-safe way to undo mistakes in shared codebases.',
+        'Instead of deleting historical nodes, it creates a brand new commit that does the exact opposite of the target commit (deleting added lines and restoring removed lines).',
+        'Your commit timeline keeps moving forward linearly, preserving a completely transparent audit trail!'
+      ],
+      diagram: 'C0 ──> C1 (bad) ──> C2  ──git revert C1──>  C0 ──> C1 ──> C2 ──> C3 [Revert "bad commit"]',
+    },
+    beginnerTips: [
+      'Reverting does not erase history; it adds a new commit that cancels out an old commit.',
+      'Notice how the generated commit message automatically starts with `Revert "..."`.',
+      'Always use `revert` instead of `reset` on main or production branches!'
+    ],
+    checkWin: (state: GitState) => {
+      const headCommit = state.commits[state.headCommitHash];
+      return (
+        headCommit !== undefined &&
+        headCommit.message.startsWith('Revert') &&
+        headCommit.parents.includes('C1')
+      );
+    },
+  },
+  {
+    id: 13,
+    title: '13. Amending Commit Messages',
+    description: 'The --amend flag lets you quickly replace the last commit on your current branch with a new commit and message.',
+    objective: 'Amend the last commit message from "oops typo" to "Clean release".',
+    startingCommands: [
+      'git commit -m "oops typo"',
+    ],
+    solutionCommands: [
+      'git commit --amend -m "Clean release"',
+    ],
+    hint: 'Run "git commit --amend -m \'Clean release\'" to update the last commit message.',
+    tutorial: {
+      conceptTitle: 'Fixing Last-Minute Typos with Commit --Amend',
+      explanation: [
+        'Have you ever hit Enter on `git commit` and immediately noticed a glaring typo in your commit message or forgot to include a staged file?',
+        'Instead of making a messy follow-up commit like "fix typo", running `git commit --amend -m "<new-msg>"` replaces the tip commit of your branch.',
+        'Under the hood, Git generates a brand new commit hash with the corrected message and swaps it into place!'
+      ],
+      diagram: 'C0 ──> C1 ("oops typo")  ──git commit --amend──>  C0 ──> C1\' ("Clean release")',
+    },
+    beginnerTips: [
+      'Notice how the commit hash changes from C1 to C1\' when amended!',
+      'Just like rebase, only amend commits that have NOT been pushed to a remote shared server yet.',
+      'You can also stage new files before running `--amend` to slip forgotten files into the last commit.'
+    ],
+    checkWin: (state: GitState) => {
+      const headCommit = state.commits[state.headCommitHash];
+      return (
+        headCommit !== undefined &&
+        headCommit.message === 'Clean release' &&
+        headCommit.hash.endsWith("'")
+      );
+    },
+  },
+  {
+    id: 14,
+    title: '14. Fetching & Pulling Remotes',
+    description: 'Collaborating with teammates requires syncing with servers. Fetch downloads remote commits; Pull fetches and merges.',
+    objective: 'Pull the latest coworker changes from the remote server origin/main into your local main branch.',
+    startingCommands: [],
+    solutionCommands: [
+      'git pull origin main',
+    ],
+    hint: 'Type "git pull origin main" to fetch and merge server commits into your branch.',
+    tutorial: {
+      conceptTitle: 'Syncing with Remote Servers: Fetch vs Pull',
+      explanation: [
+        'When working with teams on GitHub, GitLab, or Bitbucket, your coworkers push new commits to remote servers.',
+        'To see what your coworkers did, `git fetch origin` downloads their commit nodes and updates your tracking pointers (like `origin/main`) without touching your working files.',
+        '`git pull origin main` is the ultimate time-saver: it performs a `git fetch` followed immediately by a `git merge` to seamlessly blend remote commits into your active branch!'
+      ],
+      diagram: 'Local main behind origin/main (C2)  ──git pull origin main──>  Local main merged & advanced to C2',
+    },
+    beginnerTips: [
+      'Notice the purple remote badge `🌐 origin/main` in the graph!',
+      'Always run `git pull` at the start of your workday before writing new code to avoid merge conflicts later.',
+      'If you want to inspect remote changes before blending them, run `git fetch` first!'
+    ],
+    checkWin: (state: GitState) => {
+      return (
+        state.branches['main']?.targetHash === 'C2' &&
+        state.headCommitHash === 'C2'
+      );
+    },
+    startingState: {
+      commits: {
+        C0: { hash: 'C0', parents: [], message: 'Initial commit', branch: 'main', isMerge: false, author: 'git@committree', date: '12:00:00' },
+        C1: { hash: 'C1', parents: ['C0'], message: 'local work', branch: 'main', isMerge: false, author: 'git@committree', date: '12:01:00' },
+        C2: { hash: 'C2', parents: ['C1'], message: 'coworker feature', branch: 'main', isMerge: false, author: 'coworker@github', date: '12:02:00' },
+      },
+      branches: {
+        main: { name: 'main', targetHash: 'C1' },
+      },
+      remotes: {
+        'origin/main': { name: 'origin/main', targetHash: 'C2' },
+      },
+      tags: {},
+      stash: [],
+      activeBranch: 'main',
+      headCommitHash: 'C1',
+      commitCounter: 2,
+    },
+  },
+  {
+    id: 15,
+    title: '15. Pushing Your Code',
+    description: 'Pushing uploads your local branch commits to the server and advances remote tracking branches like origin/main.',
+    objective: 'Push your local commit C2 up to the remote origin server.',
+    startingCommands: [],
+    solutionCommands: [
+      'git push origin main',
+    ],
+    hint: 'Type "git push origin main" in the terminal to upload your commits to the server.',
+    tutorial: {
+      conceptTitle: 'Publishing Your Work with Git Push',
+      explanation: [
+        'Once your feature is complete, tested, and committed locally, it is time to share it with the world!',
+        'Running `git push origin main` uploads your local commits to the remote server `origin` and advances the remote tracking branch `origin/main` to match your local branch tip.',
+        'Congratulations on completing all 15 master levels of CommitTree! You are now a certified Git Grandmaster!'
+      ],
+      diagram: 'Local C2 ahead of origin/main (C1)  ──git push origin main──>  origin/main advanced to C2',
+    },
+    beginnerTips: [
+      'If a coworker pushed commits while you were working, Git will reject your push! You must run `git pull` to merge their changes first before pushing.',
+      'Always verify your code builds cleanly and unit tests pass before executing `git push`.',
+      '🎉 You have conquered the entire Git campaign! Switch to Sandbox mode or the 3D Command Guide to continue experimenting anytime.'
+    ],
+    checkWin: (state: GitState) => {
+      return (
+        state.remotes?.['origin/main']?.targetHash === 'C2'
+      );
+    },
+    startingState: {
+      commits: {
+        C0: { hash: 'C0', parents: [], message: 'Initial commit', branch: 'main', isMerge: false, author: 'git@committree', date: '12:00:00' },
+        C1: { hash: 'C1', parents: ['C0'], message: 'base work', branch: 'main', isMerge: false, author: 'git@committree', date: '12:01:00' },
+        C2: { hash: 'C2', parents: ['C1'], message: 'my new feature', branch: 'main', isMerge: false, author: 'player@committree', date: '12:02:00' },
+      },
+      branches: {
+        main: { name: 'main', targetHash: 'C2' },
+      },
+      remotes: {
+        'origin/main': { name: 'origin/main', targetHash: 'C1' },
+      },
+      tags: {},
+      stash: [],
+      activeBranch: 'main',
+      headCommitHash: 'C2',
+      commitCounter: 2,
+    },
+  },
 ];
 
 export function getStartingStateForChallenge(challenge: Challenge): GitState {
   if (challenge.startingState) {
-    return JSON.parse(JSON.stringify(challenge.startingState));
+    return {
+      ...JSON.parse(JSON.stringify(INITIAL_STATE)),
+      ...JSON.parse(JSON.stringify(challenge.startingState)),
+    };
   }
 
   // Generate state from starting commands

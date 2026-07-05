@@ -5,6 +5,9 @@ import { GitGraph } from './components/GitGraph';
 import { Terminal } from './components/Terminal';
 import { ChallengeBox } from './components/ChallengeBox';
 import { NodeInspector } from './components/NodeInspector';
+import { CommandVisualizer3D } from './components/CommandVisualizer3D';
+import { ProfileModal } from './components/ProfileModal';
+import { getActiveProfile, completeLevelForActiveProfile, type UserProfile } from './store/profileStore';
 import './App.css';
 
 interface CommandHistoryItem {
@@ -14,8 +17,12 @@ interface CommandHistoryItem {
 }
 
 function App() {
-  // Mode selection: 'campaign' or 'sandbox'
-  const [mode, setMode] = useState<'campaign' | 'sandbox'>('campaign');
+  // Profile State
+  const [activeProfile, setActiveProfile] = useState<UserProfile>(() => getActiveProfile());
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // Mode selection: 'campaign' | 'sandbox' | 'visualizer'
+  const [mode, setMode] = useState<'campaign' | 'sandbox' | 'visualizer'>('campaign');
 
   // Toggle between Your Graph and Goal Graph
   const [graphView, setGraphView] = useState<'player' | 'goal'>('player');
@@ -40,11 +47,15 @@ function App() {
     return getStartingStateForChallenge(currentChallenge);
   });
 
-  // Level Completion List
+  // Level Completion List (derived from active Profile)
   const [completedChallenges, setCompletedChallenges] = useState<number[]>(() => {
-    const saved = localStorage.getItem('committree_completed_lvls');
-    return saved ? JSON.parse(saved) : [];
+    return activeProfile.completedLevelIds;
   });
+
+  // Keep completedChallenges in sync when profile switches
+  useEffect(() => {
+    setCompletedChallenges(activeProfile.completedLevelIds);
+  }, [activeProfile]);
 
   // Active Git state based on mode
   const activeGitState = mode === 'sandbox' ? sandboxState : campaignState;
@@ -63,14 +74,10 @@ function App() {
   // Win checker for levels
   const [isLvlWon, setIsLvlWon] = useState(false);
 
-  // Auto-save states to local storage
+  // Auto-save sandbox state to local storage
   useEffect(() => {
     localStorage.setItem('committree_sandbox_state', JSON.stringify(sandboxState));
   }, [sandboxState]);
-
-  useEffect(() => {
-    localStorage.setItem('committree_completed_lvls', JSON.stringify(completedChallenges));
-  }, [completedChallenges]);
 
   useEffect(() => {
     localStorage.setItem('committree_curr_lvl', currentChallengeId.toString());
@@ -82,12 +89,14 @@ function App() {
       const won = currentChallenge.checkWin(campaignState);
       setIsLvlWon(won);
       if (won && !completedChallenges.includes(currentChallenge.id)) {
-        setCompletedChallenges(prev => [...prev, currentChallenge.id]);
+        const updatedProfile = completeLevelForActiveProfile(currentChallenge.id, CHALLENGES.length);
+        setActiveProfile(updatedProfile);
+        setCompletedChallenges(updatedProfile.completedLevelIds);
       }
     } else {
       setIsLvlWon(false);
     }
-  }, [campaignState, currentChallenge, mode]);
+  }, [campaignState, currentChallenge, mode, completedChallenges]);
 
   // Load new level state
   const loadChallenge = (id: number) => {
@@ -119,7 +128,7 @@ function App() {
     setMobileTab('terminal');
     if (mode === 'campaign') {
       loadChallenge(currentChallengeId);
-    } else {
+    } else if (mode === 'sandbox') {
       setSandboxState({ ...INITIAL_STATE });
       setSandboxHistory([]);
       setSelectedCommitHash(null);
@@ -128,7 +137,7 @@ function App() {
 
   // Command Dispatcher
   const handleExecuteCommand = (cmdText: string) => {
-    setGraphView('player'); // Reset view back to player graph when they execute a command!
+    setGraphView('player');
     const res = runGitCommand(activeGitState, cmdText);
 
     const historyItem: CommandHistoryItem = {
@@ -149,10 +158,9 @@ function App() {
       setCampaignHistory(prev => [...prev, historyItem]);
     }
 
-    // Auto-select latest commit if successful commit or checkouts
     if (!res.error) {
       const subCmd = cmdText.trim().split(/\s+/)[1];
-      if (subCmd === 'commit' || subCmd === 'checkout' || subCmd === 'switch' || subCmd === 'merge' || subCmd === 'rebase' || subCmd === 'cherry-pick') {
+      if (['commit', 'checkout', 'switch', 'merge', 'rebase', 'cherry-pick', 'reset', 'revert'].includes(subCmd)) {
         setSelectedCommitHash(res.state.headCommitHash);
       }
     }
@@ -167,13 +175,12 @@ function App() {
   };
 
   // Switch Mode handler
-  const handleModeChange = (newMode: 'campaign' | 'sandbox') => {
+  const handleModeChange = (newMode: 'campaign' | 'sandbox' | 'visualizer') => {
     setMode(newMode);
     setSelectedCommitHash(null);
     setGraphView('player');
     setMobileTab('terminal');
     if (newMode === 'campaign') {
-      // Reload current challenge state
       const freshState = getStartingStateForChallenge(currentChallenge);
       setCampaignState(freshState);
       setCampaignHistory([
@@ -198,6 +205,17 @@ function App() {
         </div>
 
         <div className="header-controls">
+          {/* Profile Switcher Button */}
+          <button
+            className="profile-top-btn"
+            onClick={() => setShowProfileModal(true)}
+            title="Switch Player Profile or View Achievements"
+          >
+            <span className="profile-avatar-emoji">{activeProfile.avatar}</span>
+            <span className="profile-name-text">{activeProfile.name}</span>
+            <span className="profile-rank-pill">{activeProfile.title}</span>
+          </button>
+
           {/* Mode Switcher */}
           <div className="mode-toggle">
             <button
@@ -212,113 +230,151 @@ function App() {
             >
               🥪 Sandbox
             </button>
+            <button
+              className={`mode-btn ${mode === 'visualizer' ? 'active' : ''}`}
+              onClick={() => handleModeChange('visualizer')}
+            >
+              🪐 3D Guide
+            </button>
           </div>
 
-          <button className="global-reset-btn" onClick={handleReset}>
-            🔄 Reset
-          </button>
+          {mode !== 'visualizer' && (
+            <button className="global-reset-btn" onClick={handleReset}>
+              🔄 Reset
+            </button>
+          )}
         </div>
       </header>
 
-      {/* Main Panel Content split-screen */}
+      {/* Main Panel Content */}
       <main className="app-body">
-        {/* Left Side: Commit Graph SVG Canvas */}
-        <section className="left-panel">
-          {/* View Graph Tabs Toggle (Campaign only) */}
-          {mode === 'campaign' && (
-            <div className="graph-view-tabs">
-              <button
-                className={`graph-tab-btn ${graphView === 'player' ? 'active' : ''}`}
-                onClick={() => setGraphView('player')}
-              >
-                🌳 Your Graph
-              </button>
-              <button
-                className={`graph-tab-btn ${graphView === 'goal' ? 'active' : ''}`}
-                onClick={() => setGraphView('goal')}
-              >
-                🎯 Goal Graph
-              </button>
-            </div>
-          )}
-
-          <GitGraph
-            gitState={graphView === 'goal' ? targetState : activeGitState}
-            selectedCommitHash={graphView === 'goal' ? null : selectedCommitHash}
-            onSelectCommit={graphView === 'goal' ? () => {} : setSelectedCommitHash}
-            isGoalView={graphView === 'goal'}
-          />
-        </section>
-
-        {/* Right Side: Challenge parameters, Terminal inputs, Node inspectors */}
-        <section className="right-panel">
-          {/* Mobile navigation tab buttons */}
-          <div className="mobile-tabs-nav">
-            <button
-              className={`mobile-nav-btn ${mobileTab === 'instructions' ? 'active' : ''}`}
-              onClick={() => setMobileTab('instructions')}
-            >
-              📋 Objectives
-            </button>
-            <button
-              className={`mobile-nav-btn ${mobileTab === 'terminal' ? 'active' : ''}`}
-              onClick={() => setMobileTab('terminal')}
-            >
-              💻 Terminal
-            </button>
-            <button
-              className={`mobile-nav-btn ${mobileTab === 'inspector' ? 'active' : ''}`}
-              onClick={() => setMobileTab('inspector')}
-            >
-              🔍 Inspector
-            </button>
+        {mode === 'visualizer' ? (
+          <div className="full-width-visualizer">
+            <CommandVisualizer3D
+              onInsertCommand={(cmd) => {
+                handleModeChange('sandbox');
+                handleExecuteCommand(cmd);
+              }}
+            />
           </div>
-
-          {/* 1. Instructions Module */}
-          <div className={`responsive-panel-section ${mobileTab !== 'instructions' ? 'mobile-hidden' : ''}`}>
-            {mode === 'campaign' ? (
-              <ChallengeBox
-                challenges={CHALLENGES}
-                currentChallenge={currentChallenge}
-                completedChallenges={completedChallenges}
-                onSelectChallenge={loadChallenge}
-                onResetChallenge={handleReset}
-                isWon={isLvlWon}
-                onNextLevel={handleNextLevel}
-              />
-            ) : (
-              <div className="sandbox-intro-box">
-                <div className="sandbox-header">
-                  <h3>Sandbox Playground</h3>
-                  <span className="badge">FREE PLAY</span>
+        ) : (
+          <>
+            {/* Left Side: Commit Graph SVG Canvas */}
+            <section className="left-panel">
+              {mode === 'campaign' && (
+                <div className="graph-view-tabs">
+                  <button
+                    className={`graph-tab-btn ${graphView === 'player' ? 'active' : ''}`}
+                    onClick={() => setGraphView('player')}
+                  >
+                    🌳 Your Graph
+                  </button>
+                  <button
+                    className={`graph-tab-btn ${graphView === 'goal' ? 'active' : ''}`}
+                    onClick={() => setGraphView('goal')}
+                  >
+                    🎯 Goal Graph
+                  </button>
                 </div>
-                <p>
-                  Experiment with any branch, commit, rebase, merge, or cherry-pick command.
-                  Watch the commit nodes generate on the left in real-time.
-                </p>
+              )}
+
+              <GitGraph
+                gitState={graphView === 'goal' ? targetState : activeGitState}
+                selectedCommitHash={graphView === 'goal' ? null : selectedCommitHash}
+                onSelectCommit={graphView === 'goal' ? () => {} : setSelectedCommitHash}
+                isGoalView={graphView === 'goal'}
+              />
+            </section>
+
+            {/* Right Side: Challenge parameters, Terminal inputs, Node inspectors */}
+            <section className="right-panel">
+              <div className="mobile-tabs-nav">
+                <button
+                  className={`mobile-nav-btn ${mobileTab === 'instructions' ? 'active' : ''}`}
+                  onClick={() => setMobileTab('instructions')}
+                >
+                  📋 Objectives
+                </button>
+                <button
+                  className={`mobile-nav-btn ${mobileTab === 'terminal' ? 'active' : ''}`}
+                  onClick={() => setMobileTab('terminal')}
+                >
+                  💻 Terminal
+                </button>
+                <button
+                  className={`mobile-nav-btn ${mobileTab === 'inspector' ? 'active' : ''}`}
+                  onClick={() => setMobileTab('inspector')}
+                >
+                  🔍 Inspector
+                </button>
               </div>
-            )}
-          </div>
 
-          {/* 2. Interactive Shell Prompt Console */}
-          <div className={`responsive-panel-section console-wrapper ${mobileTab !== 'terminal' ? 'mobile-hidden' : ''}`}>
-            <Terminal
-              gitState={activeGitState}
-              onExecuteCommand={handleExecuteCommand}
-              commandHistory={activeHistory}
-              onClearHistory={handleClearHistory}
-            />
-          </div>
+              {/* 1. Instructions Module */}
+              <div className={`responsive-panel-section ${mobileTab !== 'instructions' ? 'mobile-hidden' : ''}`}>
+                {mode === 'campaign' ? (
+                  <ChallengeBox
+                    challenges={CHALLENGES}
+                    currentChallenge={currentChallenge}
+                    completedChallenges={completedChallenges}
+                    onSelectChallenge={loadChallenge}
+                    onResetChallenge={handleReset}
+                    isWon={isLvlWon}
+                    onNextLevel={handleNextLevel}
+                  />
+                ) : (
+                  <div className="sandbox-intro-box">
+                    <div className="sandbox-header">
+                      <h3>Sandbox Playground</h3>
+                      <span className="badge">FREE PLAY</span>
+                    </div>
+                    <p>
+                      Experiment with any branch, commit, rebase, merge, tag, stash, revert, or remote command.
+                      Watch the commit nodes and tags generate on the left in real-time.
+                    </p>
+                    <button
+                      className="open-3d-guide-btn"
+                      onClick={() => handleModeChange('visualizer')}
+                    >
+                      🪐 Open 3D Command Assistant & Guide
+                    </button>
+                  </div>
+                )}
+              </div>
 
-          {/* 3. Inspector Panel */}
-          <div className={`responsive-panel-section inspector-wrapper ${mobileTab !== 'inspector' ? 'mobile-hidden' : ''}`}>
-            <NodeInspector
-              commit={selectedCommit}
-              onClose={() => setSelectedCommitHash(null)}
-            />
-          </div>
-        </section>
+              {/* 2. Interactive Shell Prompt Console */}
+              <div className={`responsive-panel-section console-wrapper ${mobileTab !== 'terminal' ? 'mobile-hidden' : ''}`}>
+                <Terminal
+                  gitState={activeGitState}
+                  onExecuteCommand={handleExecuteCommand}
+                  commandHistory={activeHistory}
+                  onClearHistory={handleClearHistory}
+                />
+              </div>
+
+              {/* 3. Inspector Panel */}
+              <div className={`responsive-panel-section inspector-wrapper ${mobileTab !== 'inspector' ? 'mobile-hidden' : ''}`}>
+                <NodeInspector
+                  commit={selectedCommit}
+                  onClose={() => setSelectedCommitHash(null)}
+                />
+              </div>
+            </section>
+          </>
+        )}
       </main>
+
+      {/* Profile Modal */}
+      {showProfileModal && (
+        <ProfileModal
+          activeProfile={activeProfile}
+          totalLevels={CHALLENGES.length}
+          onSelectProfile={(p) => {
+            setActiveProfile(p);
+            setCompletedChallenges(p.completedLevelIds);
+          }}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
 
       {/* Dynamic Overlay Celebration for Level Completions */}
       {isLvlWon && (
@@ -328,7 +384,11 @@ function App() {
             <h2>Level Completed!</h2>
             <p>You successfully matched the target Git tree structure.</p>
             <div className="celebration-actions">
-              <button className="celebration-btn" onClick={handleNextLevel} disabled={currentChallengeId === CHALLENGES[CHALLENGES.length - 1].id}>
+              <button
+                className="celebration-btn"
+                onClick={handleNextLevel}
+                disabled={currentChallengeId === CHALLENGES[CHALLENGES.length - 1].id}
+              >
                 {currentChallengeId === CHALLENGES[CHALLENGES.length - 1].id ? 'Campaign Finished!' : 'Next Level →'}
               </button>
             </div>

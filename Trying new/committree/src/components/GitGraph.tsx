@@ -8,7 +8,6 @@ interface GitGraphProps {
   isGoalView?: boolean;
 }
 
-// Visual track colors (emerald, cyan, violet, amber, rose, indigo)
 const TRACK_COLORS = [
   '#10B981', // emerald
   '#06B6D4', // cyan
@@ -24,9 +23,8 @@ export const GitGraph: React.FC<GitGraphProps> = ({
   onSelectCommit,
   isGoalView = false,
 }) => {
-  const { commits, branches, headCommitHash, activeBranch } = gitState;
+  const { commits, branches, headCommitHash, activeBranch, tags = {}, remotes = {} } = gitState;
 
-  // 1. Assign tracks to branches (main is always track 0)
   const branchList = Object.keys(branches);
   const sortedBranches = ['main', ...branchList.filter((b) => b !== 'main')];
   const branchTracks: { [name: string]: number } = {};
@@ -34,7 +32,6 @@ export const GitGraph: React.FC<GitGraphProps> = ({
     branchTracks[b] = idx % TRACK_COLORS.length;
   });
 
-  // 2. Compute rows for each commit (Bottom-to-Top layout)
   const commitRows: { [hash: string]: number } = {};
   
   function getCommitRow(hash: string): number {
@@ -51,25 +48,21 @@ export const GitGraph: React.FC<GitGraphProps> = ({
     return commitRows[hash];
   }
 
-  // Evaluate for all commits
   Object.keys(commits).forEach((hash) => {
     getCommitRow(hash);
   });
 
-  // 3. Helper to resolve X track of a commit
   const commitTracks: { [hash: string]: number } = {};
   function getCommitTrack(hash: string): number {
     if (hash in commitTracks) return commitTracks[hash];
     const commit = commits[hash];
     if (!commit) return 0;
 
-    // Direct mapping
     if (commit.branch && branchTracks[commit.branch] !== undefined) {
       commitTracks[hash] = branchTracks[commit.branch];
       return commitTracks[hash];
     }
 
-    // Fallback to parent
     if (commit.parents.length > 0) {
       commitTracks[hash] = getCommitTrack(commit.parents[0]);
       return commitTracks[hash];
@@ -83,19 +76,15 @@ export const GitGraph: React.FC<GitGraphProps> = ({
     getCommitTrack(hash);
   });
 
-  // 4. Layout dimensions
   const colWidth = 85;
   const rowHeight = 80;
   const paddingX = 55;
-  const paddingY = 85; // top padding for branch tags
+  const paddingY = 85;
 
   const maxRow = Math.max(...Object.values(commitRows), 0);
   const svgHeight = Math.max(440, maxRow * rowHeight + paddingY + 60);
-  const svgWidth = Math.max(380, sortedBranches.length * colWidth + paddingX * 2);
+  const svgWidth = Math.max(420, sortedBranches.length * colWidth + paddingX * 2);
 
-  // Translate (row, track) to SVG coordinates (X, Y)
-  // X: columns represent tracks (left to right)
-  // Y: rows represent height (Bottom-to-Top, so row 0 is at svgHeight - paddingY)
   const getCoords = (hash: string) => {
     const row = commitRows[hash] ?? 0;
     const track = commitTracks[hash] ?? 0;
@@ -104,7 +93,6 @@ export const GitGraph: React.FC<GitGraphProps> = ({
     return { x, y };
   };
 
-  // 5. Gather all connection links
   const links: { from: string; to: string; fromCoords: { x: number; y: number }; toCoords: { x: number; y: number }; color: string; isMergeEdge: boolean }[] = [];
   Object.keys(commits).forEach((childHash) => {
     const commit = commits[childHash];
@@ -126,10 +114,9 @@ export const GitGraph: React.FC<GitGraphProps> = ({
     });
   });
 
-  // 6. Gather tags for each commit (branches and HEAD)
-  const commitTags: { [hash: string]: { name: string; type: 'branch' | 'head'; isActive: boolean }[] } = {};
+  const commitTags: { [hash: string]: { name: string; type: 'branch' | 'head' | 'tag' | 'remote'; isActive: boolean }[] } = {};
   
-  // Branch pointers
+  // Local Branches
   Object.entries(branches).forEach(([bName, b]) => {
     const hash = b.targetHash;
     if (!commitTags[hash]) commitTags[hash] = [];
@@ -137,6 +124,27 @@ export const GitGraph: React.FC<GitGraphProps> = ({
       name: bName,
       type: 'branch',
       isActive: bName === activeBranch,
+    });
+  });
+
+  // Remote Tracking Branches
+  Object.entries(remotes).forEach(([rName, r]) => {
+    const hash = r.targetHash;
+    if (!commitTags[hash]) commitTags[hash] = [];
+    commitTags[hash].push({
+      name: `🌐 ${rName}`,
+      type: 'remote',
+      isActive: false,
+    });
+  });
+
+  // Release Tags
+  Object.entries(tags).forEach(([tName, hash]) => {
+    if (!commitTags[hash]) commitTags[hash] = [];
+    commitTags[hash].push({
+      name: `🏷️ ${tName}`,
+      type: 'tag',
+      isActive: false,
     });
   });
 
@@ -176,7 +184,6 @@ export const GitGraph: React.FC<GitGraphProps> = ({
           className="git-graph-svg"
           onClick={() => onSelectCommit(null)}
         >
-          {/* Glowing Filter definition */}
           <defs>
             <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
               <feGaussianBlur stdDeviation="4" result="blur" />
@@ -188,7 +195,6 @@ export const GitGraph: React.FC<GitGraphProps> = ({
             </filter>
           </defs>
 
-          {/* Grid lines (vertical tracks) */}
           {sortedBranches.map((_, trackIdx) => {
             const x = paddingX + trackIdx * colWidth;
             return (
@@ -203,12 +209,10 @@ export const GitGraph: React.FC<GitGraphProps> = ({
             );
           })}
 
-          {/* Connection Lines (Bezier Curves) */}
           {links.map((link, idx) => {
             const { x: x1, y: y1 } = link.fromCoords;
             const { x: x2, y: y2 } = link.toCoords;
             
-            // Draw refined S-curve connecting commits
             const dy = Math.abs(y2 - y1);
             const cpY1 = y1 - dy * 0.45;
             const cpY2 = y2 + dy * 0.45;
@@ -227,7 +231,6 @@ export const GitGraph: React.FC<GitGraphProps> = ({
             );
           })}
 
-          {/* Commit Nodes */}
           {Object.keys(commits).map((hash) => {
             const { x, y } = getCoords(hash);
             const commit = commits[hash];
@@ -248,7 +251,6 @@ export const GitGraph: React.FC<GitGraphProps> = ({
                   onSelectCommit(hash);
                 }}
               >
-                {/* Outer pulsating glow ring for current HEAD */}
                 {isHead && (
                   <>
                     <circle
@@ -269,7 +271,6 @@ export const GitGraph: React.FC<GitGraphProps> = ({
                   </>
                 )}
 
-                {/* Rebased Dotted Halo */}
                 {isRebasedNode && !isHead && (
                   <circle
                     r="22"
@@ -281,7 +282,6 @@ export const GitGraph: React.FC<GitGraphProps> = ({
                   />
                 )}
 
-                {/* Main Node Circle */}
                 <circle
                   r={isSelected ? "18" : "15"}
                   fill="#0B0F19"
@@ -291,7 +291,6 @@ export const GitGraph: React.FC<GitGraphProps> = ({
                   filter={isSelected || isHead ? "url(#glow)" : undefined}
                 />
 
-                {/* Special Inner Ring for Merge Commits */}
                 {isMergeNode && (
                   <circle
                     r="9"
@@ -302,7 +301,6 @@ export const GitGraph: React.FC<GitGraphProps> = ({
                   />
                 )}
 
-                {/* Node Hash Text Label */}
                 <text
                   textAnchor="middle"
                   dy=".3em"
@@ -313,15 +311,43 @@ export const GitGraph: React.FC<GitGraphProps> = ({
                   {hash}
                 </text>
 
-                {/* Commit Tags (Branches/HEAD labels) next to the node */}
                 {commitTags[hash] && (
                   <g transform="translate(26, 0)">
                     {commitTags[hash].map((tag, tagIdx) => {
                       const tagY = tagIdx * 24 - (commitTags[hash].length - 1) * 12;
                       const isTagActive = tag.isActive;
+                      const isTagType = tag.type === 'tag';
+                      const isRemoteType = tag.type === 'remote';
+                      const isHeadType = tag.type === 'head';
                       
-                      // Compute approximate width of tag text
-                      const textWidth = tag.name.length * 7 + 20;
+                      const textWidth = tag.name.length * 7 + 22;
+                      
+                      let strokeColor = '#4B5563';
+                      let fillColor = 'rgba(15, 23, 42, 0.85)';
+                      let textColor = '#D1D5DB';
+                      let dotColor = '#9CA3AF';
+
+                      if (isHeadType) {
+                        strokeColor = '#F59E0B';
+                        fillColor = 'rgba(245, 158, 11, 0.2)';
+                        textColor = '#FCD34D';
+                        dotColor = '#F59E0B';
+                      } else if (isTagType) {
+                        strokeColor = '#F59E0B';
+                        fillColor = 'rgba(245, 158, 11, 0.15)';
+                        textColor = '#FCD34D';
+                        dotColor = '#F59E0B';
+                      } else if (isRemoteType) {
+                        strokeColor = '#8B5CF6';
+                        fillColor = 'rgba(139, 92, 246, 0.2)';
+                        textColor = '#C4B5FD';
+                        dotColor = '#A78BFA';
+                      } else if (isTagActive) {
+                        strokeColor = nodeColor;
+                        fillColor = `${nodeColor}30`;
+                        textColor = '#FFFFFF';
+                        dotColor = nodeColor;
+                      }
                       
                       return (
                         <g key={tagIdx} transform={`translate(0, ${tagY})`}>
@@ -331,30 +357,29 @@ export const GitGraph: React.FC<GitGraphProps> = ({
                             width={textWidth}
                             height="20"
                             rx="5"
-                            className={`tag-bg ${tag.type === 'head' ? 'head-tag' : isTagActive ? 'active-branch-tag' : 'inactive-branch-tag'}`}
+                            className={`tag-bg ${isHeadType ? 'head-tag' : ''}`}
                             style={{
-                              stroke: tag.type === 'head' ? '#F59E0B' : isTagActive ? nodeColor : '#4B5563',
-                              strokeWidth: isTagActive || tag.type === 'head' ? '1.5px' : '1px',
-                              fill: tag.type === 'head' ? 'rgba(245, 158, 11, 0.2)' : isTagActive ? `${nodeColor}30` : 'rgba(15, 23, 42, 0.85)',
+                              stroke: strokeColor,
+                              strokeWidth: isTagActive || isHeadType || isTagType || isRemoteType ? '1.5px' : '1px',
+                              fill: fillColor,
                             }}
                           />
-                          {/* Indicator dot */}
                           <circle
                             cx="8"
                             cy="0"
                             r="3.5"
-                            fill={tag.type === 'head' ? '#F59E0B' : isTagActive ? nodeColor : '#9CA3AF'}
+                            fill={dotColor}
                           />
                           <text
                             x="16"
                             y="1"
                             dy=".3em"
-                            className={`tag-text ${isTagActive ? 'active' : ''}`}
-                            fill={tag.type === 'head' ? '#FCD34D' : isTagActive ? '#FFFFFF' : '#D1D5DB'}
-                            style={{ fontWeight: isTagActive || tag.type === 'head' ? '600' : '400', fontSize: '11px' }}
+                            className="tag-text"
+                            fill={textColor}
+                            style={{ fontWeight: isTagActive || isHeadType || isTagType ? '600' : '400', fontSize: '11px' }}
                           >
                             {tag.name}
-                            {isTagActive && tag.type !== 'head' && ' ★'}
+                            {isTagActive && !isHeadType && !isTagType && !isRemoteType && ' ★'}
                           </text>
                         </g>
                       );
