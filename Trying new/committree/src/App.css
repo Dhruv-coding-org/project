@@ -1012,6 +1012,313 @@
 }
 
 /* ==========================================================================
+   BEGINNER TUTORIAL & INTERACTIVE HINT STYLES
+   ========================================================================== */
+.challenge-sub-tabs {
+  display: flex;
+  background-color: rgba(3, 7, 18, 0.6);
+  border-bottom: 1px solid var(--border-color);
+  padding: 6px 12px;
+  gap: 8px;
+}
+
+.sub-tab-btn {
+  flex: 1;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.sub-tab-btn:hover {
+  color: var(--text-main);
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.sub-tab-btn.active {
+  background-color: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10B981;
+}
+
+.sub-tab-btn.tutorial-tab.active {
+  background-color: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #A78BFA;
+}
+
+.tutorial-view-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: fadeIn 0.3s ease;
+}
+
+.tutorial-concept-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #A78BFA;
+  margin: 0 0 4px 0;
+}
+
+.tutorial-explanation-paragraphs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tutorial-para {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-main);
+  margin: 0;
+  padding-left: 10px;
+  border-left: 3px solid rgba(139, 92, 246, 0.4);
+}
+
+.tutorial-diagram-box {
+  background-color: rgba(3, 7, 18, 0.85);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 4px;
+}
+
+.diagram-hdr {
+  font-size: 11px;
+  font-weight: 700;
+  color: #A78BFA;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+}
+
+.diagram-ascii {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 12.5px;
+  color: #FCD34D;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.beginner-tips-box {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(6, 182, 212, 0.05));
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.tips-hdr {
+  font-size: 13px;
+  font-weight: 700;
+  color: #34D399;
+  margin-bottom: 8px;
+}
+
+.tips-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tip-item {
+  font-size: 12.5px;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+.return-to-obj-btn {
+  background-color: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10B981;
+  color: #10B981;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 6px;
+}
+
+.return-to-obj-btn:hover {
+  background-color: #10B981;
+  color: #030712;
+}
+
+.tutorial-callout {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(139, 92, 246, 0.08);
+  border: 1px dashed rgba(139, 92, 246, 0.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: #DDD6FE;
+  margin-top: 4px;
+}
+
+.open-tutorial-link {
+  background: none;
+  border: none;
+  color: #A78BFA;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.open-tutorial-link:hover {
+  color: #C4B5FD;
+}
+
+/* ==========================================================================
+   GRAPH VISUAL POLISH (GLOWING HEAD, MERGE RINGS, REBASED HALO)
+   ========================================================================== */
+.head-outer-glow-ring {
+  animation: pulseOuterGlow 2s infinite ease-in-out;
+}
+
+@keyframes pulseOuterGlow {
+  0%, 100% { opacity: 0.3; transform: scale(0.95); }
+  50% { opacity: 0.8; transform: scale(1.08); }
+}
+
+.head-pulse-ring {
+  animation: pulseInnerGlow 1.5s infinite ease-in-out;
+}
+
+@keyframes pulseInnerGlow {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; stroke-width: 3.5px; }
+}
+
+.rebased-halo {
+  animation: rotateDash 10s linear infinite;
+}
+
+@keyframes rotateDash {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: 28; }
+}
+
+.merge-inner-ring {
+  opacity: 0.8;
+}
+
+.commit-connection-path.merge-path {
+  opacity: 0.85;
+}
+
+/* ==========================================================================
+   NODE INSPECTOR BADGES & DIFF VISUALIZER
+   ========================================================================== */
+.header-title-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.commit-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.type-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.3px;
+  display: inline-block;
+}
+
+.root-badge {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.merge-badge {
+  background-color: rgba(139, 92, 246, 0.18);
+  color: #C4B5FD;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+}
+
+.rebase-badge {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #FCD34D;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.normal-badge {
+  background-color: rgba(107, 114, 128, 0.2);
+  color: #E5E7EB;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+.diff-file-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.diff-file-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-style: italic;
+}
+
+.diff-visual-bar {
+  display: flex;
+  height: 6px;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.diff-bar-green {
+  background-color: #10B981;
+  height: 100%;
+}
+
+.diff-bar-red {
+  background-color: #F43F5E;
+  height: 100%;
+}
+
+.empty-icon-pulse {
+  font-size: 36px;
+  margin-bottom: 12px;
+  animation: floatIcon 3s ease-in-out infinite;
+}
+
+@keyframes floatIcon {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0 0 6px 0;
+}
+
+/* ==========================================================================
    RESPONSIVENESS MEDIA QUERIES
    ========================================================================== */
 
