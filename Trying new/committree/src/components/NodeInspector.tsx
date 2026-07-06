@@ -4,6 +4,8 @@ import type { Commit } from '../git/gitEngine';
 interface NodeInspectorProps {
   commit: Commit | null;
   onClose: () => void;
+  onCompareWithHead?: (hash: string) => void;
+  onViewBlame?: (hash: string) => void;
 }
 
 // Generate deterministic file changes based on commit hash and message
@@ -13,37 +15,53 @@ function getMockFilesChanged(commit: Commit) {
   
   if (msg.includes('initial')) {
     return [
-      { name: '.gitignore', additions: 15, deletions: 0, desc: 'Added standard Git ignore patterns' },
-      { name: 'package.json', additions: 25, deletions: 0, desc: 'Initialized dependencies and scripts' },
-      { name: 'README.md', additions: 10, deletions: 0, desc: 'Created project documentation' },
+      { name: 'index.html', additions: 18, deletions: 0, desc: 'Initial structure' },
+      { name: 'styles.css', additions: 45, deletions: 0, desc: 'Base styling rules' }
     ];
   }
   
-  if (msg.includes('merge')) {
+  if (msg.includes('nav') || msg.includes('header') || msg.includes('menu')) {
     return [
-      { name: 'src/App.tsx', additions: 14, deletions: 3, desc: 'Resolved conflicts and merged timelines' },
-      { name: 'src/components/GitGraph.tsx', additions: 8, deletions: 2, desc: 'Integrated feature branch updates' },
+      { name: 'index.html', additions: 14, deletions: 2, desc: 'Added navigation links' },
+      { name: 'styles.css', additions: 22, deletions: 4, desc: 'Flexbox navigation styling' }
     ];
   }
 
-  // Generic files based on characters in hash
-  const files = [];
-  const charSum = hash.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  if (msg.includes('fix') || msg.includes('bug') || msg.includes('patch')) {
+    return [
+      { name: 'app.js', additions: 3, deletions: 8, desc: 'Fixed null pointer exception' }
+    ];
+  }
+
+  if (msg.includes('style') || msg.includes('color') || msg.includes('theme')) {
+    return [
+      { name: 'styles.css', additions: 31, deletions: 12, desc: 'Updated color palette and responsive breakpoints' }
+    ];
+  }
+
+  if (msg.includes('doc') || msg.includes('readme')) {
+    return [
+      { name: 'README.md', additions: 25, deletions: 3, desc: 'Documented setup instructions' }
+    ];
+  }
+
+  // Default fallback calculation based on hash char code
+  const charCode = hash.charCodeAt(hash.length - 1) || 50;
+  const adds = (charCode % 15) + 4;
+  const dels = (charCode % 7);
   
-  if (charSum % 3 === 0) {
-    files.push({ name: 'src/components/GitGraph.tsx', additions: Math.floor(charSum / 10) + 5, deletions: Math.floor(charSum / 30), desc: 'Updated graph layout coordinates' });
-    files.push({ name: 'src/App.css', additions: Math.floor(charSum / 20) + 4, deletions: 1, desc: 'Styled visual nodes and curves' });
-  } else if (charSum % 3 === 1) {
-    files.push({ name: 'src/git/gitEngine.ts', additions: Math.floor(charSum / 8) + 10, deletions: Math.floor(charSum / 25), desc: 'Refactored state machine reducers' });
-  } else {
-    files.push({ name: 'src/main.tsx', additions: 8, deletions: 2, desc: 'Configured application root' });
+  const files = [
+    { name: 'app.js', additions: adds, deletions: dels, desc: 'Core logic updates' }
+  ];
+  
+  if (adds > 10) {
     files.push({ name: 'public/index.html', additions: 12, deletions: 1, desc: 'Updated meta tags and title' });
   }
   
   return files;
 }
 
-export const NodeInspector: React.FC<NodeInspectorProps> = ({ commit, onClose }) => {
+export const NodeInspector: React.FC<NodeInspectorProps> = ({ commit, onClose, onCompareWithHead, onViewBlame }) => {
   if (!commit) {
     return (
       <div className="node-inspector-empty">
@@ -110,6 +128,24 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({ commit, onClose })
       <div className="inspector-message-box">
         <div className="meta-label">Commit Message:</div>
         <p className="commit-msg-text">"{commit.message}"</p>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          {onCompareWithHead && (
+            <button
+              onClick={() => onCompareWithHead(commit.hash)}
+              style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10B981', color: '#34D399', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', flex: 1 }}
+            >
+              🔍 Compare vs HEAD
+            </button>
+          )}
+          {onViewBlame && (
+            <button
+              onClick={() => onViewBlame(commit.hash)}
+              style={{ background: 'rgba(139, 92, 246, 0.15)', border: '1px solid #8B5CF6', color: '#A78BFA', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', flex: 1 }}
+            >
+              📜 Blame at Commit
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Mock File Changes */}

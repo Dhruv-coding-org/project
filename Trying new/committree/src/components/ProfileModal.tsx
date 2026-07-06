@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { type UserProfile, getProfiles, createProfile, deleteProfile, setActiveProfileId } from '../store/profileStore';
+import { type UserProfile, getProfiles, createProfile, deleteProfile, setActiveProfileId, BADGE_REGISTRY } from '../store/profileStore';
 
 interface ProfileModalProps {
   activeProfile: UserProfile;
@@ -84,9 +84,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                       <div className="profile-info">
                         <div className="profile-name-row">
                           <span className="profile-name">{p.name}</span>
+                          <span style={{ fontSize: '10px', background: 'rgba(56, 189, 248, 0.15)', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '4px', padding: '1px 6px', fontWeight: 600 }}>
+                            Lvl {p.level || 1}
+                          </span>
                           {isActive && <span className="active-pill">Currently Playing ★</span>}
                         </div>
-                        <div className="profile-rank">{p.title}</div>
+                        <div className="profile-rank">{p.title} <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 400 }}>({p.xp || 0} XP)</span></div>
                         <div className="profile-progress-bar-wrap">
                           <div className="profile-progress-fill" style={{ width: `${progressPct}%` }} />
                         </div>
@@ -109,6 +112,44 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   </div>
                 );
               })}
+            </div>
+
+            {/* Achievement Badges Grid */}
+            <div style={{ margin: '20px 0', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', padding: '16px' }}>
+              <h4 style={{ fontSize: '14px', color: '#38BDF8', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>🎖️</span> Achievement Badges ({activeProfile.badges?.length || 0} / {BADGE_REGISTRY.length} Unlocked)
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', maxHeight: '220px', overflowY: 'auto' }}>
+                {BADGE_REGISTRY.map((b) => {
+                  const isUnlocked = activeProfile.badges?.includes(b.id);
+                  return (
+                    <div
+                      key={b.id}
+                      style={{
+                        background: isUnlocked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(30, 41, 59, 0.4)',
+                        border: `1px solid ${isUnlocked ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255, 255, 255, 0.05)'}`,
+                        borderRadius: '8px',
+                        padding: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        opacity: isUnlocked ? 1 : 0.45,
+                        filter: isUnlocked ? 'none' : 'grayscale(1)',
+                      }}
+                    >
+                      <div style={{ fontSize: '24px' }}>{b.icon}</div>
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: isUnlocked ? '#34D399' : '#94A3B8' }}>
+                          {b.title}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748B', lineHeight: '1.2' }}>
+                          {b.description}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             <button className="create-profile-btn" onClick={() => setIsCreating(true)}>

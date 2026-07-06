@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { type GitState, INITIAL_STATE, runGitCommand } from './git/gitEngine';
+import { type GitState, INITIAL_STATE, runGitCommand, executeInteractiveRebase, executePullRequestMerge } from './git/gitEngine';
 import { CHALLENGES, getStartingStateForChallenge, getTargetStateForChallenge } from './git/challenges';
 import { GitGraph } from './components/GitGraph';
 import { Terminal } from './components/Terminal';
@@ -7,13 +7,27 @@ import { ChallengeBox } from './components/ChallengeBox';
 import { NodeInspector } from './components/NodeInspector';
 import { CommandVisualizer3D } from './components/CommandVisualizer3D';
 import { ProfileModal } from './components/ProfileModal';
-import { getActiveProfile, completeLevelForActiveProfile, type UserProfile } from './store/profileStore';
+import { getActiveProfile, completeLevelForActiveProfile, type UserProfile, unlockBadgeForActiveProfile, type BadgeInfo } from './store/profileStore';
 import { resolveMergeConflict } from './git/gitEngine';
 import { ThemeShopModal } from './components/ThemeShopModal';
 import { ConflictResolverModal } from './components/ConflictResolverModal';
 import { SpeedrunArena } from './components/SpeedrunArena';
 import { GitAssistantModal } from './components/GitAssistantModal';
-import { encodeSandboxUrl, decodeSandboxUrl, exportSandboxJson } from './utils/urlSharing';
+import { InteractiveRebaseModal } from './components/InteractiveRebaseModal';
+import { GitBisectModal } from './components/GitBisectModal';
+import { StashStackModal } from './components/StashStackModal';
+import { ReflogModal } from './components/ReflogModal';
+import { DiffModal } from './components/DiffModal';
+import { BlameModal } from './components/BlameModal';
+import { BadgeToast } from './components/BadgeToast';
+import { LevelStudio } from './components/LevelStudio';
+import { BossBattles } from './components/BossBattles';
+import { PullRequestModal } from './components/PullRequestModal';
+import { CIPipelineModal } from './components/CIPipelineModal';
+import { SoundSettingsModal } from './components/SoundSettingsModal';
+import { CheatSheetModal } from './components/CheatSheetModal';
+import { TeamLabModal } from './components/TeamLabModal';
+import { encodeSandboxUrl, decodeSandboxUrl, exportSandboxJson, decodeChallengeUrl } from './utils/urlSharing';
 import { soundEngine } from './utils/soundEngine';
 import './App.css';
 
@@ -29,10 +43,44 @@ function App() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showAssistantModal, setShowAssistantModal] = useState(false);
+  const [showBisectModal, setShowBisectModal] = useState(false);
+  const [showStashModal, setShowStashModal] = useState(false);
+  const [showReflogModal, setShowReflogModal] = useState(false);
+  const [showDiffModal, setShowDiffModal] = useState(false);
+  const [showBlameModal, setShowBlameModal] = useState(false);
+  const [showPRModal, setShowPRModal] = useState(false);
+  const [showCIModal, setShowCIModal] = useState(false);
+  const [showSoundModal, setShowSoundModal] = useState(false);
+  const [showCheatSheetModal, setShowCheatSheetModal] = useState(false);
+  const [showTeamLabModal, setShowTeamLabModal] = useState(false);
+  const [isMuted, setIsMuted] = useState<boolean>(soundEngine.getMuted());
+
+  useEffect(() => {
+    const unsubscribe = soundEngine.subscribe(() => {
+      setIsMuted(soundEngine.getMuted());
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  const [ciStatus, setCiStatus] = useState<'passing' | 'failing' | 'running'>('passing');
+  const [diffInitialHashA, setDiffInitialHashA] = useState<string | undefined>(undefined);
   const [assistantError, setAssistantError] = useState<string | null>(null);
 
-  // Mode selection: 'campaign' | 'sandbox' | 'visualizer' | 'speedrun'
-  const [mode, setMode] = useState<'campaign' | 'sandbox' | 'visualizer' | 'speedrun'>('campaign');
+  // Mode selection: 'campaign' | 'sandbox' | 'visualizer' | 'speedrun' | 'studio' | 'boss'
+  const [mode, setMode] = useState<'campaign' | 'sandbox' | 'visualizer' | 'speedrun' | 'studio' | 'boss'>('campaign');
+  const [activeToastBadge, setActiveToastBadge] = useState<BadgeInfo | null>(null);
+  const [customChallenge, setCustomChallenge] = useState<any | null>(null);
+
+  const handleAwardBadge = (badgeId: string) => {
+    const { profile, newlyUnlocked, badge } = unlockBadgeForActiveProfile(badgeId);
+    if (newlyUnlocked && badge) {
+      setActiveProfile(profile);
+      setActiveToastBadge(badge);
+      soundEngine.playSuccess();
+    }
+  };
 
   // Toggle between Your Graph and Goal Graph
   const [graphView, setGraphView] = useState<'player' | 'goal'>('player');
@@ -51,9 +99,14 @@ function App() {
     return saved ? parseInt(saved, 10) : 1;
   });
 
-  const currentChallenge = CHALLENGES.find(c => c.id === currentChallengeId) || CHALLENGES[0];
+  const currentChallenge = customChallenge || CHALLENGES.find(c => c.id === currentChallengeId) || CHALLENGES[0];
 
   const [campaignState, setCampaignState] = useState<GitState>(() => {
+    const fromUrl = decodeChallengeUrl();
+    if (fromUrl) {
+      setTimeout(() => setCustomChallenge(fromUrl), 0);
+      return getStartingStateForChallenge(fromUrl);
+    }
     return getStartingStateForChallenge(currentChallenge);
   });
 
@@ -120,6 +173,12 @@ function App() {
         const updatedProfile = completeLevelForActiveProfile(currentChallenge.id, CHALLENGES.length);
         setActiveProfile(updatedProfile);
         setCompletedChallenges(updatedProfile.completedLevelIds);
+        if (currentChallenge.id >= 100) {
+          handleAwardBadge('boss_slayer');
+        }
+        if (updatedProfile.completedLevelIds.length >= 3) {
+          handleAwardBadge('clean_coder');
+        }
       }
     } else {
       setIsLvlWon(false);
@@ -128,6 +187,7 @@ function App() {
 
   // Load new level state
   const loadChallenge = (id: number) => {
+    setCustomChallenge(null);
     setCurrentChallengeId(id);
     const newLvl = CHALLENGES.find(c => c.id === id) || CHALLENGES[0];
     const freshState = getStartingStateForChallenge(newLvl);
@@ -139,6 +199,21 @@ function App() {
       {
         command: '',
         output: [`--- Initialized ${newLvl.title} ---`, `Goal: ${newLvl.objective}`],
+      },
+    ]);
+  };
+
+  const loadCustomChallenge = (chal: any) => {
+    setCustomChallenge(chal);
+    const freshState = getStartingStateForChallenge(chal);
+    setCampaignState(freshState);
+    setSelectedCommitHash(null);
+    setGraphView('player');
+    setMobileTab('terminal');
+    setCampaignHistory([
+      {
+        command: '',
+        output: [`--- Initialized Custom Challenge: ${chal.title} ---`, `Goal: ${chal.objective}`],
       },
     ]);
   };
@@ -155,7 +230,11 @@ function App() {
     setGraphView('player');
     setMobileTab('terminal');
     if (mode === 'campaign') {
-      loadChallenge(currentChallengeId);
+      if (customChallenge) {
+        loadCustomChallenge(customChallenge);
+      } else {
+        loadChallenge(currentChallengeId);
+      }
     } else if (mode === 'sandbox') {
       setSandboxState({ ...INITIAL_STATE });
       setSandboxHistory([]);
@@ -194,6 +273,15 @@ function App() {
       if (['commit', 'checkout', 'switch', 'merge', 'rebase', 'cherry-pick', 'reset', 'revert'].includes(subCmd)) {
         setSelectedCommitHash(res.state.headCommitHash);
       }
+      if (cmdText.trim().startsWith('git reflog') || cmdText.includes('HEAD@{')) {
+        handleAwardBadge('time_traveler');
+      }
+      if (cmdText.trim().startsWith('git rebase -i')) {
+        handleAwardBadge('rebase_surgeon');
+      }
+      if (cmdText.trim().startsWith('git bisect')) {
+        handleAwardBadge('bug_hunter');
+      }
     }
   };
 
@@ -205,8 +293,42 @@ function App() {
     }
   };
 
+  const handleMergePR = (baseBranch: string, compareBranch: string, strategy: 'merge' | 'squash' | 'rebase', prTitle: string) => {
+    const res = executePullRequestMerge(activeGitState, baseBranch, compareBranch, strategy, prTitle);
+    const historyItem: CommandHistoryItem = {
+      command: `git pr merge --strategy=${strategy} ${compareBranch} -> ${baseBranch}`,
+      output: res.output,
+      isError: !!res.error,
+    };
+    if (res.error) {
+      setAssistantError(res.error);
+    } else {
+      soundEngine.playSuccess();
+      if (mode === 'sandbox') {
+        setSandboxState(res.state);
+        setSandboxHistory(prev => [...prev, historyItem]);
+      } else {
+        setCampaignState(res.state);
+        setCampaignHistory(prev => [...prev, historyItem]);
+      }
+      if (res.newCommitHash) {
+        setSelectedCommitHash(res.newCommitHash);
+      }
+    }
+  };
+
+  const handleTriggerCIBreakage = () => {
+    setCiStatus('failing');
+    soundEngine.playError();
+  };
+
+  const handleTriggerCIRepair = () => {
+    setCiStatus('passing');
+    soundEngine.playSuccess();
+  };
+
   // Switch Mode handler
-  const handleModeChange = (newMode: 'campaign' | 'sandbox' | 'visualizer' | 'speedrun') => {
+  const handleModeChange = (newMode: 'campaign' | 'sandbox' | 'visualizer' | 'speedrun' | 'studio' | 'boss') => {
     setMode(newMode);
     setSelectedCommitHash(null);
     setGraphView('player');
@@ -273,6 +395,18 @@ function App() {
             >
               ⚡ Speedrun
             </button>
+            <button
+              className={`mode-btn ${mode === 'studio' ? 'active' : ''}`}
+              onClick={() => handleModeChange('studio')}
+            >
+              🛠️ Studio
+            </button>
+            <button
+              className={`mode-btn ${mode === 'boss' ? 'active' : ''}`}
+              onClick={() => handleModeChange('boss')}
+            >
+              🐉 Bosses
+            </button>
           </div>
 
           <button
@@ -293,6 +427,142 @@ function App() {
             style={{ backgroundColor: 'rgba(59,130,246,0.15)', border: '1px solid #3B82F6', borderRadius: '8px', padding: '6px 12px', color: '#60A5FA', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
           >
             🤖 AI Mentor
+          </button>
+          <button
+            className="stash-top-btn"
+            onClick={() => setShowStashModal(true)}
+            title="Stash Stack Manager"
+            style={{ backgroundColor: 'rgba(56,189,248,0.15)', border: '1px solid #38BDF8', borderRadius: '8px', padding: '6px 12px', color: '#7DD3FC', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
+          >
+            📦 Stash ({activeGitState.stash?.length || 0})
+          </button>
+          <button
+            className="bisect-top-btn"
+            onClick={() => {
+              if (!activeGitState.bisect?.active) {
+                handleExecuteCommand('git bisect start');
+              }
+              setShowBisectModal(true);
+            }}
+            title="Git Bisect Bug Hunt"
+            style={{ backgroundColor: activeGitState.bisect?.active ? 'rgba(245,158,11,0.25)' : 'rgba(245,158,11,0.15)', border: '1px solid #F59E0B', borderRadius: '8px', padding: '6px 12px', color: '#FCD34D', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px', boxShadow: activeGitState.bisect?.active ? '0 0 10px rgba(245,158,11,0.5)' : 'none' }}
+          >
+            🐛 {activeGitState.bisect?.active ? 'Bisect Active' : 'Bisect'}
+          </button>
+          <button
+            className="reflog-top-btn"
+            onClick={() => setShowReflogModal(true)}
+            title="Reflog Time Machine"
+            style={{ backgroundColor: 'rgba(6,182,212,0.15)', border: '1px solid #06B6D4', borderRadius: '8px', padding: '6px 12px', color: '#22D3EE', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
+          >
+            ⏳ Time Machine
+          </button>
+          <button
+            className="diff-top-btn"
+            onClick={() => {
+              setDiffInitialHashA(undefined);
+              setShowDiffModal(true);
+            }}
+            title="Visual Diff Viewer"
+            style={{ backgroundColor: 'rgba(16,185,129,0.15)', border: '1px solid #10B981', borderRadius: '8px', padding: '6px 12px', color: '#34D399', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
+          >
+            🔍 Diff
+          </button>
+          <button
+            className="blame-top-btn"
+            onClick={() => setShowBlameModal(true)}
+            title="Git Blame Inspector"
+            style={{ backgroundColor: 'rgba(139,92,246,0.15)', border: '1px solid #8B5CF6', borderRadius: '8px', padding: '6px 12px', color: '#A78BFA', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
+          >
+            📜 Blame
+          </button>
+          <button
+            className="pr-top-btn"
+            onClick={() => setShowPRModal(true)}
+            title="Pull Request Studio & Code Review Hub"
+            style={{ backgroundColor: 'rgba(56,189,248,0.15)', border: '1px solid #38BDF8', borderRadius: '8px', padding: '6px 12px', color: '#38BDF8', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
+          >
+            🔄 Pull Requests
+          </button>
+          <button
+            className={`ci-status-pill ${ciStatus}`}
+            onClick={() => setShowCIModal(true)}
+            title="Continuous Integration Pipeline Status"
+            style={{
+              backgroundColor: ciStatus === 'failing' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.15)',
+              border: `1px solid ${ciStatus === 'failing' ? '#EF4444' : '#10B981'}`,
+              borderRadius: '20px',
+              padding: '6px 14px',
+              color: ciStatus === 'failing' ? '#FCA5A5' : '#34D399',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '13px',
+              marginLeft: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: ciStatus === 'failing' ? '0 0 12px rgba(239,68,68,0.5)' : 'none',
+              animation: ciStatus === 'failing' ? 'pulseRed 1.5s infinite' : 'none',
+            }}
+          >
+            <span>⚙️</span> CI: {ciStatus === 'failing' ? 'Broken ❌' : 'Passing ✅'}
+          </button>
+          <button
+            className="cheatsheet-top-btn"
+            onClick={() => setShowCheatSheetModal(true)}
+            title="Git Encyclopedia & Interactive Cheat-Sheet"
+            style={{ backgroundColor: 'rgba(245,158,11,0.15)', border: '1px solid #F59E0B', borderRadius: '8px', padding: '6px 12px', color: '#FBBF24', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
+          >
+            📖 Cheat-Sheet
+          </button>
+          <button
+            className="teamlab-top-btn"
+            onClick={() => setShowTeamLabModal(true)}
+            title="Collaborative Team Lab & Remote Sync Simulator"
+            style={{ backgroundColor: 'rgba(16,185,129,0.15)', border: '1px solid #10B981', borderRadius: '8px', padding: '6px 12px', color: '#34D399', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
+          >
+            🌐 Team Lab
+          </button>
+          <button
+            className="sound-top-btn"
+            onClick={(e) => {
+              if (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) {
+                setShowSoundModal(true);
+              } else {
+                soundEngine.toggleMute();
+              }
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setShowSoundModal(true);
+            }}
+            title="Click to toggle Mute/Unmute. Right-click or Ctrl+Click to open Sound & Synth Studio!"
+            style={{
+              backgroundColor: isMuted ? 'rgba(239,68,68,0.2)' : 'rgba(56,189,248,0.15)',
+              border: `1px solid ${isMuted ? '#EF4444' : '#38BDF8'}`,
+              borderRadius: '20px',
+              padding: '6px 12px',
+              color: isMuted ? '#F87171' : '#38BDF8',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '13px',
+              marginLeft: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            <span>{isMuted ? '🔇' : '🔊'}</span> {isMuted ? 'Muted' : 'Sound'}
+            <span
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSoundModal(true);
+              }}
+              style={{ marginLeft: '4px', opacity: 0.8, fontSize: '11px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1px 5px', borderRadius: '4px', cursor: 'pointer' }}
+              title="Open Sound Settings Studio"
+            >
+              ⚙️
+            </span>
           </button>
 
           {mode !== 'visualizer' && mode !== 'speedrun' && (
@@ -317,6 +587,26 @@ function App() {
         ) : mode === 'speedrun' ? (
           <div className="full-width-visualizer" style={{ width: '100%', overflowY: 'auto' }}>
             <SpeedrunArena />
+          </div>
+        ) : mode === 'studio' ? (
+          <div className="full-width-visualizer" style={{ width: '100%', overflowY: 'auto' }}>
+            <LevelStudio
+              onPlayTest={(chal) => {
+                loadCustomChallenge(chal);
+                setMode('campaign');
+              }}
+              onAwardBadge={handleAwardBadge}
+            />
+          </div>
+        ) : mode === 'boss' ? (
+          <div className="full-width-visualizer" style={{ width: '100%', overflowY: 'auto' }}>
+            <BossBattles
+              onStartBattle={(chal) => {
+                loadCustomChallenge(chal);
+                setMode('campaign');
+              }}
+              onAwardBadge={handleAwardBadge}
+            />
           </div>
         ) : (
           <>
@@ -443,6 +733,14 @@ function App() {
                 <NodeInspector
                   commit={selectedCommit}
                   onClose={() => setSelectedCommitHash(null)}
+                  onCompareWithHead={(hash) => {
+                    setDiffInitialHashA(hash);
+                    setShowDiffModal(true);
+                  }}
+                  onViewBlame={(hash) => {
+                    handleExecuteCommand(`git checkout ${hash}`);
+                    setShowBlameModal(true);
+                  }}
                 />
               </div>
             </section>
@@ -523,6 +821,143 @@ function App() {
           onClose={() => setShowAssistantModal(false)}
         />
       )}
+
+      {/* Interactive Rebase Studio */}
+      {activeGitState.activeRebase && (
+        <InteractiveRebaseModal
+          rebaseState={activeGitState.activeRebase}
+          onExecute={(rebaseState) => {
+            const res = executeInteractiveRebase(activeGitState, rebaseState);
+            if (mode === 'sandbox') {
+              setSandboxState(res.state);
+              setSandboxHistory(prev => [...prev, { command: 'git rebase -i --continue', output: res.output }]);
+            } else {
+              setCampaignState(res.state);
+              setCampaignHistory(prev => [...prev, { command: 'git rebase -i --continue', output: res.output }]);
+            }
+          }}
+          onCancel={() => {
+            const clearedState = { ...activeGitState };
+            delete clearedState.activeRebase;
+            if (mode === 'sandbox') setSandboxState(clearedState);
+            else setCampaignState(clearedState);
+          }}
+        />
+      )}
+
+      {/* Git Bisect Modal */}
+      {(showBisectModal || activeGitState.bisect?.active) && activeGitState.bisect && (
+        <GitBisectModal
+          bisect={activeGitState.bisect}
+          onCommand={(cmd) => {
+            handleExecuteCommand(cmd);
+            if (cmd === 'git bisect reset') setShowBisectModal(false);
+          }}
+          onClose={() => setShowBisectModal(false)}
+        />
+      )}
+
+      {/* Stash Stack Modal */}
+      {showStashModal && (
+        <StashStackModal
+          stashList={activeGitState.stash || []}
+          stashEntries={activeGitState.stashEntries || []}
+          onAction={(action, index, branchName) => {
+            let cmd = `git stash ${action} stash@{${index}}`;
+            if (action === 'branch' && branchName) {
+              cmd = `git stash branch ${branchName} stash@{${index}}`;
+            }
+            handleExecuteCommand(cmd);
+          }}
+          onClose={() => setShowStashModal(false)}
+        />
+      )}
+
+      {/* Reflog Time Machine Modal */}
+      {showReflogModal && (
+        <ReflogModal
+          reflogEntries={activeGitState.reflogEntries || []}
+          onRestore={(idx) => {
+            handleExecuteCommand(`git reset --hard HEAD@{${idx}}`);
+            setShowReflogModal(false);
+          }}
+          onClose={() => setShowReflogModal(false)}
+        />
+      )}
+
+      {/* Visual Diff Modal */}
+      {showDiffModal && (
+        <DiffModal
+          commits={activeGitState.commits}
+          initialHashA={diffInitialHashA}
+          headCommitHash={activeGitState.headCommitHash}
+          onClose={() => setShowDiffModal(false)}
+        />
+      )}
+
+      {/* Git Blame Inspector Modal */}
+      {showBlameModal && (
+        <BlameModal
+          commits={activeGitState.commits}
+          headCommitHash={activeGitState.headCommitHash}
+          onSelectCommit={(hash) => {
+            setSelectedCommitHash(hash);
+          }}
+          onClose={() => setShowBlameModal(false)}
+        />
+      )}
+
+      {/* Pull Request Studio Modal */}
+      {showPRModal && (
+        <PullRequestModal
+          state={activeGitState}
+          onMergePR={handleMergePR}
+          onAwardBadge={handleAwardBadge}
+          onClose={() => setShowPRModal(false)}
+        />
+      )}
+
+      {/* CI/CD Pipeline Modal */}
+      {showCIModal && (
+        <CIPipelineModal
+          ciStatus={ciStatus}
+          onTriggerBreakage={handleTriggerCIBreakage}
+          onTriggerRepair={handleTriggerCIRepair}
+          onAwardBadge={handleAwardBadge}
+          onClose={() => setShowCIModal(false)}
+        />
+      )}
+
+      {/* Sound & Synth Studio Modal */}
+      {showSoundModal && (
+        <SoundSettingsModal
+          onAwardBadge={handleAwardBadge}
+          onClose={() => setShowSoundModal(false)}
+        />
+      )}
+
+      {/* Git Encyclopedia & Cheat-Sheet Modal */}
+      {showCheatSheetModal && (
+        <CheatSheetModal
+          onSelectCommand={(cmd) => {
+            handleModeChange('sandbox');
+            handleExecuteCommand(cmd);
+          }}
+          onAwardBadge={handleAwardBadge}
+          onClose={() => setShowCheatSheetModal(false)}
+        />
+      )}
+
+      {/* Collaborative Team Lab Modal */}
+      {showTeamLabModal && (
+        <TeamLabModal
+          onAwardBadge={handleAwardBadge}
+          onClose={() => setShowTeamLabModal(false)}
+        />
+      )}
+
+      {/* Achievement Badge Notification Toast */}
+      <BadgeToast badge={activeToastBadge} onClose={() => setActiveToastBadge(null)} />
     </div>
   );
 }

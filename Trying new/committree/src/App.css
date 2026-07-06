@@ -2978,3 +2978,86 @@
   transition: transform 0.15s ease;
 }
 .apply-cmd-btn:hover { transform: scale(1.03); background-color: #2563EB; }
+
+/* Upgrade 2 Toolbar Buttons Hover Effects */
+.reflog-top-btn:hover {
+  background-color: rgba(6, 182, 212, 0.3) !important;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+  transform: translateY(-1px);
+}
+
+.diff-top-btn:hover {
+  background-color: rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+.blame-top-btn:hover {
+  background-color: rgba(139, 92, 246, 0.3) !important;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+  transform: translateY(-1px);
+}
+
+.reflog-modal-content, .diff-modal-content, .blame-modal-content {
+  animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalPop {
+  0% { transform: scale(0.92); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Upgrade #3: Gamification & Community Styles */
+@keyframes toastSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Upgrade #4: Real-World DevOps & CI/CD Styles */
+.pr-top-btn:hover {
+  background-color: rgba(56, 189, 248, 0.3) !important;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+  transform: translateY(-1px);
+}
+
+.ci-status-pill:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+@keyframes pulseRed {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Upgrade #5: Crowning Master Suite Styles */
+.cheatsheet-top-btn:hover {
+  background-color: rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+  transform: translateY(-1px);
+}
+
+.teamlab-top-btn:hover {
+  background-color: rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+.sound-top-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+}

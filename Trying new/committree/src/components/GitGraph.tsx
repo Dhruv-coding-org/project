@@ -160,6 +160,23 @@ export const GitGraph: React.FC<GitGraphProps> = ({
     });
   }
 
+  // Bisect markers
+  if (gitState.bisect?.active) {
+    const { goodHash, badHash, currentHash } = gitState.bisect;
+    if (goodHash) {
+      if (!commitTags[goodHash]) commitTags[goodHash] = [];
+      commitTags[goodHash].push({ name: '✅ bisect good', type: 'tag', isActive: false });
+    }
+    if (badHash) {
+      if (!commitTags[badHash]) commitTags[badHash] = [];
+      commitTags[badHash].push({ name: '❌ bisect bad', type: 'tag', isActive: false });
+    }
+    if (currentHash && currentHash !== headCommitHash) {
+      if (!commitTags[currentHash]) commitTags[currentHash] = [];
+      commitTags[currentHash].push({ name: '🔍 bisect test', type: 'head', isActive: true });
+    }
+  }
+
   return (
     <div className={`graph-scroll-container theme-${theme} ${isGoalView ? 'goal-view-active' : ''}`}>
       {isGoalView && <div className="goal-overlay-badge">🎯 TARGET GOAL</div>}
