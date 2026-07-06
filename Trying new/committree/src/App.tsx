@@ -37,6 +37,35 @@ interface CommandHistoryItem {
   isError?: boolean;
 }
 
+const GitDashboardBar: React.FC<{ gitState: GitState }> = ({ gitState }) => {
+  const isDetached = !gitState.activeBranch;
+  const stashSize = gitState.stash?.length || 0;
+  const tagCount = Object.keys(gitState.tags || {}).length;
+
+  return (
+    <div className="git-dashboard-bar">
+      <div className="dash-stat-item">
+        <span className="dash-label">🌿 BRANCH</span>
+        <span className={`dash-val ${isDetached ? 'val-detached' : 'val-branch'}`}>
+          {isDetached ? 'DETACHED' : gitState.activeBranch}
+        </span>
+      </div>
+      <div className="dash-stat-item">
+        <span className="dash-label">📌 HEAD</span>
+        <span className="dash-val val-hash">{gitState.headCommitHash}</span>
+      </div>
+      <div className="dash-stat-item">
+        <span className="dash-label">📦 STASH</span>
+        <span className="dash-val val-stash">{stashSize}</span>
+      </div>
+      <div className="dash-stat-item">
+        <span className="dash-label">🏷️ TAGS</span>
+        <span className="dash-val val-tags">{tagCount}</span>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   // Profile State
   const [activeProfile, setActiveProfile] = useState<UserProfile>(() => getActiveProfile());
@@ -646,6 +675,8 @@ function App() {
 
             {/* Right Side: Challenge parameters, Terminal inputs, Node inspectors */}
             <section className="right-panel">
+              <GitDashboardBar gitState={activeGitState} />
+
               <div className="mobile-tabs-nav">
                 <button
                   className={`mobile-nav-btn ${mobileTab === 'instructions' ? 'active' : ''}`}
@@ -663,13 +694,28 @@ function App() {
                   className={`mobile-nav-btn ${mobileTab === 'inspector' ? 'active' : ''}`}
                   onClick={() => setMobileTab('inspector')}
                 >
-                  🔍 Inspector
+                  🔍 Inspector ({selectedCommit ? '1' : '0'})
                 </button>
               </div>
 
-              {/* 1. Instructions Module */}
-              <div className={`responsive-panel-section ${mobileTab !== 'instructions' ? 'mobile-hidden' : ''}`}>
-                {mode === 'campaign' ? (
+              {/* 1. Top Panel: Inspector when node selected, Objectives otherwise */}
+              <div className={`responsive-panel-section ${mobileTab !== 'instructions' && mobileTab !== 'inspector' ? 'mobile-hidden' : ''}`}>
+                {selectedCommit ? (
+                  <div className="top-inspector-card" style={{ marginBottom: '14px' }}>
+                    <NodeInspector
+                      commit={selectedCommit}
+                      onClose={() => setSelectedCommitHash(null)}
+                      onCompareWithHead={(hash) => {
+                        setDiffInitialHashA(hash);
+                        setShowDiffModal(true);
+                      }}
+                      onViewBlame={(hash) => {
+                        handleExecuteCommand(`git checkout ${hash}`);
+                        setShowBlameModal(true);
+                      }}
+                    />
+                  </div>
+                ) : mode === 'campaign' ? (
                   <ChallengeBox
                     challenges={CHALLENGES}
                     currentChallenge={currentChallenge}
@@ -732,22 +778,7 @@ function App() {
                   onExecuteCommand={handleExecuteCommand}
                   commandHistory={activeHistory}
                   onClearHistory={handleClearHistory}
-                />
-              </div>
-
-              {/* 3. Inspector Panel */}
-              <div className={`responsive-panel-section inspector-wrapper ${mobileTab !== 'inspector' ? 'mobile-hidden' : ''}`}>
-                <NodeInspector
-                  commit={selectedCommit}
-                  onClose={() => setSelectedCommitHash(null)}
-                  onCompareWithHead={(hash) => {
-                    setDiffInitialHashA(hash);
-                    setShowDiffModal(true);
-                  }}
-                  onViewBlame={(hash) => {
-                    handleExecuteCommand(`git checkout ${hash}`);
-                    setShowBlameModal(true);
-                  }}
+                  onOpenHint={() => setShowAssistantModal(true)}
                 />
               </div>
             </section>

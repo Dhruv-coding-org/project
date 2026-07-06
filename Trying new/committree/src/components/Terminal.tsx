@@ -6,6 +6,7 @@ interface TerminalProps {
   onExecuteCommand: (cmd: string) => void;
   commandHistory: { command: string; output: string[]; isError?: boolean }[];
   onClearHistory: () => void;
+  onOpenHint?: () => void;
 }
 
 export const Terminal: React.FC<TerminalProps> = ({
@@ -13,15 +14,39 @@ export const Terminal: React.FC<TerminalProps> = ({
   onExecuteCommand,
   commandHistory,
   onClearHistory,
+  onOpenHint,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
+  const [showHintBtn, setShowHintBtn] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const consoleEndRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 5-second error timer: if latest command was an error, wait 5s to show hint
+  useEffect(() => {
+    const lastCmd = commandHistory[commandHistory.length - 1];
+    if (lastCmd && lastCmd.isError) {
+      if (!errorTimerRef.current && !showHintBtn) {
+        errorTimerRef.current = setTimeout(() => {
+          setShowHintBtn(true);
+        }, 5000);
+      }
+    } else if (lastCmd && !lastCmd.isError && lastCmd.command !== '') {
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+        errorTimerRef.current = null;
+      }
+      setShowHintBtn(false);
+    }
+    return () => {
+      // Clean up timer if unmounted
+    };
+  }, [commandHistory, showHintBtn]);
 
   // Command history buffer containing only strings typed by the user
   const userCommands = commandHistory
@@ -31,7 +56,7 @@ export const Terminal: React.FC<TerminalProps> = ({
   // Auto-scroll to the bottom of the console whenever history changes
   useEffect(() => {
     consoleEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [commandHistory]);
+  }, [commandHistory, showHintBtn]);
 
   // Focus terminal input when clicking anywhere inside the terminal area
   const handleTerminalClick = () => {
@@ -192,16 +217,15 @@ export const Terminal: React.FC<TerminalProps> = ({
                 <span className="entered-command">{item.command}</span>
               </div>
             )}
-            {item.output.map((outLine, oIdx) => (
-              <div
-                key={oIdx}
-                className={`console-line console-output ${
-                  item.isError ? 'output-error' : 'output-success'
-                }`}
-              >
-                {outLine}
+            {item.output.length > 0 && (
+              <div className={`console-output-wrapper ${item.isError ? 'output-error-block' : 'output-success-block'}`}>
+                {item.output.map((outLine, oIdx) => (
+                  <div key={oIdx} className="console-line console-output">
+                    {outLine}
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         ))}
         <div ref={consoleEndRef} />
@@ -227,6 +251,23 @@ export const Terminal: React.FC<TerminalProps> = ({
             </button>
           ))}
           {suggestions.length > 5 && <span className="suggestion-more">+{suggestions.length - 5} more</span>}
+        </div>
+      )}
+
+      {/* 5-Second Error Hint Banner */}
+      {showHintBtn && onOpenHint && (
+        <div className="terminal-hint-banner">
+          <span className="hint-banner-text">💡 Having trouble with Git commands?</span>
+          <button
+            type="button"
+            className="hint-trigger-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenHint();
+            }}
+          >
+            Open Git Assistant ➔
+          </button>
         </div>
       )}
 

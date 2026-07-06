@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Commit } from '../git/gitEngine';
 
 interface NodeInspectorProps {
@@ -6,6 +6,41 @@ interface NodeInspectorProps {
   onClose: () => void;
   onCompareWithHead?: (hash: string) => void;
   onViewBlame?: (hash: string) => void;
+}
+
+// Generate deterministic side-by-side diff code lines
+function getMockSideBySideDiff(file: { name: string; desc: string }, commitMsg: string) {
+  const msg = commitMsg.toLowerCase();
+  const isInit = msg.includes('initial');
+
+  if (file.name.endsWith('.html')) {
+    return {
+      left: isInit ? ['(File did not exist)'] : [' <nav className="old-nav">', '   <a href="/">Home</a>', ' </nav>'],
+      right: isInit ? [' <!DOCTYPE html>', ' <html>', '   <head><title>CommitTree App</title></head>', '   <body><div id="root"></div></body>', ' </html>'] : [' <nav className="new-nav glass-dock">', '   <a href="/">Home</a>', '   <a href="/dashboard">Dashboard</a>', '   <a href="/settings">Settings</a>', ' </nav>'],
+    };
+  }
+  if (file.name.endsWith('.css')) {
+    return {
+      left: isInit ? ['(File did not exist)'] : [' .button {', '   background: blue;', '   color: white;', ' }'],
+      right: isInit ? [' :root {', '   --primary: #10B981;', '   --bg: #030712;', ' }', ' body { background: var(--bg); }'] : [' .button {', '   background: linear-gradient(135deg, #10B981, #06B6D4);', '   color: #F8FAFC;', '   border-radius: 8px;', '   transition: all 0.15s ease;', ' }'],
+    };
+  }
+  if (file.name.endsWith('.js') || file.name.endsWith('.ts') || file.name.endsWith('.tsx')) {
+    return {
+      left: [' function initApp() {', '   console.log("Loading...");', '   renderOldView();', ' }'],
+      right: [' async function initApp() {', '   console.log("Loading CommitTree...");', '   await checkPermissions();', '   renderModernDashboard();', ' }'],
+    };
+  }
+  if (file.name.endsWith('.md')) {
+    return {
+      left: [' # Old Documentation', ' - Setup instructions missing'],
+      right: [' # CommitTree Documentation', ' - Interactive Git Simulator', ' - Run npm run dev to start'],
+    };
+  }
+  return {
+    left: [' - Previous version content', ' - Old configuration values'],
+    right: [' + Updated version content', ' + New optimized configuration values', ' + Added safety checks'],
+  };
 }
 
 // Generate deterministic file changes based on commit hash and message
@@ -62,6 +97,7 @@ function getMockFilesChanged(commit: Commit) {
 }
 
 export const NodeInspector: React.FC<NodeInspectorProps> = ({ commit, onClose, onCompareWithHead, onViewBlame }) => {
+  const [viewMode, setViewMode] = useState<'diff' | 'summary'>('diff');
   if (!commit) {
     return (
       <div className="node-inspector-empty">
@@ -150,36 +186,89 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({ commit, onClose, o
 
       {/* Mock File Changes */}
       <div className="inspector-file-diffs">
-        <div className="diff-header">
-          <span>Changed Files ({files.length})</span>
-          <span className="diff-totals">
-            <span className="text-green">+{totalAdditions} lines</span> / <span className="text-red">-{totalDeletions} lines</span>
-          </span>
+        <div className="diff-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+          <div>
+            <span>Changed Files ({files.length}) </span>
+            <span className="diff-totals">
+              <span className="text-green">+{totalAdditions} lines</span> / <span className="text-red">-{totalDeletions} lines</span>
+            </span>
+          </div>
+          <div className="diff-view-toggle" style={{ display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.4)', padding: '2px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <button
+              type="button"
+              onClick={() => setViewMode('diff')}
+              style={{ padding: '3px 8px', fontSize: '10.5px', borderRadius: '4px', border: 'none', background: viewMode === 'diff' ? '#10B981' : 'transparent', color: viewMode === 'diff' ? '#030712' : '#9CA3AF', fontWeight: 600, cursor: 'pointer' }}
+            >
+              ⚡ Side-by-Side Diff
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('summary')}
+              style={{ padding: '3px 8px', fontSize: '10.5px', borderRadius: '4px', border: 'none', background: viewMode === 'summary' ? '#10B981' : 'transparent', color: viewMode === 'summary' ? '#030712' : '#9CA3AF', fontWeight: 600, cursor: 'pointer' }}
+            >
+              📊 Summary
+            </button>
+          </div>
         </div>
-        <div className="diff-files-list">
-          {files.map((file, idx) => {
-            const total = file.additions + file.deletions;
-            const addPct = Math.min(100, Math.max(10, Math.round((file.additions / total) * 100)));
-            const delPct = 100 - addPct;
 
-            return (
-              <div key={idx} className="diff-file-item">
-                <div className="diff-file-top">
-                  <span className="diff-file-name">📄 {file.name}</span>
-                  <span className="diff-file-stats">
-                    <span className="add-count text-green">+{file.additions}</span>
-                    <span className="del-count text-red">-{file.deletions}</span>
-                  </span>
+        {viewMode === 'diff' ? (
+          <div className="diff-files-list">
+            {files.map((file, idx) => {
+              const diffCode = getMockSideBySideDiff(file, commit.message);
+              return (
+                <div key={idx} className="diff-file-item" style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '10px', marginBottom: '8px' }}>
+                  <div className="diff-file-top" style={{ marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span className="diff-file-name" style={{ fontWeight: 700, color: '#38BDF8', fontSize: '12px' }}>📄 {file.name}</span>
+                    <span className="diff-file-stats">
+                      <span className="add-count text-green">+{file.additions}</span>{' '}
+                      <span className="del-count text-red">-{file.deletions}</span>
+                    </span>
+                  </div>
+                  <div className="diff-file-desc" style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '8px' }}>{file.desc}</div>
+                  <div className="side-by-side-diff-grid">
+                    <div className="diff-col-left">
+                      <div style={{ fontSize: '9.5px', color: '#FCA5A5', fontWeight: 700, marginBottom: '4px', textTransform: 'uppercase' }}>Old Version (-{file.deletions})</div>
+                      {diffCode.left.map((line, lIdx) => (
+                        <div key={lIdx} style={{ color: '#FCA5A5', whiteSpace: 'pre' }}>{line}</div>
+                      ))}
+                    </div>
+                    <div className="diff-col-right">
+                      <div style={{ fontSize: '9.5px', color: '#6EE7B7', fontWeight: 700, marginBottom: '4px', textTransform: 'uppercase' }}>New Version (+{file.additions})</div>
+                      {diffCode.right.map((line, rIdx) => (
+                        <div key={rIdx} style={{ color: '#6EE7B7', whiteSpace: 'pre' }}>{line}</div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <div className="diff-file-desc">{file.desc}</div>
-                <div className="diff-visual-bar">
-                  <div className="diff-bar-green" style={{ width: `${addPct}%` }} />
-                  {file.deletions > 0 && <div className="diff-bar-red" style={{ width: `${delPct}%` }} />}
+              );
+            })}
+          </div>
+        ) : (
+          <div className="diff-files-list">
+            {files.map((file, idx) => {
+              const total = file.additions + file.deletions;
+              const addPct = Math.min(100, Math.max(10, Math.round((file.additions / total) * 100)));
+              const delPct = 100 - addPct;
+
+              return (
+                <div key={idx} className="diff-file-item">
+                  <div className="diff-file-top">
+                    <span className="diff-file-name">📄 {file.name}</span>
+                    <span className="diff-file-stats">
+                      <span className="add-count text-green">+{file.additions}</span>
+                      <span className="del-count text-red">-{file.deletions}</span>
+                    </span>
+                  </div>
+                  <div className="diff-file-desc">{file.desc}</div>
+                  <div className="diff-visual-bar">
+                    <div className="diff-bar-green" style={{ width: `${addPct}%` }} />
+                    {file.deletions > 0 && <div className="diff-bar-red" style={{ width: `${delPct}%` }} />}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

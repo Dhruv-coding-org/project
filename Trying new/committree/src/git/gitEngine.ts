@@ -241,11 +241,25 @@ export interface GitCommandResult {
 
 export function runGitCommand(state: GitState, commandStr: string): GitCommandResult {
   const parts = commandStr.trim().split(/\s+/);
-  if (parts[0] !== 'git') {
-    return { state, output: [], error: `Unknown command: "${parts[0]}". Did you mean "git"?` };
+  const firstWord = parts[0]?.toLowerCase();
+
+  if (firstWord === 'clear') {
+    return { state, output: ['Console cleared.'], error: undefined };
+  }
+  if (firstWord === 'help') {
+    return { state, output: ['Usage: git <command> [<args>]', '', 'Available commands in this simulator:', '  init, add, status, commit, branch, checkout, switch, merge, rebase, bisect, cherry-pick, reset, restore, tag, stash, revert, fetch, pull, push, log, diff, show, clone, config, reflog, rm, remote, blame'] };
   }
 
-  const action = parts[1];
+  const gitSubcommands = ['init', 'add', 'status', 'commit', 'branch', 'checkout', 'switch', 'merge', 'rebase', 'bisect', 'cherry-pick', 'reset', 'restore', 'tag', 'stash', 'revert', 'fetch', 'pull', 'push', 'log', 'diff', 'show', 'clone', 'config', 'reflog', 'rm', 'remote', 'blame'];
+
+  if (firstWord !== 'git') {
+    if (gitSubcommands.includes(firstWord)) {
+      return { state, output: [], error: `"${firstWord}" is a git command. Try typing: git ${commandStr}` };
+    }
+    return { state, output: [], error: `Unknown command: "${parts[0]}". Please start your commands with "git ".` };
+  }
+
+  const action = parts[1]?.toLowerCase();
   if (!action) {
     return { state, output: ['Usage: git <command> [<args>]', '', 'Available commands in this simulator:', '  init, add, status, commit, branch, checkout, switch, merge, rebase, bisect, cherry-pick, reset, restore, tag, stash, revert, fetch, pull, push, log, diff, show, clone, config, reflog, rm, remote, blame'] };
   }
