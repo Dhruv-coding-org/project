@@ -349,6 +349,13 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* Ambient Floating Glow Mesh Background */}
+      <div className="ambient-glow-mesh">
+        <div className="glow-orb orb-cyan"></div>
+        <div className="glow-orb orb-violet"></div>
+        <div className="glow-orb orb-emerald"></div>
+      </div>
+
       {/* Top Navigation Bar */}
       <header className="app-header">
         <div className="brand">
