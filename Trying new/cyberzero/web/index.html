@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="obsidian">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CyberZero — Professional cybersecurity training platform with 22 interactive labs, boss battles, and a real hacker terminal.">
+  <title>CyberZero — Neural Defense Grid</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- APP SHELL                                                      -->
+<!-- ============================================================ -->
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-avatar" id="sidebar-avatar">🛡️</span>
+      <div class="brand-text">
+        <div class="brand-name">CYBERZERO</div>
+        <div class="brand-tagline">Neural Defense Grid</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="home" onclick="switchView('home')" title="Home Base">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home Base</span>
+      </button>
+      <button class="nav-item" data-view="training" onclick="switchView('training')" title="Training Modules">
+        <span class="nav-icon">📡</span>
+        <span class="nav-label">Training Modules</span>
+        <span class="nav-badge" id="nav-badge-training">22</span>
+      </button>
+      <button class="nav-item" data-view="arcade" onclick="switchView('arcade')" title="Cyber Arcade">
+        <span class="nav-icon">🎮</span>
+        <span class="nav-label">Cyber Arcade</span>
+      </button>
+      <button class="nav-item" data-view="terminal" onclick="switchView('terminal')" title="Hacker Terminal">
+        <span class="nav-icon">💻</span>
+        <span class="nav-label">Hacker Terminal</span>
+      </button>
+
+      <div class="sidebar-divider"></div>
+
+      <button class="nav-item" data-view="profile" onclick="switchView('profile')" title="My Profile">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">My Profile</span>
+      </button>
+      <button class="nav-item" data-view="trophies" onclick="switchView('trophies')" title="Trophy Room">
+        <span class="nav-icon">🏆</span>
+        <span class="nav-label">Trophy Room</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="footer-btn cybot-btn" onclick="toggleCybot()" title="Open Cy-Bot">
+        <span>🤖</span>
+        <span>Cy-Bot Mentor</span>
+      </button>
+      <button class="footer-btn" onclick="toggleSettings()" title="Settings">
+        <span>⚙️</span>
+        <span>Settings</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- SIDEBAR OVERLAY (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- MOBILE HEADER -->
+  <header class="mobile-header">
+    <button class="mobile-icon-btn" onclick="toggleSidebar()">☰</button>
+    <span class="mobile-header-title">CYBERZERO</span>
+    <button class="mobile-icon-btn" onclick="toggleCybot()">🤖</button>
+  </header>
+
+  <!-- ====================================================== -->
+  <!-- MAIN CONTENT                                            -->
+  <!-- ====================================================== -->
+  <main class="main-content">
+
+    <!-- ==================== VIEW: HOME ==================== -->
+    <div id="view-home" class="view active">
+
+      <!-- Greeting Bar -->
+      <div class="home-greeting-bar">
+        <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+          <span class="greeting-avatar" id="home-avatar">🛡️</span>
+          <div>
+            <div id="home-greeting" style="font-size:1rem; color:var(--c-text-dim); font-weight:600;"></div>
+            <h2 id="home-name" style="font-size:1.6rem; font-weight:800; margin:4px 0;">Operative Guardian</h2>
+            <span class="greeting-rank-badge" id="home-rank">Cyber Cadet</span>
+            <div class="xp-track" style="margin-top:12px;">
+              <div class="xp-track-label">
+                <span id="home-xp-label">0 XP</span>
+                <span id="home-level-label">Level 1</span>
+              </div>
+              <div class="xp-bar-bg"><div class="xp-bar-fill" id="home-xp-bar" style="width:5%"></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <button class="btn btn-primary btn-lg" onclick="switchView('training')">▶ Continue Training</button>
+          <button class="btn btn-secondary" onclick="toggleCybot()">🤖 Ask Cy-Bot</button>
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="home-stats-row">
+        <div class="stat-chip">
+          <div class="chip-val" id="home-stat-badges">0/22</div>
+          <div class="chip-label">Badges Earned</div>
+        </div>
+        <div class="stat-chip">
+          <div class="chip-val" id="home-stat-bosses">0/4</div>
+          <div class="chip-label">Boss Sieges Won</div>
+        </div>
+        <div class="stat-chip">
+          <div class="chip-val" id="home-stat-xp">0</div>
+          <div class="chip-label">Total XP</div>
+        </div>
+        <div class="stat-chip">
+          <div class="chip-val" id="home-stat-combo">0×</div>
+          <div class="chip-label">Combo Streak</div>
+        </div>
+        <div class="stat-chip">
+          <div class="chip-val" id="home-stat-level">1</div>
+          <div class="chip-label">Operative Level</div>
+        </div>
+      </div>
+
+      <!-- Two-Column Cards -->
+      <div class="home-cards-row">
+        <!-- Threat of the Day -->
+        <div class="threat-card">
+          <div class="threat-card-tag">
+            <span>🚨</span> Threat Intelligence Feed — Today
+          </div>
+          <h3 id="threat-name">Loading threat data...</h3>
+          <p id="threat-desc" style="margin-bottom:16px;"></p>
+          <button class="btn btn-secondary btn-sm" id="threat-module-btn" onclick="goToThreatModule()">→ Study Relevant Module</button>
+        </div>
+
+        <!-- Today's Mission -->
+        <div class="mission-card">
+          <div style="font-size:0.72rem; font-weight:700; color:var(--c-cyan); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:12px;">📋 Today's Mission Brief</div>
+          <h3 id="mission-title" style="font-size:1.05rem; font-weight:700; color:var(--c-text); margin-bottom:10px;">Calculating mission...</h3>
+          <p id="mission-desc" style="font-size:0.88rem; color:var(--c-text-dim); line-height:1.6; margin-bottom:20px;"></p>
+          <button class="btn btn-primary btn-sm" onclick="switchView('training')">Launch Mission</button>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="section-title" style="margin-bottom:16px;">Quick Actions</div>
+      <div class="row" style="flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="switchView('training')">📡 Training Modules</button>
+        <button class="btn btn-secondary" onclick="switchView('arcade')">🎮 Cyber Arcade</button>
+        <button class="btn btn-secondary" onclick="switchView('terminal')">💻 Open Terminal</button>
+        <button class="btn btn-secondary" onclick="switchView('profile')">👤 My Profile</button>
+        <button class="btn btn-secondary" onclick="switchView('trophies')">🏆 Trophy Room</button>
+        <button class="btn btn-ghost btn-sm" onclick="openCommandPalette()">⌨️ <span class="kbd">Ctrl+K</span> Command Palette</button>
+      </div>
+    </div>
+
+
+    <!-- ==================== VIEW: TRAINING ==================== -->
+    <div id="view-training" class="view">
+
+      <!-- Module Grid -->
+      <div id="training-grid-view">
+        <div class="section-header">
+          <h1>Training Modules</h1>
+          <p>22 interactive labs across 5 phases. Each module earns a badge and contributes to your Grandmaster certification.</p>
+        </div>
+
+        <div class="phase-selector" id="phase-selector">
+          <!-- Rendered by JS -->
+        </div>
+
+        <div class="module-grid" id="module-grid">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Module Arena (hidden by default) -->
+      <div id="module-arena">
+        <!-- Breadcrumb -->
+        <div class="arena-breadcrumb">
+          <span class="breadcrumb-link" onclick="backToGrid()">Training Modules</span>
+          <span class="breadcrumb-sep">›</span>
+          <span id="arena-phase-label" style="color:var(--c-text-dim);">Phase 1</span>
+          <span class="breadcrumb-sep">›</span>
+          <span id="arena-mod-label" style="color:var(--c-text);">Module</span>
+        </div>
+
+        <!-- Arena Header -->
+        <div class="arena-header">
+          <div class="arena-meta">
+            <h2 id="arena-title">Module Name</h2>
+            <div class="arena-tags" id="arena-tags"></div>
+          </div>
+          <div class="arena-nav-btns">
+            <button class="btn btn-ghost btn-sm" onclick="navigateModule(-1)">← Prev</button>
+            <button class="btn btn-ghost btn-sm" id="arena-status-btn">🔒 Locked</button>
+            <button class="btn btn-ghost btn-sm" onclick="navigateModule(1)">Next →</button>
+          </div>
+        </div>
+
+        <!-- Boss HUD (shown only during boss battles) -->
+        <div class="boss-hud" id="boss-hud">
+          <div class="boss-hud-row">
+            <div class="boss-hud-title">🚨 LIVE SIEGE — DEFEND YOUR CITADEL</div>
+            <div class="boss-timer" id="boss-timer">30s</div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:0.82rem; font-weight:600; color:var(--c-text-dim);">
+            <span>Shield Integrity</span>
+            <span id="shield-pct">100%</span>
+          </div>
+          <div class="shield-bar-bg"><div class="shield-bar-fill" id="shield-fill" style="width:100%"></div></div>
+        </div>
+
+        <!-- Arena Tabs -->
+        <div class="arena-tabs">
+          <button class="arena-tab active" data-panel="concept" onclick="switchArenaTab('concept')">💡 Concept</button>
+          <button class="arena-tab" data-panel="lab" onclick="switchArenaTab('lab')">🧪 Lab</button>
+          <button class="arena-tab" data-panel="quiz" onclick="switchArenaTab('quiz')">🎯 Quiz</button>
+        </div>
+
+        <!-- PANEL: CONCEPT -->
+        <div class="arena-panel active" id="panel-concept">
+          <div class="concept-card">
+            <div class="concept-label">💡 Real-World Analogy (Zero Jargon)</div>
+            <div class="concept-text" id="concept-text">Loading concept...</div>
+
+            <div class="incident-card">
+              <div class="incident-label">⚠️ Real-World Incident</div>
+              <div class="incident-text" id="incident-text">Loading incident...</div>
+            </div>
+          </div>
+          <div style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="switchArenaTab('lab')">→ Open Interactive Lab</button>
+            <button class="btn btn-ghost btn-sm" onclick="askCybotModule()">🤖 Ask Cy-Bot about this</button>
+          </div>
+        </div>
+
+        <!-- PANEL: LAB -->
+        <div class="arena-panel" id="panel-lab">
+          <div class="lab-container">
+            <div class="lab-header">
+              <div class="lab-title" id="lab-title">🧪 Interactive Lab</div>
+              <button class="btn btn-purple btn-sm" onclick="askCybotModule()">🤖 Guide Me</button>
+            </div>
+            <div class="lab-hint-bar" id="lab-hint" style="display:none; background:var(--c-cyan-dim); border:1px solid rgba(6,182,212,0.2); border-radius:var(--r-md); padding:12px 16px; font-size:0.85rem; color:var(--c-cyan); margin-bottom:16px; line-height:1.5;"></div>
+            <div class="lab-controls" id="lab-controls">
+              <!-- Dynamic lab UI -->
+            </div>
+            <div class="sim-output" id="sim-output"></div>
+          </div>
+          <div style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="switchArenaTab('quiz')">→ Take Mastery Quiz</button>
+            <button class="btn btn-ghost btn-sm" onclick="switchArenaTab('concept')">← Review Concept</button>
+          </div>
+        </div>
+
+        <!-- PANEL: QUIZ -->
+        <div class="arena-panel" id="panel-quiz">
+          <div class="quiz-container" id="quiz-container">
+            <!-- Lives -->
+            <div class="quiz-lives" id="quiz-lives">
+              <span class="quiz-lives-label">Lives:</span>
+              <span class="life-icon" id="life-1">🛡️</span>
+              <span class="life-icon" id="life-2">🛡️</span>
+              <span class="life-icon" id="life-3">🛡️</span>
+            </div>
+
+            <!-- Timer Bar -->
+            <div class="quiz-timer-bar">
+              <div class="quiz-timer-fill" id="quiz-timer-fill" style="width:100%"></div>
+            </div>
+
+            <!-- Question -->
+            <div class="quiz-q-label">Mastery Verification — +30 XP & Badge Unlock</div>
+            <div class="quiz-q-text" id="quiz-question">Loading question...</div>
+
+            <!-- Options -->
+            <div class="quiz-options" id="quiz-options">
+              <!-- Rendered by JS -->
+            </div>
+
+            <!-- Explanation -->
+            <div class="quiz-explanation" id="quiz-explanation"></div>
+          </div>
+
+          <div style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap;">
+            <button class="btn btn-primary" id="quiz-next-btn" style="display:none;" onclick="navigateModule(1)">Next Module →</button>
+            <button class="btn btn-ghost btn-sm" onclick="switchArenaTab('lab')">← Back to Lab</button>
+          </div>
+        </div>
+
+        <!-- Arena Footer -->
+        <div class="arena-footer">
+          <button class="btn btn-ghost btn-sm" onclick="backToGrid()">↩ Back to Grid</button>
+          <div class="row" style="gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="switchView('profile')">👤 Profile</button>
+            <button class="btn btn-ghost btn-sm" onclick="switchView('trophies')">🏆 Trophies</button>
+            <button class="btn btn-ghost btn-sm" onclick="switchView('terminal')">💻 Terminal</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ==================== VIEW: ARCADE ==================== -->
+    <div id="view-arcade" class="view">
+      <div class="section-header">
+        <h1>Cyber Arcade</h1>
+        <p>Speed-test your reflexes and survival instincts with adrenaline-fueled mini-games. Each game awards bonus XP.</p>
+      </div>
+
+      <div class="arcade-cards">
+        <div class="arcade-card">
+          <div class="arcade-icon">🎣</div>
+          <div>
+            <div class="arcade-name">Phishing Swipe</div>
+            <div class="arcade-desc">5 rapid-fire emails. Identify scams vs. legitimate senders as fast as you can. +20 XP per correct call.</div>
+          </div>
+          <button class="btn btn-purple btn-sm" onclick="startArcade('phish')">▶ Start Game</button>
+        </div>
+        <div class="arcade-card">
+          <div class="arcade-icon">🗝️</div>
+          <div>
+            <div class="arcade-name">Password Titan</div>
+            <div class="arcade-desc">Build a password that takes Trillions of Years to crack as fast as possible. Real entropy math. +100 XP bonus.</div>
+          </div>
+          <button class="btn btn-success btn-sm" onclick="startArcade('pwd')">▶ Speed Run</button>
+        </div>
+        <div class="arcade-card">
+          <div class="arcade-icon">🧠</div>
+          <div>
+            <div class="arcade-name">Daily Cyber Trivia</div>
+            <div class="arcade-desc">Daily rotating survival questions. Answer correctly for +50 XP. New question set available every 24 hours.</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="startArcade('trivia')">▶ Play Trivia</button>
+        </div>
+        <div class="arcade-card">
+          <div class="arcade-icon">🔍</div>
+          <div>
+            <div class="arcade-name">Log Hunter</div>
+            <div class="arcade-desc">Inspect a simulated server log dump. Find the attack pattern hidden among 20 lines before time runs out. +75 XP.</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="startArcade('log')">▶ Hunt Threats</button>
+        </div>
+        <div class="arcade-card">
+          <div class="arcade-icon">🏰</div>
+          <div>
+            <div class="arcade-name">Port Defense</div>
+            <div class="arcade-desc">Attackers are knocking. Identify and close dangerous open ports before the breach meter hits zero. +80 XP.</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="startArcade('port')">▶ Defend Ports</button>
+        </div>
+        <div class="arcade-card">
+          <div class="arcade-icon">🎭</div>
+          <div>
+            <div class="arcade-name">Social Engineering Gauntlet</div>
+            <div class="arcade-desc">A series of real-world social engineering scenarios. Recognize the manipulation attempt in each scene. +15 XP each.</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="startArcade('social')">▶ Face Gauntlet</button>
+        </div>
+      </div>
+
+      <!-- Active Game Area -->
+      <div class="arcade-game-area" id="arcade-game-area">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
+          <h2 id="arcade-game-title" style="font-size:1.3rem; font-weight:800;">Game</h2>
+          <button class="btn btn-ghost btn-sm" onclick="closeArcade()">✕ Exit Game</button>
+        </div>
+        <div id="arcade-game-content"></div>
+      </div>
+    </div>
+
+
+    <!-- ==================== VIEW: TERMINAL ==================== -->
+    <div id="view-terminal" class="view">
+      <div class="section-header">
+        <h1>Hacker Terminal</h1>
+        <p>A fully interactive CLI synced with your dashboard. Command history (↑↓), tab hints, and realistic security tool output.</p>
+      </div>
+
+      <div class="row" style="margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="termRun('help')">help</button>
+        <button class="btn btn-secondary btn-sm" onclick="termRun('profile')">profile</button>
+        <button class="btn btn-secondary btn-sm" onclick="termRun('lesson 1')">lesson 1</button>
+        <button class="btn btn-secondary btn-sm" onclick="termRun('quiz 1 c')">quiz 1</button>
+        <button class="btn btn-secondary btn-sm" onclick="termRun('scan')">scan</button>
+        <button class="btn btn-secondary btn-sm" onclick="termRun('hint')">hint</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearTerm()">Clear</button>
+      </div>
+
+      <div class="terminal-wrap">
+        <div class="term-titlebar">
+          <div class="term-dots">
+            <div class="term-dot dot-red"></div>
+            <div class="term-dot dot-yellow"></div>
+            <div class="term-dot dot-green"></div>
+          </div>
+          <div class="term-title" id="term-session-label">cyberzero@neural-grid — bash</div>
+          <div style="font-size:0.75rem; color:var(--c-text-muted);">↑↓ History &nbsp;|&nbsp; Tab Hints</div>
+        </div>
+
+        <div class="term-screen" id="term-screen">
+          <div class="term-out info">  ██████╗██╗   ██╗██████╗ ███████╗██████╗ ███████╗███████╗██████╗  ██████╗</div>
+          <div class="term-out info"> ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗╚════██║██╔════╝██╔══██╗██╔═══██╗</div>
+          <div class="term-out info"> ██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝    ██╔╝█████╗  ██████╔╝██║   ██║</div>
+          <div class="term-out info"> ██║       ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗   ██╔╝ ██╔══╝  ██╔══██╗██║   ██║</div>
+          <div class="term-out info"> ╚██████╗   ██║   ██████╔╝███████╗██║  ██║   ██║  ███████╗██║  ██║╚██████╔╝</div>
+          <div class="term-out info">  ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝   ╚═╝  ╚══════╝╚═╝  ╚═╝ ╚═════╝</div>
+          <div class="term-out" style="color:var(--c-text-dim);">Neural Defense Grid — Unified Interactive Console v3.0</div>
+          <div class="term-out" style="color:var(--c-text-dim);">Type <b>help</b> for commands · ↑↓ arrows for history · Tab for hints</div>
+          <div class="term-out" style="color:var(--c-border);">────────────────────────────────────────────────────────────────</div>
+        </div>
+
+        <div class="term-input-row">
+          <span class="term-prompt-label" id="term-prompt">⚡ cyberzero(cadet)&nbsp;»&nbsp;</span>
+          <input
+            class="term-text-input"
+            id="term-input"
+            type="text"
+            placeholder="Type command here..."
+            autocomplete="off"
+            spellcheck="false"
+            onkeydown="termKeyDown(event)"
+          >
+          <button class="btn btn-primary btn-sm" onclick="termSubmit()">Run ↵</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        <span style="font-size:0.8rem; color:var(--c-text-dim);">Keyboard shortcuts:</span>
+        <span class="kbd">↑</span><span style="font-size:0.8rem; color:var(--c-text-dim);">prev command</span>
+        <span class="kbd">↓</span><span style="font-size:0.8rem; color:var(--c-text-dim);">next command</span>
+        <span class="kbd">Tab</span><span style="font-size:0.8rem; color:var(--c-text-dim);">complete hint</span>
+        <span class="kbd">Ctrl+L</span><span style="font-size:0.8rem; color:var(--c-text-dim);">clear</span>
+      </div>
+    </div>
+
+
+    <!-- ==================== VIEW: PROFILE ==================== -->
+    <div id="view-profile" class="view">
+      <!-- Profile Hero -->
+      <div class="profile-hero">
+        <div class="profile-left">
+          <div class="profile-avatar" id="profile-avatar">🛡️</div>
+          <div>
+            <div class="profile-name" id="profile-name">Operative Guardian</div>
+            <div class="profile-rank" id="profile-rank">Level 1 — Cyber Cadet</div>
+            <div class="profile-xp-bar">
+              <div class="xp-track-label">
+                <span id="profile-xp-label">0 XP</span>
+                <span id="profile-next-label">→ Level 2: 100 XP</span>
+              </div>
+              <div class="xp-bar-bg"><div class="xp-bar-fill" id="profile-xp-bar" style="width:5%"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="col" style="gap:10px; align-items:flex-start; flex-wrap:wrap;">
+          <div class="row">
+            <input class="input" id="callsign-input" type="text" placeholder="Change operative callsign..." style="max-width:220px; background:var(--c-surface-2);">
+            <button class="btn btn-primary btn-sm" onclick="updateCallsign()">Save</button>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="resetProgress()">🔄 Reset All Progress</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stat-grid-wide" style="margin-bottom:32px;">
+        <div class="stat-panel">
+          <div class="stat-val" id="stat-xp">0</div>
+          <div class="stat-label">Total XP</div>
+        </div>
+        <div class="stat-panel">
+          <div class="stat-val" id="stat-combo">0×</div>
+          <div class="stat-label">Combo Streak</div>
+        </div>
+        <div class="stat-panel">
+          <div class="stat-val" id="stat-badges">0/22</div>
+          <div class="stat-label">Badges Earned</div>
+        </div>
+        <div class="stat-panel">
+          <div class="stat-val" id="stat-bosses">0/4</div>
+          <div class="stat-label">Bosses Defeated</div>
+        </div>
+        <div class="stat-panel">
+          <div class="stat-val" id="stat-level">1</div>
+          <div class="stat-label">Operative Level</div>
+        </div>
+      </div>
+
+      <!-- Avatar Picker -->
+      <div class="card" style="margin-bottom:32px;">
+        <div class="section-title" style="margin-bottom:16px;">🎨 Equip Avatar</div>
+        <div class="avatar-grid" id="avatar-grid">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW: TROPHIES ==================== -->
+    <div id="view-trophies" class="view">
+      <!-- Trophy Room -->
+      <div class="section-title" style="margin-bottom:16px;">🏆 Trophy Room — Badge Collection</div>
+      <div class="trophy-grid" id="trophy-grid">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Diploma -->
+      <div class="diploma" id="diploma">
+        <div style="font-size:3rem;" id="diploma-avatar">🛡️</div>
+        <h1>Certificate of Grandmaster Mastery</h1>
+        <p style="color:var(--c-text-dim); font-size:0.9rem;">This officially certifies that</p>
+        <h2 id="diploma-name">Operative Guardian</h2>
+        <p>has successfully mastered all 22 interactive cyberdefense training modules, conquered all 4 tactical Boss Sieges, and demonstrated superior competency across the full spectrum of cybersecurity defense disciplines.</p>
+        <h3 style="color:var(--c-yellow); font-size:1.4rem; margin-top:20px;">Rank: GRANDMASTER CYBER SENTINEL 👑</h3>
+        <p id="diploma-date" style="color:var(--c-text-dim); font-size:0.85rem; margin-top:8px;"></p>
+        <button class="btn btn-primary btn-lg" style="margin-top:24px;" onclick="window.print()">🖨️ Print Diploma PDF</button>
+      </div>
+    </div>
+
+  </main><!-- /main-content -->
+</div><!-- /app-shell -->
+
+
+<!-- ============================================================ -->
+<!-- CY-BOT PANEL                                                  -->
+<!-- ============================================================ -->
+<div class="cybot-backdrop" id="cybot-backdrop" onclick="toggleCybot()"></div>
+<aside class="cybot-panel" id="cybot-panel">
+  <div class="cybot-header">
+    <div class="cybot-title">
+      <span>🤖</span>
+      <div>
+        <div>Cy-Bot Chief Mentor</div>
+        <div style="font-size:0.7rem; font-weight:500; color:var(--c-text-dim); margin-top:1px;">AI-powered zero-jargon guide</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span class="cybot-status">ONLINE</span>
+      <button onclick="toggleCybot()" style="background:none;border:none;color:var(--c-text-dim);font-size:1.4rem;cursor:pointer;padding:4px;">×</button>
+    </div>
+  </div>
+  <div class="cybot-messages" id="cybot-messages">
+    <div class="cybot-msg msg-bot">
+      <b>🤖 Cy-Bot:</b> Greetings Operative! I'm your 24/7 cybersecurity mentor with knowledge covering all 22 modules. Ask me anything — 'What is SQL injection?', 'How does 2FA work?', or click <b>Guide Me</b> inside any Lab for step-by-step instructions.
+    </div>
+  </div>
+  <div class="cybot-input-area">
+    <input class="cybot-text-input" id="cybot-input" type="text" placeholder="Ask any security question..." onkeydown="if(event.key==='Enter') cybotSend()">
+    <button class="btn btn-purple btn-sm" onclick="cybotSend()">Send</button>
+  </div>
+</aside>
+
+
+<!-- ============================================================ -->
+<!-- SETTINGS MODAL                                                 -->
+<!-- ============================================================ -->
+<div class="modal-backdrop" id="settings-modal">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">⚙️ Settings</div>
+
+    <div class="modal-section">
+      <div class="modal-section-label">Visual Theme</div>
+      <div class="theme-swatches">
+        <div class="theme-swatch swatch-obsidian active" id="swatch-obsidian" onclick="setTheme('obsidian')">
+          <span>🛡️</span><span style="font-size:0.6rem;">Obsidian</span>
+        </div>
+        <div class="theme-swatch swatch-matrix" id="swatch-matrix" onclick="setTheme('matrix')">
+          <span>🟩</span><span style="font-size:0.6rem;">Matrix</span>
+        </div>
+        <div class="theme-swatch swatch-light" id="swatch-light" onclick="setTheme('light')">
+          <span>☀️</span><span style="font-size:0.6rem;">Light</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-label">Sound</div>
+      <div class="col" style="gap:12px;">
+        <div class="toggle-row" onclick="toggleSound()">
+          <div class="toggle-switch" id="sound-toggle"></div>
+          <div class="toggle-label">Mechanical Keyboard Sounds</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-label">Keyboard Shortcuts</div>
+      <div class="col" style="gap:8px; font-size:0.85rem; color:var(--c-text-dim);">
+        <div class="row"><span class="kbd">Ctrl+K</span> Command Palette (jump anywhere)</div>
+        <div class="row"><span class="kbd">Ctrl+/</span> Toggle Cy-Bot</div>
+        <div class="row"><span class="kbd">Ctrl+T</span> Jump to Terminal</div>
+        <div class="row"><span class="kbd">Esc</span> Close panels / Back to grid</div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-label">Progress Data</div>
+      <div class="row" style="flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="exportProgress()">📤 Export JSON</button>
+        <button class="btn btn-danger btn-sm" onclick="resetProgress(); toggleSettings()">🗑️ Reset All Progress</button>
+      </div>
+    </div>
+
+    <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="toggleSettings()">Close</button>
+  </div>
+</div>
+<div class="modal-backdrop" id="settings-modal-bg" onclick="toggleSettings()" style="background:transparent; z-index:1999;"></div>
+
+
+<!-- ============================================================ -->
+<!-- COMMAND PALETTE                                               -->
+<!-- ============================================================ -->
+<div class="cmd-palette" id="cmd-palette">
+  <input class="cmd-palette-input" id="cmd-palette-input" type="text" placeholder="⌨️  Jump to module, view, or command..." oninput="filterPalette()" onkeydown="palettKeyNav(event)" autocomplete="off">
+  <div class="cmd-results" id="cmd-results"></div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- TOAST CONTAINER                                                -->
+<!-- ============================================================ -->
+<div class="toast-container" id="toast-container"></div>
+
+
+<!-- ============================================================ -->
+<!-- SCRIPTS                                                        -->
+<!-- ============================================================ -->
+<script src="curriculum.js"></script>
+<script src="cybot.js"></script>
+<script src="labs.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
