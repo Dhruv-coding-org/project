@@ -16,6 +16,8 @@ function App() {
     leaveRoom,
     sendChat,
     changeSource,
+    changeSubtitles,
+    togglePermissions,
     emitPlay,
     emitPause,
     emitSeek,
@@ -53,6 +55,8 @@ function App() {
         onLeave={leaveRoom}
         onSendChat={sendChat}
         onChangeSource={changeSource}
+        onChangeSubtitles={changeSubtitles}
+        onTogglePermissions={togglePermissions}
         onEmitPlay={emitPlay}
         onEmitPause={emitPause}
         onEmitSeek={emitSeek}

@@ -15,6 +15,17 @@ const peerConfig: RTCConfiguration = {
   ],
 };
 
+// Cap WebRTC video bitrate to reduce host upload bandwidth
+const MAX_VIDEO_BITRATE_KBPS = 1500;
+
+function setMediaBitrate(sdp: string, maxBitrateKbps: number): string {
+  // Insert b=AS line after each a=mid:video line
+  return sdp.replace(
+    /(a=mid:video\r\n)/g,
+    `$1b=AS:${maxBitrateKbps}\r\n`
+  );
+}
+
 export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
   const peers = useRef<Map<string, RTCPeerConnection>>(new Map());
   const remoteStream = useRef<MediaStream | null>(null);
@@ -62,6 +73,9 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
   async function renegotiate(peerId: string, pc: RTCPeerConnection) {
     try {
       const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+      if (offer.sdp) {
+        offer.sdp = setMediaBitrate(offer.sdp, MAX_VIDEO_BITRATE_KBPS);
+      }
       await pc.setLocalDescription(offer);
       socket.emit('webrtc-offer', { targetId: peerId, offer });
       console.log('[WebRTC] Re-negotiation offer sent to', peerId);
@@ -111,6 +125,9 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
     };
 
     const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+    if (offer.sdp) {
+      offer.sdp = setMediaBitrate(offer.sdp, MAX_VIDEO_BITRATE_KBPS);
+    }
     await pc.setLocalDescription(offer);
     socket.emit('webrtc-offer', { targetId: peerId, offer });
   }, []);

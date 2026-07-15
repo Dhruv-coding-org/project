@@ -5,17 +5,22 @@ import './SourcePicker.css';
 
 interface SourcePickerProps {
   onConfirm: (source: VideoSource) => void;
+  onSubtitlesLoaded?: (subtitleText: string | null) => void;
   onClose: () => void;
 }
 
 type PickerTab = 'url' | 'file';
 
-export function SourcePicker({ onConfirm, onClose }: SourcePickerProps) {
+export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePickerProps) {
   const [tab, setTab] = useState<PickerTab>('url');
   const [url, setUrl] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
+
+  // Subtitle state
+  const [subtitleText, setSubtitleText] = useState<string | null>(null);
+  const [subtitleName, setSubtitleName] = useState('');
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -24,6 +29,27 @@ export function SourcePicker({ onConfirm, onClose }: SourcePickerProps) {
     setFileUrl(objectUrl);
     setFileName(file.name);
     setError('');
+  }
+
+  function handleSubtitleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSubtitleName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = reader.result as string;
+      setSubtitleText(text);
+    };
+    reader.onerror = () => {
+      setError('Failed to read subtitle file.');
+    };
+    reader.readAsText(file);
+  }
+
+  function clearSubtitle() {
+    setSubtitleText(null);
+    setSubtitleName('');
   }
 
   function handleSubmit(e: FormEvent) {
@@ -37,6 +63,10 @@ export function SourcePicker({ onConfirm, onClose }: SourcePickerProps) {
     } else {
       if (!fileUrl) { setError('Please select a video file.'); return; }
       onConfirm({ sourceType: 'file', url: fileUrl });
+    }
+    // Broadcast subtitles separately
+    if (onSubtitlesLoaded) {
+      onSubtitlesLoaded(subtitleText);
     }
   }
 
@@ -136,6 +166,53 @@ export function SourcePicker({ onConfirm, onClose }: SourcePickerProps) {
             </div>
           )}
 
+          {/* ── Subtitle file (optional) ─────────────────── */}
+          <div className="source-subtitle-section">
+            <div className="source-subtitle-divider">
+              <span>Optional</span>
+            </div>
+            <div className="source-field">
+              <label className="source-label">Subtitle File (.srt, .vtt)</label>
+              <label className="source-file-label source-subtitle-label" htmlFor="source-subtitle-input">
+                {subtitleName ? (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path d="M2 7l4 4 6-7" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="source-file-name">{subtitleName}</span>
+                    <button
+                      type="button"
+                      className="source-subtitle-clear"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); clearSubtitle(); }}
+                      aria-label="Remove subtitle"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.1"/>
+                      <path d="M3 8h4M3 10h6" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+                    </svg>
+                    <span>Add subtitles (optional)</span>
+                  </>
+                )}
+              </label>
+              <input
+                id="source-subtitle-input"
+                type="file"
+                accept=".vtt,.srt"
+                onChange={handleSubtitleFile}
+                className="source-file-input-hidden"
+                aria-label="Select subtitle file"
+              />
+              <p className="source-hint">Foreign language? Add .srt or .vtt subtitles for everyone in the room.</p>
+            </div>
+          </div>
+
           {error && (
             <div className="source-error animate-fade-in" role="alert">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -163,3 +240,4 @@ export function SourcePicker({ onConfirm, onClose }: SourcePickerProps) {
     </div>
   );
 }
+

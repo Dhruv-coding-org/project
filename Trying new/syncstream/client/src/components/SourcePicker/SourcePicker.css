@@ -196,3 +196,55 @@
     padding: 16px;
   }
 }
+
+/* ── Subtitle section ────────────────────────────── */
+.source-subtitle-section {
+  margin-top: 2px;
+}
+
+.source-subtitle-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.source-subtitle-divider::before,
+.source-subtitle-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.source-subtitle-divider span {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.source-subtitle-label {
+  padding: 16px;
+  border-width: 1.5px;
+  font-size: 12px;
+}
+
+.source-subtitle-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-xs);
+  margin-left: auto;
+  transition: all var(--transition-fast);
+}
+.source-subtitle-clear:hover {
+  color: var(--error);
+  background: rgba(248, 113, 113, 0.1);
+}

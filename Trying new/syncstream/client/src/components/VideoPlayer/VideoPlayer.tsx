@@ -7,12 +7,16 @@ import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 import { socket } from '../../socket';
 import type { VideoSource } from '../../hooks/useRoom';
+import type { SubtitleCue } from '../../utils/subtitleParser';
 import { VideoPlayerSkeleton } from '../Skeleton/Skeleton';
+import { SubtitleOverlay } from './SubtitleOverlay';
 import './VideoPlayer.css';
 
 interface VideoPlayerProps {
   isHost: boolean;
+  canControl: boolean;
   videoSource: VideoSource | null;
+  subtitleCues: SubtitleCue[];
   onPlay: (currentTime: number) => void;
   onPause: (currentTime: number) => void;
   onSeek: (currentTime: number) => void;
@@ -30,11 +34,11 @@ function formatDuration(secs: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-type VideoEl = HTMLVideoElement & { captureStream?: () => MediaStream; mozCaptureStream?: () => MediaStream };
+type VideoEl = HTMLVideoElement & { captureStream?: (fps?: number) => MediaStream; mozCaptureStream?: (fps?: number) => MediaStream };
 
-function captureVideoStream(video: VideoEl): MediaStream | null {
-  if (typeof video.captureStream === 'function') return video.captureStream();
-  if (typeof video.mozCaptureStream === 'function') return video.mozCaptureStream();
+function captureVideoStream(video: VideoEl, fps = 24): MediaStream | null {
+  if (typeof video.captureStream === 'function') return video.captureStream(fps);
+  if (typeof video.mozCaptureStream === 'function') return video.mozCaptureStream(fps);
   return null;
 }
 
@@ -57,7 +61,9 @@ function extractVimeoId(url: string): string | null {
 
 export function VideoPlayer({
   isHost,
+  canControl,
   videoSource,
+  subtitleCues,
   onPlay,
   onPause,
   onSeek,
@@ -89,6 +95,13 @@ export function VideoPlayer({
   const streamCaptured = useRef(false);
   const audioCaptureRetry = useRef<ReturnType<typeof setInterval> | null>(null);
   const plyrInitialized = useRef(false);
+  const [subtitlesVisible, setSubtitlesVisible] = useState(true);
+  const [guestLocalFileUrl, setGuestLocalFileUrl] = useState<string | null>(null);
+
+  // Web Audio API refs for persistent audio streaming
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const audioDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
 
   const isUrl = videoSource?.sourceType === 'url';
   const isFile = videoSource?.sourceType === 'file';
@@ -212,6 +225,35 @@ export function VideoPlayer({
   }, [videoSource, isEmbedProvider, isYouTube, isVimeo]);
 
   // ── (1b) SOURCE MANAGEMENT FOR FILE / DIRECT URL ────────────────
+  // Web Audio bridge — keeps audio alive for WebRTC on long files
+  function setupWebAudioBridge(video: HTMLVideoElement) {
+    if (audioSourceRef.current) return; // Already setup
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioCtx();
+      audioCtxRef.current = ctx;
+      const source = ctx.createMediaElementSource(video);
+      const dest = ctx.createMediaStreamDestination();
+      source.connect(dest);
+      source.connect(ctx.destination); // local playback for host
+      audioSourceRef.current = source;
+      audioDestRef.current = dest;
+      console.log('[WebAudio] AudioContext bridge connected');
+    } catch (e) {
+      console.warn('[WebAudio] Failed to initialize AudioContext:', e);
+    }
+  }
+
+  function cleanupWebAudio() {
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current = null;
+    }
+    audioSourceRef.current = null;
+    audioDestRef.current = null;
+  }
+
   useEffect(() => {
     if (isEmbedProvider) return;
 
@@ -224,6 +266,8 @@ export function VideoPlayer({
     setAudioReady(false);
     setVideoReady(false);
     streamCaptured.current = false;
+    setGuestLocalFileUrl(null);
+    cleanupWebAudio();
 
     // Clean up Plyr if switching from embed to file
     if (plyrRef.current) {
@@ -244,7 +288,6 @@ export function VideoPlayer({
     }
 
     if (isUrl) {
-      // Direct URL (mp4, webm, etc.) — use native video element
       const video = videoRef.current;
       if (!video) return;
       usingObjectStream.current = false;
@@ -264,6 +307,10 @@ export function VideoPlayer({
         if (video.srcObject) video.srcObject = null;
         video.src = videoSource.url;
         video.load();
+        // Setup Web Audio bridge for persistent audio on long files
+        setTimeout(() => {
+          if (videoRef.current) setupWebAudioBridge(videoRef.current);
+        }, 200);
       } else {
         usingObjectStream.current = false;
         setIsLoading(true);
@@ -273,6 +320,10 @@ export function VideoPlayer({
         video.load();
       }
     }
+
+    return () => {
+      cleanupWebAudio();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoSource, isHost, isEmbedProvider]);
 
@@ -502,37 +553,45 @@ export function VideoPlayer({
   }
 
   function attemptStreamCapture(video: VideoEl) {
-    const stream = captureVideoStream(video);
+    const stream = captureVideoStream(video, 24);
     if (!stream) {
       console.warn('[VideoPlayer] captureStream() returned null');
       return;
     }
 
-    const audioTracks = stream.getAudioTracks();
     const videoTracks = stream.getVideoTracks();
-    console.log('[VideoPlayer] captureStream — audio:', audioTracks.length, 'video:', videoTracks.length);
+    console.log('[VideoPlayer] captureStream — audio:', stream.getAudioTracks().length, 'video:', videoTracks.length);
 
     if (videoTracks.length > 0) {
+      // Replace captured audio with persistent Web Audio track
+      if (audioDestRef.current) {
+        const webaudioTrack = audioDestRef.current.stream.getAudioTracks()[0];
+        if (webaudioTrack) {
+          stream.getAudioTracks().forEach(t => stream.removeTrack(t));
+          stream.addTrack(webaudioTrack);
+          console.log('[WebAudio] WebRTC stream audio replaced with persistent AudioContext track');
+          setAudioReady(true);
+        }
+      }
+
       onLocalStream(stream);
       streamCaptured.current = true;
 
-      // Extended retry for audio on long videos — 120 retries with exponential backoff (up to 60s+)
-      if (audioTracks.length === 0) {
-        console.log('[VideoPlayer] No audio tracks yet — starting extended retry for long video');
+      if (stream.getAudioTracks().length === 0 && !audioDestRef.current) {
+        // Fallback: retry for audio if Web Audio bridge wasn't set up
+        console.log('[VideoPlayer] No audio tracks — starting retry');
         setAudioReady(false);
         let retries = 0;
-        const maxRetries = 120;
+        const maxRetries = 60;
         if (audioCaptureRetry.current) clearInterval(audioCaptureRetry.current);
 
-        const getDelay = (r: number) => Math.min(500 * Math.pow(1.1, r), 3000);
-        
         function retryAudio() {
           retries++;
-          const freshStream = captureVideoStream(video);
+          const freshStream = captureVideoStream(video, 24);
           if (freshStream) {
             const freshAudio = freshStream.getAudioTracks();
             if (freshAudio.length > 0) {
-              console.log('[VideoPlayer] Audio tracks now available (retry', retries, ') — re-sending stream');
+              console.log('[VideoPlayer] Audio tracks now available (retry', retries, ')');
               streamCaptured.current = true;
               setAudioReady(true);
               onLocalStream(freshStream);
@@ -542,16 +601,14 @@ export function VideoPlayer({
             }
           }
           if (retries >= maxRetries) {
-            console.warn('[VideoPlayer] Max audio retries reached — file may not have an audio track');
+            console.warn('[VideoPlayer] Max audio retries reached');
             setAudioReady(false);
             if (audioCaptureRetry.current) clearTimeout(audioCaptureRetry.current);
             audioCaptureRetry.current = null;
             return;
           }
-          // Schedule next retry with exponential backoff
-          audioCaptureRetry.current = setTimeout(retryAudio, getDelay(retries));
+          audioCaptureRetry.current = setTimeout(retryAudio, Math.min(500 * Math.pow(1.1, retries), 3000));
         }
-
         audioCaptureRetry.current = setTimeout(retryAudio, 500);
       } else {
         setAudioReady(true);
@@ -590,7 +647,7 @@ export function VideoPlayer({
 
   // ── (6) CONTROLS ───────────────────────────────────────────────
   const togglePlay = useCallback(() => {
-    if (!isHost) return;
+    if (!canControl) return;
 
     if (isEmbedProvider && plyrRef.current) {
       const player = plyrRef.current;
@@ -616,10 +673,10 @@ export function VideoPlayer({
         onPause(video.currentTime);
       }
     }
-  }, [isHost, onPlay, onPause, isEmbedProvider]);
+  }, [canControl, onPlay, onPause, isEmbedProvider]);
 
   function handleSeek(e: ChangeEvent<HTMLInputElement>) {
-    if (!isHost) return;
+    if (!canControl) return;
     const t = Number(e.target.value);
     setCurrentTime(t);
     onSeek(t);
@@ -705,7 +762,7 @@ export function VideoPlayer({
           toggleFullscreen();
           break;
         case 'ArrowLeft':
-          if (!isHost) return;
+          if (!canControl) return;
           e.preventDefault();
           {
             const newTime = Math.max(0, currentTime - 10);
@@ -720,7 +777,7 @@ export function VideoPlayer({
           }
           break;
         case 'ArrowRight':
-          if (!isHost) return;
+          if (!canControl) return;
           e.preventDefault();
           {
             const newTime = Math.min(duration, currentTime + 10);
@@ -734,12 +791,17 @@ export function VideoPlayer({
             }
           }
           break;
+        case 'c':
+        case 'C':
+          e.preventDefault();
+          setSubtitlesVisible(v => !v);
+          break;
       }
     }
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, toggleMute, toggleFullscreen, isHost, currentTime, duration, isEmbedProvider, onSeek]);
+  }, [togglePlay, toggleMute, toggleFullscreen, canControl, currentTime, duration, isEmbedProvider, onSeek]);
 
   useEffect(() => {
     const onFsChange = () => setFullscreen(!!document.fullscreenElement);
@@ -754,7 +816,7 @@ export function VideoPlayer({
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const bufferedPercent = duration > 0 ? (buffered / duration) * 100 : 0;
   const hasSource = !!videoSource;
-  const guestWaitingForStream = !isHost && isFile && !usingObjectStream.current;
+  const guestWaitingForStream = !isHost && isFile && !usingObjectStream.current && !guestLocalFileUrl;
 
   if (showSkeleton) {
     return <VideoPlayerSkeleton />;
@@ -785,7 +847,7 @@ export function VideoPlayer({
           onWaiting={handleNativeWaiting}
           onCanPlay={handleNativeCanPlay}
           onError={handleNativeError}
-          onClick={isHost ? togglePlay : undefined}
+          onClick={canControl ? togglePlay : undefined}
           playsInline
           muted={false}
         />
@@ -793,10 +855,21 @@ export function VideoPlayer({
 
       {/* Plyr embed target for YouTube/Vimeo */}
       {hasSource && isEmbedProvider && (
-        <div className="vp-video vp-plyr-wrapper" onClick={isHost ? togglePlay : undefined}>
+        <div className="vp-video vp-plyr-wrapper">
           <div id="plyr-embed-target" data-plyr-provider="" data-plyr-embed-id="" />
+          <div
+            className="vp-iframe-overlay"
+            onClick={canControl ? togglePlay : undefined}
+          />
         </div>
       )}
+
+      {/* Subtitle overlay */}
+      <SubtitleOverlay
+        cues={subtitleCues}
+        currentTime={currentTime}
+        visible={subtitlesVisible && subtitleCues.length > 0}
+      />
 
       {/* Loading overlay with status */}
       {isLoading && hasSource && (
@@ -902,7 +975,7 @@ export function VideoPlayer({
 
       {/* Controls overlay */}
       <div className="vp-controls" role="group" aria-label="Video controls">
-        {!isHost && hasSource && !guestWaitingForStream && (
+        {!canControl && hasSource && !guestWaitingForStream && (
           <div className="vp-guest-notice">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2"/>
@@ -926,7 +999,7 @@ export function VideoPlayer({
               step={0.1}
               value={currentTime}
               onChange={handleSeek}
-              disabled={!isHost || !hasSource || duration === 0}
+              disabled={!canControl || !hasSource || duration === 0}
               aria-label="Seek"
               id="vp-seek-slider"
             />
@@ -938,7 +1011,7 @@ export function VideoPlayer({
             <button
               className="btn-icon vp-btn vp-play-btn"
               onClick={togglePlay}
-              disabled={!isHost || !hasSource}
+              disabled={!canControl || !hasSource}
               aria-label={playing ? 'Pause' : 'Play'}
               id="vp-play-btn"
             >
@@ -958,14 +1031,14 @@ export function VideoPlayer({
             <button
               className="btn-icon vp-btn"
               onClick={() => {
-                if (!isHost) return;
+                if (!canControl) return;
                 const t = Math.max(0, currentTime - 10);
                 setCurrentTime(t);
                 onSeek(t);
                 if (isEmbedProvider && plyrRef.current) plyrRef.current.currentTime = t;
                 else if (videoRef.current) videoRef.current.currentTime = t;
               }}
-              disabled={!isHost || !hasSource}
+              disabled={!canControl || !hasSource}
               aria-label="Skip back 10 seconds"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -978,14 +1051,14 @@ export function VideoPlayer({
             <button
               className="btn-icon vp-btn"
               onClick={() => {
-                if (!isHost) return;
+                if (!canControl) return;
                 const t = Math.min(duration, currentTime + 10);
                 setCurrentTime(t);
                 onSeek(t);
                 if (isEmbedProvider && plyrRef.current) plyrRef.current.currentTime = t;
                 else if (videoRef.current) videoRef.current.currentTime = t;
               }}
-              disabled={!isHost || !hasSource}
+              disabled={!canControl || !hasSource}
               aria-label="Skip forward 10 seconds"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -1035,6 +1108,21 @@ export function VideoPlayer({
           </div>
 
           <div className="vp-right-controls">
+            {/* Subtitle CC toggle */}
+            {subtitleCues.length > 0 && (
+              <button
+                className={`btn-icon vp-btn vp-cc-btn ${subtitlesVisible ? 'active' : ''}`}
+                onClick={() => setSubtitlesVisible(v => !v)}
+                aria-label={subtitlesVisible ? 'Hide subtitles' : 'Show subtitles'}
+                id="vp-cc-btn"
+                title={subtitlesVisible ? 'Hide subtitles (C)' : 'Show subtitles (C)'}
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <rect x="1" y="3" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.3"/>
+                  <text x="9" y="12" textAnchor="middle" fill="currentColor" fontSize="7" fontWeight="700" fontFamily="var(--font)">CC</text>
+                </svg>
+              </button>
+            )}
             {/* Audio status indicator */}
             {hasSource && !isEmbedProvider && !audioReady && isHost && isFile && (
               <span className="vp-audio-status" title="Audio track loading...">

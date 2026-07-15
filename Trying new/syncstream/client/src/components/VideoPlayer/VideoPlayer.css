@@ -480,3 +480,124 @@
     height: 36px;
   }
 }
+
+/* ── Subtitle overlay ────────────────────────────── */
+.vp-subtitle-container {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  max-width: 80%;
+  pointer-events: none;
+  animation: fadeIn 0.2s var(--ease) both;
+}
+
+.vp-subtitle-text {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  padding: 6px 16px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 768px) {
+  .vp-subtitle-container {
+    bottom: 60px;
+    max-width: 92%;
+  }
+  .vp-subtitle-text {
+    font-size: 13px;
+    padding: 4px 12px;
+  }
+}
+
+/* ── CC toggle button ────────────────────────────── */
+.vp-cc-btn.active {
+  color: var(--accent-bright) !important;
+  background: rgba(124, 58, 237, 0.15) !important;
+}
+
+/* ── Iframe overlay (YouTube/Vimeo click interceptor) ── */
+.vp-iframe-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Ensure controls sit above the iframe overlay */
+.vp-controls {
+  z-index: 3;
+}
+
+/* ── Plyr embed sizing fixes ─────────────────────── */
+.vp-plyr-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.vp-plyr-wrapper .plyr,
+.vp-plyr-wrapper .plyr__video-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── Co-viewing banner ────────────────────────────── */
+.vp-coview-banner {
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 24px;
+  background: rgba(10, 14, 28, 0.92);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: fadeIn 0.3s var(--ease) both;
+  max-width: 90%;
+  text-align: center;
+}
+
+.vp-coview-banner p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.vp-coview-banner label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  color: var(--accent-bright);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.vp-coview-banner label:hover {
+  background: rgba(124, 58, 237, 0.15);
+  border-color: var(--accent);
+}
+
+.vp-coview-banner input[type="file"] {
+  display: none;
+}

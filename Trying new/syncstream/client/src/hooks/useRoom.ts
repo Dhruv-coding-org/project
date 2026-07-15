@@ -10,6 +10,8 @@ export interface RoomUser {
 export interface VideoSource {
   sourceType: 'url' | 'file';
   url: string;
+  subtitleText?: string;
+  subtitleName?: string;
 }
 
 export interface PlaybackState {
@@ -28,6 +30,8 @@ export interface RoomState {
   chatMessages: ChatMessage[];
   connected: boolean;
   error: string | null;
+  subtitleText: string | null;
+  controlsOpen: boolean;
 }
 
 export interface ChatMessage {
@@ -54,6 +58,8 @@ export function useRoom() {
     chatMessages: [],
     connected: false,
     error: null,
+    subtitleText: null,
+    controlsOpen: false,
   });
 
   // ── Socket event listeners ──────────────────────────────────────────
@@ -106,6 +112,14 @@ export function useRoom() {
       }));
     });
 
+    socket.on('subtitles-changed', ({ subtitleText }: { subtitleText: string | null }) => {
+      setState(s => ({ ...s, subtitleText }));
+    });
+
+    socket.on('permissions-changed', ({ controlsOpen }: { controlsOpen: boolean }) => {
+      setState(s => ({ ...s, controlsOpen }));
+    });
+
     socket.on('chat-message', (msg: Omit<ChatMessage, 'id' | 'isMine'>) => {
       setState(s => ({
         ...s,
@@ -134,6 +148,8 @@ export function useRoom() {
       socket.off('source-changed');
       socket.off('chat-message');
       socket.off('sync-request-from-guest');
+      socket.off('subtitles-changed');
+      socket.off('permissions-changed');
     };
   }, []);
 
@@ -171,6 +187,8 @@ export function useRoom() {
         playbackState?: PlaybackState;
         hostId?: string;
         error?: string;
+        subtitleText?: string | null;
+        controlsOpen?: boolean;
       }) => {
         if (res.success) {
           setState(s => ({
@@ -182,6 +200,8 @@ export function useRoom() {
             videoSource: res.videoSource ?? null,
             playbackState: res.playbackState ?? { playing: false, currentTime: 0 },
             error: null,
+            subtitleText: res.subtitleText ?? null,
+            controlsOpen: res.controlsOpen ?? false,
           }));
           resolve();
         } else {
@@ -205,6 +225,8 @@ export function useRoom() {
       chatMessages: [],
       connected: false,
       error: null,
+      subtitleText: null,
+      controlsOpen: false,
     });
   }, []);
 
@@ -215,6 +237,16 @@ export function useRoom() {
   const changeSource = useCallback((source: VideoSource) => {
     socket.emit('change-source', source);
     setState(s => ({ ...s, videoSource: source, playbackState: { playing: false, currentTime: 0 } }));
+  }, []);
+
+  const changeSubtitles = useCallback((subtitleText: string | null) => {
+    socket.emit('change-subtitles', { subtitleText });
+    setState(s => ({ ...s, subtitleText }));
+  }, []);
+
+  const togglePermissions = useCallback((open: boolean) => {
+    socket.emit('toggle-permissions', { open });
+    setState(s => ({ ...s, controlsOpen: open }));
   }, []);
 
   const emitPlay  = useCallback((currentTime: number) => socket.emit('sync-play',  { currentTime }), []);
@@ -228,6 +260,8 @@ export function useRoom() {
     leaveRoom,
     sendChat,
     changeSource,
+    changeSubtitles,
+    togglePermissions,
     emitPlay,
     emitPause,
     emitSeek,

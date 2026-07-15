@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import type { RoomState, VideoSource } from '../../hooks/useRoom';
 import { useWebRTC } from '../../hooks/useWebRTC';
 import { VideoPlayer } from '../VideoPlayer/VideoPlayer';
@@ -6,6 +6,8 @@ import { UserList } from '../UserList/UserList';
 import { Chat } from '../Chat/Chat';
 import { SourcePicker } from '../SourcePicker/SourcePicker';
 import { RoomSkeleton } from '../Skeleton/Skeleton';
+import { parseSubtitles } from '../../utils/subtitleParser';
+import type { SubtitleCue } from '../../utils/subtitleParser';
 import { socket } from '../../socket';
 import './Room.css';
 
@@ -14,6 +16,8 @@ interface RoomProps {
   onLeave: () => void;
   onSendChat: (msg: string) => void;
   onChangeSource: (source: VideoSource) => void;
+  onChangeSubtitles: (text: string | null) => void;
+  onTogglePermissions: (open: boolean) => void;
   onEmitPlay: (t: number) => void;
   onEmitPause: (t: number) => void;
   onEmitSeek: (t: number) => void;
@@ -24,6 +28,8 @@ export function Room({
   onLeave,
   onSendChat,
   onChangeSource,
+  onChangeSubtitles,
+  onTogglePermissions,
   onEmitPlay,
   onEmitPause,
   onEmitSeek,
@@ -38,6 +44,14 @@ export function Room({
     hostId: state.hostId,
     localStream,
   });
+
+  const canControl = state.isHost || state.controlsOpen;
+
+  // Parse subtitle text into cues
+  const subtitleCues: SubtitleCue[] = useMemo(() => {
+    if (!state.subtitleText) return [];
+    return parseSubtitles(state.subtitleText);
+  }, [state.subtitleText]);
 
   // Show skeleton briefly on mount
   useEffect(() => {
@@ -80,6 +94,10 @@ export function Room({
   function handleSourceConfirm(source: VideoSource) {
     onChangeSource(source);
     setShowSourcePicker(false);
+  }
+
+  function handleSubtitlesLoaded(text: string | null) {
+    onChangeSubtitles(text);
   }
 
   // Host clicks logo → reload room (re-sync everything)
@@ -172,6 +190,27 @@ export function Room({
         </div>
 
         <div className="room-header-right">
+          {/* Permissions toggle (host-only) */}
+          {state.isHost && (
+            <button
+              className={`btn btn-ghost room-permissions-btn ${state.controlsOpen ? 'active' : ''}`}
+              onClick={() => onTogglePermissions(!state.controlsOpen)}
+              title={state.controlsOpen ? 'Everyone can control — click to lock' : 'Only host controls — click to unlock'}
+              id="room-permissions-btn"
+            >
+              {state.controlsOpen ? (
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="2" y="7" width="10" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
+                  <path d="M4 7V4.5a3 3 0 016 0" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="2" y="7" width="10" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
+                  <path d="M4 7V4.5a3 3 0 016 0V7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                </svg>
+              )}
+            </button>
+          )}
           {state.isHost && (
             <button
               className="btn btn-ghost room-source-btn"
@@ -206,7 +245,9 @@ export function Room({
         <main className="room-main">
           <VideoPlayer
             isHost={state.isHost}
+            canControl={canControl}
             videoSource={state.videoSource}
+            subtitleCues={subtitleCues}
             onPlay={onEmitPlay}
             onPause={onEmitPause}
             onSeek={onEmitSeek}
@@ -236,9 +277,11 @@ export function Room({
       {showSourcePicker && (
         <SourcePicker
           onConfirm={handleSourceConfirm}
+          onSubtitlesLoaded={handleSubtitlesLoaded}
           onClose={() => setShowSourcePicker(false)}
         />
       )}
     </div>
   );
 }
+

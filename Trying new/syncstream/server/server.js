@@ -44,7 +44,9 @@ io.on('connection', (socket) => {
       users: new Map(),
       videoSource: null,
       playbackState: { playing: false, currentTime: 0 },
-      hostId: socket.id
+      hostId: socket.id,
+      subtitleText: null,
+      controlsOpen: false
     };
     room.users.set(socket.id, { username, isHost: true });
     rooms.set(roomCode, room);
@@ -73,7 +75,9 @@ io.on('connection', (socket) => {
       isHost: false,
       videoSource: room.videoSource,
       playbackState: room.playbackState,
-      hostId: room.hostId
+      hostId: room.hostId,
+      subtitleText: room.subtitleText,
+      controlsOpen: room.controlsOpen
     });
 
     io.to(code).emit('room-users', getUserList(code));
@@ -107,7 +111,7 @@ io.on('connection', (socket) => {
   socket.on('sync-play', ({ currentTime }) => {
     const room = rooms.get(socket.roomCode);
     if (room) {
-      if (room.hostId !== socket.id) return; // SECURITY: Only host can sync
+      if (room.hostId !== socket.id && !room.controlsOpen) return;
       room.playbackState = { playing: true, currentTime };
       socket.to(socket.roomCode).emit('sync-play', { currentTime });
     }
@@ -116,7 +120,7 @@ io.on('connection', (socket) => {
   socket.on('sync-pause', ({ currentTime }) => {
     const room = rooms.get(socket.roomCode);
     if (room) {
-      if (room.hostId !== socket.id) return; // SECURITY: Only host can sync
+      if (room.hostId !== socket.id && !room.controlsOpen) return;
       room.playbackState = { playing: false, currentTime };
       socket.to(socket.roomCode).emit('sync-pause', { currentTime });
     }
@@ -125,7 +129,7 @@ io.on('connection', (socket) => {
   socket.on('sync-seek', ({ currentTime }) => {
     const room = rooms.get(socket.roomCode);
     if (room) {
-      if (room.hostId !== socket.id) return; // SECURITY: Only host can sync
+      if (room.hostId !== socket.id && !room.controlsOpen) return;
       room.playbackState.currentTime = currentTime;
       socket.to(socket.roomCode).emit('sync-seek', { currentTime });
     }
@@ -168,6 +172,29 @@ io.on('connection', (socket) => {
       room.videoSource = { sourceType, url };
       room.playbackState = { playing: false, currentTime: 0 };
       socket.to(socket.roomCode).emit('source-changed', { sourceType, url });
+    }
+  });
+
+  // ─── Subtitles ───────────────────────────────────────────────
+
+  socket.on('change-subtitles', ({ subtitleText }) => {
+    const room = rooms.get(socket.roomCode);
+    if (room) {
+      if (room.hostId !== socket.id) return; // SECURITY: Only host can set subtitles
+      room.subtitleText = subtitleText;
+      socket.to(socket.roomCode).emit('subtitles-changed', { subtitleText });
+    }
+  });
+
+  // ─── Permissions ────────────────────────────────────────────
+
+  socket.on('toggle-permissions', ({ open }) => {
+    const room = rooms.get(socket.roomCode);
+    if (room) {
+      if (room.hostId !== socket.id) return; // SECURITY: Only host can toggle
+      room.controlsOpen = !!open;
+      io.to(socket.roomCode).emit('permissions-changed', { controlsOpen: room.controlsOpen });
+      console.log(`✦ Room ${socket.roomCode} controls ${room.controlsOpen ? 'opened' : 'locked'}`);
     }
   });
 

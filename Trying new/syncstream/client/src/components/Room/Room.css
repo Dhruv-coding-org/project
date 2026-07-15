@@ -168,6 +168,18 @@
   gap: 8px;
 }
 
+.room-permissions-btn {
+  padding: 7px 12px;
+  font-size: 12px;
+  gap: 6px;
+  color: var(--text-muted) !important;
+}
+.room-permissions-btn.active {
+  color: var(--accent-bright) !important;
+  background: rgba(124, 58, 237, 0.15) !important;
+  border-color: var(--accent-border) !important;
+}
+
 .room-source-btn {
   padding: 7px 16px;
   font-size: 12px;
