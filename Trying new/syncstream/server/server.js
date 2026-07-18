@@ -31,6 +31,26 @@ function getUserList(roomCode) {
   return users;
 }
 
+// ── Rate Limiting ──────────────────────────────────────────────
+const rateLimits = new Map(); // socketId -> { event -> { count, resetTime } }
+
+function rateLimit(socketId, event, maxPerSecond) {
+  const now = Date.now();
+  if (!rateLimits.has(socketId)) rateLimits.set(socketId, {});
+  const limits = rateLimits.get(socketId);
+
+  if (!limits[event] || now > limits[event].resetTime) {
+    limits[event] = { count: 1, resetTime: now + 1000 };
+    return false; // Not rate-limited
+  }
+
+  limits[event].count++;
+  if (limits[event].count > maxPerSecond) {
+    return true; // Rate-limited
+  }
+  return false;
+}
+
 io.on('connection', (socket) => {
   console.log(`✦ User connected: ${socket.id}`);
 
@@ -130,6 +150,7 @@ io.on('connection', (socket) => {
     const room = rooms.get(socket.roomCode);
     if (room) {
       if (room.hostId !== socket.id && !room.controlsOpen) return;
+      if (rateLimit(socket.id, 'sync-seek', 5)) return; // 5/sec max
       room.playbackState.currentTime = currentTime;
       socket.to(socket.roomCode).emit('sync-seek', { currentTime });
     }
@@ -169,6 +190,7 @@ io.on('connection', (socket) => {
     const room = rooms.get(socket.roomCode);
     if (room) {
       if (room.hostId !== socket.id) return; // SECURITY: Only host can change source
+      if (rateLimit(socket.id, 'change-source', 1)) return; // 1/sec max
       room.videoSource = { sourceType, url };
       room.playbackState = { playing: false, currentTime: 0 };
       socket.to(socket.roomCode).emit('source-changed', { sourceType, url });
@@ -203,6 +225,7 @@ io.on('connection', (socket) => {
   socket.on('chat-message', ({ message }) => {
     const room = rooms.get(socket.roomCode);
     if (room) {
+      if (rateLimit(socket.id, 'chat-message', 3)) return; // 3/sec max
       const user = room.users.get(socket.id);
       io.to(socket.roomCode).emit('chat-message', {
         username: user?.username || 'Unknown',
@@ -236,6 +259,15 @@ io.on('connection', (socket) => {
         if (newHost) newHost.isHost = true;
         io.to(roomCode).emit('host-changed', { newHostId });
         console.log(`✦ Host migrated to ${newHost?.username} in room ${roomCode}`);
+
+        // If the disconnected host was streaming a local file, clear it
+        // (the blob: URL is dead since it belonged to the original host's browser)
+        if (room.videoSource && room.videoSource.sourceType === 'file') {
+          room.videoSource = null;
+          room.playbackState = { playing: false, currentTime: 0 };
+          io.to(roomCode).emit('source-changed', { sourceType: null, url: null });
+          console.log(`✦ Cleared dead file source in room ${roomCode} after host migration`);
+        }
       }
       io.to(roomCode).emit('room-users', getUserList(roomCode));
       io.to(roomCode).emit('user-left', { username: user?.username, socketId: socket.id });

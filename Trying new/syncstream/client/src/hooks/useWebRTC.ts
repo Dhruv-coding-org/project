@@ -63,6 +63,9 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
         const newTrackCount = localStream.getTracks().length;
         const senderCount = senders.filter(s => s.track).length;
         if (newTrackCount > senderCount) {
+          // Safety guard: only renegotiate if genuinely new tracks were added
+          // With the compositor, streams should have both audio+video from the start
+          console.warn('[WebRTC] Late track detected — renegotiating. Tracks:', newTrackCount, 'Senders:', senderCount);
           renegotiate(peerId, pc);
         }
       }

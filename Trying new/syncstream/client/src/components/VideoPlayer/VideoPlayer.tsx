@@ -2,7 +2,7 @@ import {
   useRef, useEffect, useState, useCallback
 } from 'react';
 import type { ChangeEvent } from 'react';
-// @ts-ignore - Plyr types sometimes incorrectly report missing default export in IDEs
+// @ts-expect-error - Plyr types sometimes incorrectly report missing default export in IDEs
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 import { socket } from '../../socket';
@@ -90,10 +90,11 @@ export function VideoPlayer({
   const [videoReady, setVideoReady] = useState(false);
   const [syncDrift, setSyncDrift] = useState(0);
   const [showSyncBanner, setShowSyncBanner] = useState(false);
+  const [guestAudioBlocked, setGuestAudioBlocked] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const usingObjectStream = useRef(false);
+  const [usingObjectStreamState, setUsingObjectStreamState] = useState(false);
   const streamCaptured = useRef(false);
-  const audioCaptureRetry = useRef<ReturnType<typeof setInterval> | null>(null);
   const plyrInitialized = useRef(false);
   const [subtitlesVisible, setSubtitlesVisible] = useState(true);
   const [guestLocalFileUrl, setGuestLocalFileUrl] = useState<string | null>(null);
@@ -126,6 +127,7 @@ export function VideoPlayer({
       plyrInitialized.current = false;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlaying(false);
     setCurrentTime(0);
     setDuration(0);
@@ -225,24 +227,70 @@ export function VideoPlayer({
   }, [videoSource, isEmbedProvider, isYouTube, isVimeo]);
 
   // ── (1b) SOURCE MANAGEMENT FOR FILE / DIRECT URL ────────────────
-  // Web Audio bridge — keeps audio alive for WebRTC on long files
-  function setupWebAudioBridge(video: HTMLVideoElement) {
-    if (audioSourceRef.current) return; // Already setup
+  // Async MediaStream Compositor — deterministic audio/video extraction without retry loops
+  async function composeStreamWithAudio(video: VideoEl): Promise<MediaStream | null> {
+    const rawStream = captureVideoStream(video, 24);
+    if (!rawStream) {
+      console.warn('[Compositor] captureStream() returned null');
+      return null;
+    }
+
+    const masterStream = new MediaStream();
+    const videoTracks = rawStream.getVideoTracks();
+    const nativeAudioTracks = rawStream.getAudioTracks();
+
+    // Step 1: Add video tracks
+    videoTracks.forEach(t => masterStream.addTrack(t));
+    if (videoTracks.length === 0) {
+      console.warn('[Compositor] No video tracks captured');
+      return null;
+    }
+
+    // Step 2: Prefer native audio tracks if available and live
+    const liveNativeAudio = nativeAudioTracks.filter(t => t.readyState === 'live');
+    if (liveNativeAudio.length > 0) {
+      masterStream.addTrack(liveNativeAudio[0]);
+      console.log('[Compositor] Using native captureStream audio track');
+      setAudioReady(true);
+      return masterStream;
+    }
+
+    // Step 3: Fallback — Web Audio bridge (only if native audio absent)
+    console.log('[Compositor] No native audio — initializing Web Audio bridge');
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       const ctx = new AudioCtx();
+
+      // Ensure AudioContext is running (not suspended by autoplay policy)
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+      if (ctx.state !== 'running') {
+        console.warn('[Compositor] AudioContext state:', ctx.state, '— audio may be silent');
+      }
+
       audioCtxRef.current = ctx;
       const source = ctx.createMediaElementSource(video);
       const dest = ctx.createMediaStreamDestination();
       source.connect(dest);
-      source.connect(ctx.destination); // local playback for host
+      source.connect(ctx.destination); // Host local playback
       audioSourceRef.current = source;
       audioDestRef.current = dest;
-      console.log('[WebAudio] AudioContext bridge connected');
+
+      const bridgeAudioTrack = dest.stream.getAudioTracks()[0];
+      if (bridgeAudioTrack && bridgeAudioTrack.readyState === 'live') {
+        masterStream.addTrack(bridgeAudioTrack);
+        console.log('[Compositor] Web Audio bridge audio track added');
+        setAudioReady(true);
+      } else {
+        console.warn('[Compositor] Web Audio bridge produced no live audio track');
+      }
     } catch (e) {
-      console.warn('[WebAudio] Failed to initialize AudioContext:', e);
+      console.warn('[Compositor] Failed to initialize AudioContext:', e);
     }
+
+    return masterStream;
   }
 
   function cleanupWebAudio() {
@@ -278,6 +326,7 @@ export function VideoPlayer({
 
     if (!videoSource) {
       usingObjectStream.current = false;
+      setUsingObjectStreamState(false);
       setIsLoading(false);
       if (videoRef.current) {
         if (videoRef.current.srcObject) videoRef.current.srcObject = null;
@@ -291,6 +340,7 @@ export function VideoPlayer({
       const video = videoRef.current;
       if (!video) return;
       usingObjectStream.current = false;
+      setUsingObjectStreamState(false);
       setIsLoading(true);
       setLoadingStatus('Loading video…');
       if (video.srcObject) video.srcObject = null;
@@ -302,17 +352,17 @@ export function VideoPlayer({
 
       if (isHost) {
         usingObjectStream.current = false;
+        setUsingObjectStreamState(false);
         setIsLoading(true);
         setLoadingStatus('Loading video file…');
         if (video.srcObject) video.srcObject = null;
         video.src = videoSource.url;
         video.load();
-        // Setup Web Audio bridge for persistent audio on long files
-        setTimeout(() => {
-          if (videoRef.current) setupWebAudioBridge(videoRef.current);
-        }, 200);
+        // Audio bridge is now initialized on-demand via composeStreamWithAudio()
+        // No premature setTimeout — waits for loadeddata/canplaythrough events
       } else {
         usingObjectStream.current = false;
+        setUsingObjectStreamState(false);
         setIsLoading(true);
         setLoadingStatus('Connecting to host stream…');
         if (video.srcObject) video.srcObject = null;
@@ -376,11 +426,12 @@ export function VideoPlayer({
     socket.on('sync-pause', ({ currentTime: t }: { currentTime: number }) => applySync('pause', t));
     socket.on('sync-seek', ({ currentTime: t }: { currentTime: number }) => applySync('seek', t));
 
-    // Periodic heartbeat sync — track drift for re-sync banner
+    // Periodic heartbeat sync — playbackRate micro-adjustment for smooth drift correction
     socket.on('sync-heartbeat', ({ currentTime: hostTime, playing: hostPlaying }: { currentTime: number; playing: boolean }) => {
       const p = getPlayer();
       if (!p) return;
 
+      // eslint-disable-next-line no-useless-assignment
       let guestTime = 0;
       if (p.type === 'plyr') {
         guestTime = p.player.currentTime;
@@ -391,10 +442,24 @@ export function VideoPlayer({
       const drift = Math.abs(guestTime - hostTime);
       setSyncDrift(drift);
 
+      // Smooth drift correction via playbackRate micro-adjustments
       if (drift > 2) {
+        // Large drift — show banner, let user decide
         setShowSyncBanner(true);
-      } else {
+        // Reset playbackRate if it was adjusted
+        if (p.type !== 'plyr' && p.player.playbackRate !== 1.0) {
+          p.player.playbackRate = 1.0;
+        }
+      } else if (drift > 0.4 && p.type !== 'plyr') {
+        // Small drift — micro-adjust playbackRate to catch up or slow down
         setShowSyncBanner(false);
+        p.player.playbackRate = guestTime < hostTime ? 1.05 : 0.95;
+      } else {
+        // In sync — restore normal playbackRate
+        setShowSyncBanner(false);
+        if (p.type !== 'plyr' && p.player.playbackRate !== 1.0) {
+          p.player.playbackRate = 1.0;
+        }
       }
 
       // Sync play state
@@ -472,6 +537,7 @@ export function VideoPlayer({
         console.log('[VideoPlayer] Stream tracks — audio:', audioTracks.length, 'video:', videoTracks.length);
 
         usingObjectStream.current = true;
+        setUsingObjectStreamState(true);
         video.removeAttribute('src');
         video.srcObject = stream;
         video.volume = volume;
@@ -479,16 +545,15 @@ export function VideoPlayer({
         setMuted(false);
         setVideoReady(videoTracks.length > 0);
         setAudioReady(audioTracks.length > 0);
-        video.play().catch(err => {
+        video.play().then(() => {
+          setGuestAudioBlocked(false);
+        }).catch(err => {
           console.warn('[VideoPlayer] Autoplay blocked:', err.message);
+          // Fallback: play muted and show interactive unmute overlay
           video.muted = true;
-          video.play().then(() => {
-            setTimeout(() => {
-              video.muted = false;
-              video.volume = volume;
-              setMuted(false);
-            }, 100);
-          }).catch(() => {});
+          setMuted(true);
+          setGuestAudioBlocked(true);
+          video.play().catch(() => {});
         });
         setIsLoading(false);
         clearInterval(interval);
@@ -539,7 +604,7 @@ export function VideoPlayer({
     console.log('[VideoPlayer] loadeddata — volume:', video.volume, 'muted:', video.muted, 'duration:', d);
   }
 
-  // Capture stream on canplaythrough with extended retry for audio
+  // Capture stream on canplaythrough — single-pass compositor, zero retries
   function handleNativeCanPlayThrough() {
     setIsLoading(false);
     setAudioReady(true);
@@ -548,72 +613,18 @@ export function VideoPlayer({
     const video = videoRef.current as VideoEl | null;
     if (!video || streamCaptured.current) return;
 
-    console.log('[VideoPlayer] canplaythrough fired — attempting stream capture');
-    attemptStreamCapture(video);
-  }
-
-  function attemptStreamCapture(video: VideoEl) {
-    const stream = captureVideoStream(video, 24);
-    if (!stream) {
-      console.warn('[VideoPlayer] captureStream() returned null');
-      return;
-    }
-
-    const videoTracks = stream.getVideoTracks();
-    console.log('[VideoPlayer] captureStream — audio:', stream.getAudioTracks().length, 'video:', videoTracks.length);
-
-    if (videoTracks.length > 0) {
-      // Replace captured audio with persistent Web Audio track
-      if (audioDestRef.current) {
-        const webaudioTrack = audioDestRef.current.stream.getAudioTracks()[0];
-        if (webaudioTrack) {
-          stream.getAudioTracks().forEach(t => stream.removeTrack(t));
-          stream.addTrack(webaudioTrack);
-          console.log('[WebAudio] WebRTC stream audio replaced with persistent AudioContext track');
-          setAudioReady(true);
-        }
+    console.log('[VideoPlayer] canplaythrough fired — composing master stream');
+    composeStreamWithAudio(video).then(masterStream => {
+      if (masterStream && !streamCaptured.current) {
+        const aTracks = masterStream.getAudioTracks();
+        const vTracks = masterStream.getVideoTracks();
+        console.log('[Compositor] Master stream ready — audio:', aTracks.length, 'video:', vTracks.length);
+        onLocalStream(masterStream);
+        streamCaptured.current = true;
+        setVideoReady(vTracks.length > 0);
+        setAudioReady(aTracks.length > 0);
       }
-
-      onLocalStream(stream);
-      streamCaptured.current = true;
-
-      if (stream.getAudioTracks().length === 0 && !audioDestRef.current) {
-        // Fallback: retry for audio if Web Audio bridge wasn't set up
-        console.log('[VideoPlayer] No audio tracks — starting retry');
-        setAudioReady(false);
-        let retries = 0;
-        const maxRetries = 60;
-        if (audioCaptureRetry.current) clearInterval(audioCaptureRetry.current);
-
-        function retryAudio() {
-          retries++;
-          const freshStream = captureVideoStream(video, 24);
-          if (freshStream) {
-            const freshAudio = freshStream.getAudioTracks();
-            if (freshAudio.length > 0) {
-              console.log('[VideoPlayer] Audio tracks now available (retry', retries, ')');
-              streamCaptured.current = true;
-              setAudioReady(true);
-              onLocalStream(freshStream);
-              if (audioCaptureRetry.current) clearTimeout(audioCaptureRetry.current);
-              audioCaptureRetry.current = null;
-              return;
-            }
-          }
-          if (retries >= maxRetries) {
-            console.warn('[VideoPlayer] Max audio retries reached');
-            setAudioReady(false);
-            if (audioCaptureRetry.current) clearTimeout(audioCaptureRetry.current);
-            audioCaptureRetry.current = null;
-            return;
-          }
-          audioCaptureRetry.current = setTimeout(retryAudio, Math.min(500 * Math.pow(1.1, retries), 3000));
-        }
-        audioCaptureRetry.current = setTimeout(retryAudio, 500);
-      } else {
-        setAudioReady(true);
-      }
-    }
+    });
   }
 
   function handleNativePlay() {
@@ -621,12 +632,14 @@ export function VideoPlayer({
     if (isHost && isFile && !streamCaptured.current) {
       const video = videoRef.current as VideoEl | null;
       if (!video) return;
-      setTimeout(() => {
-        if (!streamCaptured.current && video) {
-          console.log('[VideoPlayer] Fallback: attempting capture on play event');
-          attemptStreamCapture(video);
+      console.log('[VideoPlayer] Fallback: composing stream on play event');
+      composeStreamWithAudio(video).then(masterStream => {
+        if (masterStream && !streamCaptured.current) {
+          onLocalStream(masterStream);
+          streamCaptured.current = true;
+          setAudioReady(masterStream.getAudioTracks().length > 0);
         }
-      }, 500);
+      });
     }
   }
 
@@ -809,14 +822,13 @@ export function VideoPlayer({
     return () => {
       document.removeEventListener('fullscreenchange', onFsChange);
       if (hideTimer.current) clearTimeout(hideTimer.current);
-      if (audioCaptureRetry.current) clearTimeout(audioCaptureRetry.current);
     };
   }, []);
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const bufferedPercent = duration > 0 ? (buffered / duration) * 100 : 0;
   const hasSource = !!videoSource;
-  const guestWaitingForStream = !isHost && isFile && !usingObjectStream.current && !guestLocalFileUrl;
+  const guestWaitingForStream = !isHost && isFile && !usingObjectStreamState && !guestLocalFileUrl;
 
   if (showSkeleton) {
     return <VideoPlayerSkeleton />;
@@ -931,6 +943,34 @@ export function VideoPlayer({
             </svg>
             Re-sync
           </button>
+        </div>
+      )}
+
+      {/* Guest audio blocked overlay — interactive unmute prompt */}
+      {guestAudioBlocked && (
+        <div
+          className="vp-audio-blocked-overlay animate-fade-in"
+          onClick={() => {
+            const video = videoRef.current;
+            if (video) {
+              video.muted = false;
+              video.volume = volume;
+              setMuted(false);
+            }
+            setGuestAudioBlocked(false);
+            socket.emit('request-sync');
+          }}
+          id="vp-unmute-overlay"
+        >
+          <div className="vp-audio-blocked-content">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+              <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M10 12h4l5-4v16l-5-4h-4V12z" fill="currentColor" />
+              <path d="M22 12a5 5 0 010 8M25 9a9 9 0 010 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <p>Click to enable audio</p>
+            <span>Browser blocked autoplay — tap anywhere to join audio</span>
+          </div>
         </div>
       )}
 

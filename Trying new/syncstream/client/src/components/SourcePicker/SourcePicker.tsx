@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import type { VideoSource } from '../../hooks/useRoom';
 import './SourcePicker.css';
@@ -25,11 +25,24 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Revoke previous blob URL to prevent memory leaks on large files
+    if (fileUrl && fileUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(fileUrl);
+    }
     const objectUrl = URL.createObjectURL(file);
     setFileUrl(objectUrl);
     setFileName(file.name);
     setError('');
   }
+
+  // Cleanup blob URL on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (fileUrl && fileUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(fileUrl);
+      }
+    };
+  }, [fileUrl]);
 
   function handleSubtitleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
