@@ -66,6 +66,7 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
           // Safety guard: only renegotiate if genuinely new tracks were added
           // With the compositor, streams should have both audio+video from the start
           console.warn('[WebRTC] Late track detected — renegotiating. Tracks:', newTrackCount, 'Senders:', senderCount);
+          // eslint-disable-next-line react-hooks/immutability
           renegotiate(peerId, pc);
         }
       }
