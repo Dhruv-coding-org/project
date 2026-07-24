@@ -18,6 +18,13 @@ interface UserListProps {
   onToggleDeafen?: () => void;
 }
 
+function getPingQuality(ping?: number) {
+  if (!ping || ping <= 0) return { color: '#10b981', label: 'Good', text: '< 30ms' };
+  if (ping < 70) return { color: '#10b981', label: 'Excellent', text: `${ping}ms` };
+  if (ping < 180) return { color: '#f59e0b', label: 'Fair', text: `${ping}ms` };
+  return { color: '#ef4444', label: 'Poor (Lagging)', text: `${ping}ms` };
+}
+
 export function UserList({
   users,
   hostId,
@@ -128,6 +135,8 @@ export function UserList({
         {users.map((user, index) => {
           const isMe = user.socketId === myId;
           const isHost = user.socketId === hostId;
+          const pingQuality = getPingQuality(user.ping);
+
           return (
             <li
               key={user.socketId}
@@ -135,14 +144,32 @@ export function UserList({
               style={{ animationDelay: `${index * 0.06}s` }}
             >
               <div className="userlist-avatar">
-                {user.username.charAt(0).toUpperCase()}
+                {user.avatar || user.username.charAt(0).toUpperCase()}
               </div>
-              <span className="userlist-username">
-                {user.username}
-                {isMe && <span className="userlist-you"> (you)</span>}
+
+              <div className="userlist-details">
+                <span className="userlist-username">
+                  {user.username}
+                  {isMe && <span className="userlist-you"> (you)</span>}
+                </span>
+                {user.statusMessage && (
+                  <span className="userlist-status-msg">{user.statusMessage}</span>
+                )}
+              </div>
+
+              {/* Real-time Ping Meter */}
+              <span
+                className="user-ping-badge"
+                style={{ color: pingQuality.color }}
+                title={`Network Latency: ${user.ping || 0}ms (${pingQuality.label})`}
+              >
+                <span className="ping-dot" style={{ backgroundColor: pingQuality.color }} />
+                {pingQuality.text}
               </span>
+
               {user.isMuted && <span className="voice-status-tag" title="Muted">🔇</span>}
               {user.isDeafened && <span className="voice-status-tag" title="Deafened">🎧🚫</span>}
+
               {isHost && (
                 <span className="userlist-host-badge" title="Host">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">

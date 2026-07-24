@@ -1,18 +1,23 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
+import { getSavedProfile } from '../../hooks/useRoom';
+import { AVATAR_PRESETS } from '../../constants/avatars';
 import { LobbyCardSkeleton } from '../Skeleton/Skeleton';
 import './Lobby.css';
 
 interface LobbyProps {
-  onCreateRoom: (username: string) => Promise<void>;
-  onJoinRoom: (username: string, roomCode: string) => Promise<void>;
+  onCreateRoom: (username: string, avatar?: string, statusMessage?: string) => Promise<void>;
+  onJoinRoom: (username: string, roomCode: string, avatar?: string, statusMessage?: string) => Promise<void>;
 }
 
 type Tab = 'create' | 'join';
 
 export function Lobby({ onCreateRoom, onJoinRoom }: LobbyProps) {
+  const saved = getSavedProfile();
   const [tab, setTab] = useState<Tab>('create');
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(saved.username || '');
+  const [selectedAvatar, setSelectedAvatar] = useState(saved.avatar || '🍿');
+  const [statusMessage, setStatusMessage] = useState(saved.statusMessage || '');
   const [roomCode, setRoomCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -32,9 +37,9 @@ export function Lobby({ onCreateRoom, onJoinRoom }: LobbyProps) {
     setLoading(true);
     try {
       if (tab === 'create') {
-        await onCreateRoom(username.trim());
+        await onCreateRoom(username.trim(), selectedAvatar, statusMessage.trim());
       } else {
-        await onJoinRoom(username.trim(), roomCode.trim().toUpperCase());
+        await onJoinRoom(username.trim(), roomCode.trim().toUpperCase(), selectedAvatar, statusMessage.trim());
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
@@ -58,82 +63,111 @@ export function Lobby({ onCreateRoom, onJoinRoom }: LobbyProps) {
           <div className="lobby-logo">
             <div className="lobby-logo-icon">
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <circle cx="14" cy="14" r="13" stroke="url(#g1)" strokeWidth="2"/>
-                <path d="M10 9.5L20 14L10 18.5V9.5Z" fill="url(#g1)"/>
+                <circle cx="14" cy="14" r="13" stroke="url(#gl)" strokeWidth="1.8"/>
+                <path d="M11 9.5L19 14L11 18.5V9.5Z" fill="url(#gl)"/>
                 <defs>
-                  <linearGradient id="g1" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#7c3aed"/>
-                    <stop offset="1" stopColor="#a855f7"/>
+                  <linearGradient id="gl" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#7c3aed"/><stop offset="1" stopColor="#a855f7"/>
                   </linearGradient>
                 </defs>
               </svg>
             </div>
             <div>
-              <h1 className="lobby-logo-name">SyncStream</h1>
-              <p className="lobby-logo-tagline">Watch together, in perfect sync</p>
+              <h1 className="lobby-title">SyncStream</h1>
+              <p className="lobby-subtitle">Real-time synchronized video watch parties</p>
             </div>
           </div>
 
-          {/* Tab selector */}
+          {/* Tabs */}
           <div className="lobby-tabs" role="tablist">
             <button
-              role="tab"
-              aria-selected={tab === 'create'}
               className={`lobby-tab ${tab === 'create' ? 'active' : ''}`}
               onClick={() => { setTab('create'); setError(''); }}
-              id="tab-create"
+              role="tab"
+              aria-selected={tab === 'create'}
+              id="tab-create-room"
             >
               Create Room
             </button>
             <button
-              role="tab"
-              aria-selected={tab === 'join'}
               className={`lobby-tab ${tab === 'join' ? 'active' : ''}`}
               onClick={() => { setTab('join'); setError(''); }}
-              id="tab-join"
+              role="tab"
+              aria-selected={tab === 'join'}
+              id="tab-join-room"
             >
               Join Room
             </button>
           </div>
 
           {/* Form */}
-          <form className="lobby-form" onSubmit={handleSubmit} noValidate>
-            <div className="lobby-field">
-              <label htmlFor="lobby-username" className="lobby-label">Your display name</label>
+          <form className="lobby-form" onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="username-input" className="label">Display Name</label>
               <input
-                id="lobby-username"
+                id="username-input"
                 className="input"
                 type="text"
-                placeholder="e.g. Alex"
+                placeholder="Enter your name…"
                 value={username}
-                onChange={e => setUsername(e.target.value)}
-                maxLength={24}
-                autoComplete="off"
+                onChange={e => { setUsername(e.target.value); setError(''); }}
+                maxLength={20}
+                required
                 autoFocus
               />
             </div>
 
+            <div className="form-group">
+              <label htmlFor="status-input" className="label">Status Message (optional)</label>
+              <input
+                id="status-input"
+                className="input"
+                type="text"
+                placeholder='e.g. "Watching Sci-Fi", "Ready!"'
+                value={statusMessage}
+                onChange={e => setStatusMessage(e.target.value)}
+                maxLength={30}
+              />
+            </div>
+
+            {/* Avatar Selection */}
+            <div className="form-group">
+              <label className="label">Choose Avatar ({selectedAvatar})</label>
+              <div className="lobby-avatar-picker">
+                {AVATAR_PRESETS.slice(0, 14).map(preset => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    className={`lobby-avatar-item ${selectedAvatar === preset.icon ? 'selected' : ''}`}
+                    onClick={() => setSelectedAvatar(preset.icon)}
+                    title={preset.label}
+                  >
+                    {preset.icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {tab === 'join' && (
-              <div className="lobby-field animate-slide-up">
-                <label htmlFor="lobby-roomcode" className="lobby-label">Room code</label>
+              <div className="form-group animate-fade-in">
+                <label htmlFor="roomcode-input" className="label">Room Code</label>
                 <input
-                  id="lobby-roomcode"
-                  className="input lobby-code-input"
+                  id="roomcode-input"
+                  className="input input-mono"
                   type="text"
-                  placeholder="e.g. ABCDE1"
+                  placeholder="e.g. A1B2C3"
                   value={roomCode}
-                  onChange={e => setRoomCode(e.target.value.toUpperCase())}
-                  maxLength={6}
-                  autoComplete="off"
+                  onChange={e => { setRoomCode(e.target.value.toUpperCase()); setError(''); }}
+                  maxLength={8}
+                  required
                 />
               </div>
             )}
 
             {error && (
               <div className="lobby-error animate-fade-in" role="alert">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="8" r="7" stroke="#ef4444" strokeWidth="1.5"/>
-                  <path d="M8 5v3M8 11v.5" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round"/>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M7 1a6 6 0 100 12A6 6 0 007 1zm0 3.5v3M7 9.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
                 </svg>
                 {error}
               </div>
@@ -141,34 +175,25 @@ export function Lobby({ onCreateRoom, onJoinRoom }: LobbyProps) {
 
             <button
               type="submit"
-              className="btn btn-primary lobby-submit"
+              className="btn btn-primary lobby-submit-btn"
               disabled={loading}
               id="lobby-submit-btn"
             >
               {loading ? (
-                <span className="lobby-spinner" />
-              ) : tab === 'create' ? (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Create Room
-                </>
+                <span className="flex items-center gap-2">
+                  <span className="spinner" />
+                  {tab === 'create' ? 'Creating room…' : 'Joining room…'}
+                </span>
               ) : (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M6 8l4-3v6L6 8z" fill="currentColor"/>
-                    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/>
-                  </svg>
-                  Join Room
-                </>
+                tab === 'create' ? '✦ Create Room' : '✦ Join Room'
               )}
             </button>
           </form>
 
-          <p className="lobby-footer">
-            Up to 6 people per room · No account needed
-          </p>
+          {/* Quick instructions footer */}
+          <div className="lobby-info-footer">
+            <p>🔒 End-to-end P2P streaming • ⚡ Real-time sync • 👥 Up to 6 people</p>
+          </div>
         </div>
       )}
     </div>

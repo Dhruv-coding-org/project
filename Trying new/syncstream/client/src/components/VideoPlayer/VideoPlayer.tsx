@@ -205,13 +205,18 @@ export function VideoPlayer({
         if (isFinite(player.duration)) setDuration(player.duration);
       });
 
-      player.on('playing', () => setPlaying(true));
+      player.on('playing', () => {
+        setPlaying(true);
+        setIsLoading(false);
+      });
       player.on('pause', () => setPlaying(false));
       player.on('ended', () => setPlaying(false));
 
       player.on('waiting', () => {
-        setIsLoading(true);
-        setLoadingStatus('Buffering…');
+        if (!player.playing) {
+          setIsLoading(true);
+          setLoadingStatus('Buffering…');
+        }
       });
       player.on('canplay', () => {
         setIsLoading(false);
@@ -581,6 +586,9 @@ export function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
     setCurrentTime(video.currentTime);
+    if (video.currentTime > 0) {
+      setIsLoading(false);
+    }
     if (video.buffered.length > 0) {
       setBuffered(video.buffered.end(video.buffered.length - 1));
     }
@@ -641,6 +649,7 @@ export function VideoPlayer({
 
   function handleNativePlay() {
     setPlaying(true);
+    setIsLoading(false);
     if (isHost && isFile && !streamCaptured.current) {
       const video = videoRef.current as VideoEl | null;
       if (!video) return;
@@ -681,6 +690,8 @@ export function VideoPlayer({
     }
   }
   function handleNativeWaiting() {
+    const video = videoRef.current;
+    if (video && video.readyState >= 3) return;
     setIsLoading(true);
     setLoadingStatus('Buffering…');
   }

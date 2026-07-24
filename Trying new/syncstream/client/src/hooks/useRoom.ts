@@ -6,10 +6,32 @@ import type {
   PlaybackState,
   RoomState,
   ChatMessage,
-  EmojiReaction
+  EmojiReaction,
+  UserProfile
 } from '../types';
 
-export type { RoomUser, VideoSource, PlaybackState, RoomState, ChatMessage, EmojiReaction } from '../types';
+export type { RoomUser, VideoSource, PlaybackState, RoomState, ChatMessage, EmojiReaction, UserProfile } from '../types';
+
+export function getSavedProfile(): UserProfile {
+  try {
+    const raw = localStorage.getItem('syncstream_user_profile');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        username: parsed.username || '',
+        avatar: parsed.avatar || '🍿',
+        statusMessage: parsed.statusMessage || ''
+      };
+    }
+  } catch { /* ignore */ }
+  return { username: '', avatar: '🍿', statusMessage: '' };
+}
+
+export function saveProfileToStorage(profile: UserProfile) {
+  try {
+    localStorage.setItem('syncstream_user_profile', JSON.stringify(profile));
+  } catch { /* ignore */ }
+}
 
 export function useRoom() {
   const [state, setState] = useState<RoomState>({
@@ -31,7 +53,7 @@ export function useRoom() {
 
   const rttRef = useRef<number>(0);
 
-  // Measure round trip latency (RTT) every 10s for timestamp offset compensation
+  // Measure round trip latency (RTT) every 3 seconds for real-time ping meters
   useEffect(() => {
     if (!state.connected || !state.roomCode) return;
 
@@ -46,7 +68,7 @@ export function useRoom() {
     };
 
     measureRtt();
-    const interval = setInterval(measureRtt, 10000);
+    const interval = setInterval(measureRtt, 3000);
     return () => clearInterval(interval);
   }, [state.connected, state.roomCode]);
 
@@ -122,7 +144,6 @@ export function useRoom() {
         ...s,
         activeReactions: [...s.activeReactions, reaction]
       }));
-      // Auto-clear reaction particle after animation duration (3 seconds)
       setTimeout(() => {
         setState(s => ({
           ...s,
@@ -164,11 +185,12 @@ export function useRoom() {
     };
   }, []);
 
-  const createRoom = useCallback(({ username }: { username: string }): Promise<string> => {
+  const createRoom = useCallback(({ username, avatar = '🍿', statusMessage = '' }: { username: string; avatar?: string; statusMessage?: string }): Promise<string> => {
     return new Promise((resolve, reject) => {
       if (!socket.connected) socket.connect();
 
-      socket.emit('create-room', { username }, (res: { success: boolean; roomCode?: string; error?: string }) => {
+      saveProfileToStorage({ username, avatar, statusMessage });
+      socket.emit('create-room', { username, avatar, statusMessage }, (res: { success: boolean; roomCode?: string; error?: string }) => {
         if (res.success && res.roomCode) {
           setState(s => ({
             ...s,
@@ -186,11 +208,12 @@ export function useRoom() {
     });
   }, []);
 
-  const joinRoom = useCallback(({ username, roomCode }: { username: string; roomCode: string }): Promise<void> => {
+  const joinRoom = useCallback(({ username, roomCode, avatar = '🍿', statusMessage = '' }: { username: string; roomCode: string; avatar?: string; statusMessage?: string }): Promise<void> => {
     return new Promise((resolve, reject) => {
       if (!socket.connected) socket.connect();
 
-      socket.emit('join-room', { username, roomCode }, (res: {
+      saveProfileToStorage({ username, avatar, statusMessage });
+      socket.emit('join-room', { username, roomCode, avatar, statusMessage }, (res: {
         success: boolean;
         roomCode?: string;
         videoSource?: VideoSource | null;
@@ -222,6 +245,16 @@ export function useRoom() {
         }
       });
     });
+  }, []);
+
+  const updateUserProfile = useCallback(({ username, avatar, statusMessage }: { username: string; avatar: string; statusMessage: string }) => {
+    socket.emit('update-profile', { username, avatar, statusMessage });
+    saveProfileToStorage({ username, avatar, statusMessage });
+    setState(s => ({
+      ...s,
+      username,
+      users: s.users.map(u => u.socketId === socket.id ? { ...u, username, avatar, statusMessage } : u)
+    }));
   }, []);
 
   const leaveRoom = useCallback(() => {
@@ -292,6 +325,7 @@ export function useRoom() {
     state,
     createRoom,
     joinRoom,
+    updateUserProfile,
     leaveRoom,
     sendChat,
     sendReaction,

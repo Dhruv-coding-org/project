@@ -161,6 +161,37 @@
   flex-direction: column;
   gap: 18px;
 }
+
+.lobby-avatar-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.lobby-avatar-item {
+  font-size: 1.25rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lobby-avatar-item:hover,
+.lobby-avatar-item.selected {
+  background: rgba(124, 58, 237, 0.35);
+  border-color: #a855f7;
+  transform: scale(1.15);
+}
 .lobby-field {
   display: flex;
   flex-direction: column;

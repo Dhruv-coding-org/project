@@ -19,12 +19,19 @@ class RoomManager {
     if (!room) return [];
     const users = [];
     room.users.forEach((user, socketId) => {
-      users.push({ socketId, username: user.username, isHost: user.isHost });
+      users.push({
+        socketId,
+        username: user.username,
+        isHost: user.isHost,
+        avatar: user.avatar || '🍿',
+        statusMessage: user.statusMessage || '',
+        ping: user.ping || 0
+      });
     });
     return users;
   }
 
-  createRoom(socketId, username) {
+  createRoom(socketId, username, avatar = '🍿', statusMessage = '') {
     let roomCode = this.generateRoomCode();
     while (this.rooms.has(roomCode)) {
       roomCode = this.generateRoomCode();
@@ -40,13 +47,13 @@ class RoomManager {
       playlist: [],
       playlistIndex: 0
     };
-    room.users.set(socketId, { username, isHost: true });
+    room.users.set(socketId, { username, isHost: true, avatar, statusMessage, ping: 0 });
     this.rooms.set(roomCode, room);
 
     return { roomCode, room };
   }
 
-  joinRoom(roomCode, socketId, username) {
+  joinRoom(roomCode, socketId, username, avatar = '🍿', statusMessage = '') {
     const code = roomCode.toUpperCase().trim();
     const room = this.rooms.get(code);
 
@@ -57,7 +64,7 @@ class RoomManager {
       return { success: false, error: 'Room is full (max 6 people).' };
     }
 
-    room.users.set(socketId, { username, isHost: false });
+    room.users.set(socketId, { username, isHost: false, avatar, statusMessage, ping: 0 });
     return {
       success: true,
       roomCode: code,

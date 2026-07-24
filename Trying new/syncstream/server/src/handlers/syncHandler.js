@@ -2,8 +2,19 @@ const roomManager = require('../services/roomManager');
 const rateLimiter = require('../services/rateLimiter');
 
 function registerSyncHandlers(io, socket) {
-  // Latency calculation helper
   socket.on('ping-rtt', (clientTime, callback) => {
+    const room = roomManager.getRoom(socket.roomCode);
+    if (room && clientTime) {
+      const user = room.users.get(socket.id);
+      if (user) {
+        const rtt = Math.max(1, Math.round(Date.now() - clientTime));
+        const oldPing = user.ping || 0;
+        user.ping = rtt;
+        if (Math.abs(rtt - oldPing) > 15) {
+          io.to(socket.roomCode).emit('room-users', roomManager.getUserList(socket.roomCode));
+        }
+      }
+    }
     if (typeof callback === 'function') {
       callback({ clientTime, serverTime: Date.now() });
     }

@@ -2,8 +2,17 @@ export interface RoomUser {
   socketId: string;
   username: string;
   isHost: boolean;
+  ping?: number;
+  avatar?: string;
+  statusMessage?: string;
   isMuted?: boolean;
   isDeafened?: boolean;
+}
+
+export interface UserProfile {
+  username: string;
+  avatar: string;
+  statusMessage: string;
 }
 
 export interface VideoSource {

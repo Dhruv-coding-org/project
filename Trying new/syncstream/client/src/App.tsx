@@ -13,6 +13,7 @@ function App() {
     state,
     createRoom,
     joinRoom,
+    updateUserProfile,
     leaveRoom,
     sendChat,
     sendReaction,
@@ -36,12 +37,12 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  async function handleCreateRoom(username: string) {
-    await createRoom({ username });
+  async function handleCreateRoom(username: string, avatar?: string, statusMessage?: string) {
+    await createRoom({ username, avatar, statusMessage });
   }
 
-  async function handleJoinRoom(username: string, roomCode: string) {
-    await joinRoom({ username, roomCode });
+  async function handleJoinRoom(username: string, roomCode: string, avatar?: string, statusMessage?: string) {
+    await joinRoom({ username, roomCode, avatar, statusMessage });
   }
 
   if (showSplash) {
@@ -62,6 +63,7 @@ function App() {
         onUpdatePlaylist={updatePlaylist}
         onPlayNextInPlaylist={playNextInPlaylist}
         onUpdateVoiceStatus={updateVoiceStatus}
+        onUpdateUserProfile={updateUserProfile}
         onChangeSource={changeSource}
         onChangeSubtitles={changeSubtitles}
         onTogglePermissions={togglePermissions}

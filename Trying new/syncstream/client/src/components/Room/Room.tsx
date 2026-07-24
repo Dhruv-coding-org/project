@@ -6,9 +6,11 @@ import { UserList } from '../UserList/UserList';
 import { Chat } from '../Chat/Chat';
 import { SourcePicker } from '../SourcePicker/SourcePicker';
 import { PlaylistModal } from '../Playlist/PlaylistModal';
+import { ProfileModal } from '../Profile/ProfileModal';
 import { RoomSkeleton } from '../Skeleton/Skeleton';
 import { parseSubtitles } from '../../utils/subtitleParser';
 import type { SubtitleCue } from '../../utils/subtitleParser';
+import type { UserProfile } from '../../types';
 import { socket } from '../../socket';
 import './Room.css';
 
@@ -20,6 +22,7 @@ interface RoomProps {
   onUpdatePlaylist?: (playlist: VideoSource[]) => void;
   onPlayNextInPlaylist?: () => void;
   onUpdateVoiceStatus?: (isMuted: boolean, isDeafened: boolean) => void;
+  onUpdateUserProfile?: (profile: UserProfile) => void;
   onChangeSource: (source: VideoSource) => void;
   onChangeSubtitles: (text: string | null) => void;
   onTogglePermissions: (open: boolean) => void;
@@ -36,6 +39,7 @@ export function Room({
   onUpdatePlaylist,
   onPlayNextInPlaylist,
   onUpdateVoiceStatus,
+  onUpdateUserProfile,
   onChangeSource,
   onChangeSubtitles,
   onTogglePermissions,
@@ -45,6 +49,7 @@ export function Room({
 }: RoomProps) {
   const [showSourcePicker, setShowSourcePicker] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [copiedToast, setCopiedToast] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
@@ -210,6 +215,15 @@ export function Room({
         </div>
 
         <div className="room-header-right">
+          {/* Profile Settings Button */}
+          <button
+            className="btn btn-ghost room-profile-btn"
+            onClick={() => setShowProfileModal(true)}
+            title="Profile Settings"
+          >
+            👤 Profile
+          </button>
+
           {/* Playlist Queue Button */}
           <button
             className="btn btn-ghost room-playlist-btn"
@@ -332,6 +346,19 @@ export function Room({
           onUpdatePlaylist={onUpdatePlaylist || (() => {})}
           onPlayNext={onPlayNextInPlaylist || (() => {})}
           onClose={() => setShowPlaylistModal(false)}
+        />
+      )}
+
+      {/* Profile modal */}
+      {showProfileModal && (
+        <ProfileModal
+          currentProfile={{
+            username: state.username,
+            avatar: state.users.find(u => u.socketId === socket.id)?.avatar || '🍿',
+            statusMessage: state.users.find(u => u.socketId === socket.id)?.statusMessage || ''
+          }}
+          onSave={onUpdateUserProfile || (() => {})}
+          onClose={() => setShowProfileModal(false)}
         />
       )}
     </div>

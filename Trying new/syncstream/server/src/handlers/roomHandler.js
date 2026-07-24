@@ -2,8 +2,8 @@ const roomManager = require('../services/roomManager');
 const rateLimiter = require('../services/rateLimiter');
 
 function registerRoomHandlers(io, socket) {
-  socket.on('create-room', ({ username }, callback) => {
-    const { roomCode } = roomManager.createRoom(socket.id, username);
+  socket.on('create-room', ({ username, avatar, statusMessage }, callback) => {
+    const { roomCode } = roomManager.createRoom(socket.id, username, avatar, statusMessage);
     socket.join(roomCode);
     socket.roomCode = roomCode;
 
@@ -14,8 +14,8 @@ function registerRoomHandlers(io, socket) {
     console.log(`✦ Room ${roomCode} created by ${username}`);
   });
 
-  socket.on('join-room', ({ roomCode, username }, callback) => {
-    const result = roomManager.joinRoom(roomCode, socket.id, username);
+  socket.on('join-room', ({ roomCode, username, avatar, statusMessage }, callback) => {
+    const result = roomManager.joinRoom(roomCode, socket.id, username, avatar, statusMessage);
     if (!result.success) {
       if (typeof callback === 'function') callback({ success: false, error: result.error });
       return;
@@ -68,6 +68,19 @@ function registerRoomHandlers(io, socket) {
       io.to(roomCode).emit('user-left', { username: res.username, socketId: socket.id });
     }
     console.log(`✦ User disconnected: ${socket.id}`);
+  });
+
+  socket.on('update-profile', ({ username, avatar, statusMessage }) => {
+    const room = roomManager.getRoom(socket.roomCode);
+    if (room) {
+      const user = room.users.get(socket.id);
+      if (user) {
+        if (username) user.username = username;
+        if (avatar) user.avatar = avatar;
+        if (statusMessage !== undefined) user.statusMessage = statusMessage;
+        io.to(socket.roomCode).emit('room-users', roomManager.getUserList(socket.roomCode));
+      }
+    }
   });
 }
 
