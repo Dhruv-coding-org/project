@@ -2,11 +2,10 @@ import {
   useRef, useEffect, useState, useCallback
 } from 'react';
 import type { ChangeEvent } from 'react';
-// @ts-expect-error - Plyr types sometimes incorrectly report missing default export in IDEs
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 import { socket } from '../../socket';
-import type { VideoSource } from '../../hooks/useRoom';
+import type { VideoSource } from '../../types';
 import type { SubtitleCue } from '../../utils/subtitleParser';
 import { VideoPlayerSkeleton } from '../Skeleton/Skeleton';
 import { SubtitleOverlay } from './SubtitleOverlay';
@@ -103,6 +102,7 @@ export function VideoPlayer({
   const audioCtxRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const audioDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const connectedAudioSources = useRef<WeakMap<HTMLVideoElement, MediaElementAudioSourceNode>>(new WeakMap());
 
   const isUrl = videoSource?.sourceType === 'url';
   const isFile = videoSource?.sourceType === 'file';
@@ -223,7 +223,6 @@ export function VideoPlayer({
         plyrInitialized.current = false;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoSource, isEmbedProvider, isYouTube, isVimeo]);
 
   // ── (1b) SOURCE MANAGEMENT FOR FILE / DIRECT URL ────────────────
@@ -271,7 +270,11 @@ export function VideoPlayer({
       }
 
       audioCtxRef.current = ctx;
-      const source = ctx.createMediaElementSource(video);
+      let source = connectedAudioSources.current.get(video);
+      if (!source) {
+        source = ctx.createMediaElementSource(video);
+        connectedAudioSources.current.set(video, source);
+      }
       const dest = ctx.createMediaStreamDestination();
       source.connect(dest);
       source.connect(ctx.destination); // Host local playback
@@ -431,13 +434,9 @@ export function VideoPlayer({
       const p = getPlayer();
       if (!p) return;
 
-      // eslint-disable-next-line no-useless-assignment
-      let guestTime = 0;
-      if (p.type === 'plyr') {
-        guestTime = p.player.currentTime;
-      } else {
-        guestTime = isFinite(p.player.currentTime) ? p.player.currentTime : 0;
-      }
+      const guestTime = p.type === 'plyr'
+        ? p.player.currentTime
+        : (isFinite(p.player.currentTime) ? p.player.currentTime : 0);
 
       const drift = Math.abs(guestTime - hostTime);
       setSyncDrift(drift);

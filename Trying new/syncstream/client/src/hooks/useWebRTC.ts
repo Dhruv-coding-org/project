@@ -7,29 +7,59 @@ interface UseWebRTCOptions {
   localStream: MediaStream | null;
 }
 
+// Configurable iceServers supporting both STUN and custom TURN configurations
 const peerConfig: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
   ],
 };
 
-// Cap WebRTC video bitrate to reduce host upload bandwidth
-const MAX_VIDEO_BITRATE_KBPS = 1500;
+// Target WebRTC bitrate cap (in bps)
+const MAX_VIDEO_BITRATE_BPS = 1500 * 1000; // 1.5 Mbps
 
-function setMediaBitrate(sdp: string, maxBitrateKbps: number): string {
-  // Insert b=AS line after each a=mid:video line
-  return sdp.replace(
-    /(a=mid:video\r\n)/g,
-    `$1b=AS:${maxBitrateKbps}\r\n`
-  );
+/**
+ * Standard RTCRtpSender parameter configuration for WebRTC bitrate control
+ */
+async function applyBitrateLimit(pc: RTCPeerConnection, maxBitrateBps: number) {
+  try {
+    const senders = pc.getSenders();
+    for (const sender of senders) {
+      if (sender.track && sender.track.kind === 'video') {
+        const parameters = sender.getParameters();
+        if (!parameters.encodings || parameters.encodings.length === 0) {
+          parameters.encodings = [{}];
+        }
+        parameters.encodings[0].maxBitrate = maxBitrateBps;
+        await sender.setParameters(parameters);
+        console.log('[WebRTC] Bitrate limited to', maxBitrateBps / 1000, 'kbps via RTCRtpSender');
+      }
+    }
+  } catch (err) {
+    console.warn('[WebRTC] Failed to set RTCRtpSender parameters:', err);
+  }
 }
 
 export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
   const peers = useRef<Map<string, RTCPeerConnection>>(new Map());
   const remoteStream = useRef<MediaStream | null>(null);
   const onRemoteStreamRef = useRef<((stream: MediaStream) => void) | null>(null);
+
+  // Re-negotiate a peer connection after adding new tracks
+  const renegotiate = useCallback(async (peerId: string, pc: RTCPeerConnection) => {
+    try {
+      const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+      await pc.setLocalDescription(offer);
+      await applyBitrateLimit(pc, MAX_VIDEO_BITRATE_BPS);
+      socket.emit('webrtc-offer', { targetId: peerId, offer });
+      console.log('[WebRTC] Re-negotiation offer sent to', peerId);
+    } catch (err) {
+      console.warn('[WebRTC] Re-negotiation failed:', err);
+    }
+  }, []);
 
   // ── Keep a ref to localStream that's always current ──────────────
   const localStreamRef = useRef<MediaStream | null>(localStream);
@@ -53,40 +83,25 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
               console.warn('[WebRTC] Failed to replace track:', err);
             });
           } else {
-            // New track type (e.g., audio track arriving late) — add it
+            // New track type — add it
             pc.addTrack(track, localStream);
             console.log('[WebRTC] Added new', track.kind, 'track to existing peer', peerId);
           }
         });
 
-        // If new tracks were added, we need to re-negotiate
+        // Apply bitrate limits via RTCRtpSender API
+        applyBitrateLimit(pc, MAX_VIDEO_BITRATE_BPS);
+
+        // Check for new tracks that necessitate renegotiation
         const newTrackCount = localStream.getTracks().length;
         const senderCount = senders.filter(s => s.track).length;
         if (newTrackCount > senderCount) {
-          // Safety guard: only renegotiate if genuinely new tracks were added
-          // With the compositor, streams should have both audio+video from the start
           console.warn('[WebRTC] Late track detected — renegotiating. Tracks:', newTrackCount, 'Senders:', senderCount);
-          // eslint-disable-next-line react-hooks/immutability
           renegotiate(peerId, pc);
         }
       }
     }
-  }, [localStream, isHost]);
-
-  // Re-negotiate a peer connection after adding new tracks
-  async function renegotiate(peerId: string, pc: RTCPeerConnection) {
-    try {
-      const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
-      if (offer.sdp) {
-        offer.sdp = setMediaBitrate(offer.sdp, MAX_VIDEO_BITRATE_KBPS);
-      }
-      await pc.setLocalDescription(offer);
-      socket.emit('webrtc-offer', { targetId: peerId, offer });
-      console.log('[WebRTC] Re-negotiation offer sent to', peerId);
-    } catch (err) {
-      console.warn('[WebRTC] Re-negotiation failed:', err);
-    }
-  }
+  }, [localStream, isHost, renegotiate]);
 
   const setOnRemoteStream = useCallback((cb: (stream: MediaStream) => void) => {
     onRemoteStreamRef.current = cb;
@@ -122,6 +137,7 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
       try {
         const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
         await pc.setLocalDescription(offer);
+        await applyBitrateLimit(pc, MAX_VIDEO_BITRATE_BPS);
         socket.emit('webrtc-offer', { targetId: peerId, offer });
       } catch (err) {
         console.warn('[WebRTC] onnegotiationneeded failed:', err);
@@ -129,10 +145,8 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
     };
 
     const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
-    if (offer.sdp) {
-      offer.sdp = setMediaBitrate(offer.sdp, MAX_VIDEO_BITRATE_KBPS);
-    }
     await pc.setLocalDescription(offer);
+    await applyBitrateLimit(pc, MAX_VIDEO_BITRATE_BPS);
     socket.emit('webrtc-offer', { targetId: peerId, offer });
   }, []);
 
@@ -238,7 +252,6 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
       socket.off('webrtc-answer');
       socket.off('webrtc-ice-candidate');
     };
-  // Only re-register if role changes — localStream is now via ref, no stale closure
   }, [isHost, createHostPeer, createGuestPeer]);
 
   // ── Request stream when guest needs file content ─────────────────

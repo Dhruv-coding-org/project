@@ -1,50 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { socket } from '../socket';
+import type {
+  RoomUser,
+  VideoSource,
+  PlaybackState,
+  RoomState,
+  ChatMessage
+} from '../types';
 
-export interface RoomUser {
-  socketId: string;
-  username: string;
-  isHost: boolean;
-}
-
-export interface VideoSource {
-  sourceType: 'url' | 'file';
-  url: string;
-  subtitleText?: string;
-  subtitleName?: string;
-}
-
-export interface PlaybackState {
-  playing: boolean;
-  currentTime: number;
-}
-
-export interface RoomState {
-  roomCode: string | null;
-  username: string;
-  isHost: boolean;
-  users: RoomUser[];
-  hostId: string | null;
-  videoSource: VideoSource | null;
-  playbackState: PlaybackState;
-  chatMessages: ChatMessage[];
-  connected: boolean;
-  error: string | null;
-  subtitleText: string | null;
-  controlsOpen: boolean;
-}
-
-export interface ChatMessage {
-  id: string;
-  username: string;
-  message: string;
-  timestamp: number;
-  senderId: string;
-  isMine: boolean;
-}
-
-interface CreateRoomOptions { username: string; }
-interface JoinRoomOptions   { username: string; roomCode: string; }
+export type { RoomUser, VideoSource, PlaybackState, RoomState, ChatMessage } from '../types';
 
 export function useRoom() {
   const [state, setState] = useState<RoomState>({
@@ -62,8 +26,27 @@ export function useRoom() {
     controlsOpen: false,
   });
 
-  // ── Socket event listeners ──────────────────────────────────────────
-  // ── Helpers ─────────────────────────────────────────────────────────
+  const rttRef = useRef<number>(0);
+
+  // Measure round trip latency (RTT) every 10s for timestamp offset compensation
+  useEffect(() => {
+    if (!state.connected || !state.roomCode) return;
+
+    const measureRtt = () => {
+      const start = Date.now();
+      socket.emit('ping-rtt', start, (res: { clientTime: number; serverTime: number }) => {
+        if (res && res.clientTime) {
+          const rtt = Date.now() - res.clientTime;
+          rttRef.current = rtt;
+        }
+      });
+    };
+
+    measureRtt();
+    const interval = setInterval(measureRtt, 10000);
+    return () => clearInterval(interval);
+  }, [state.connected, state.roomCode]);
+
   const addSystemMessage = (message: string) => {
     setState(s => ({
       ...s,
@@ -131,10 +114,7 @@ export function useRoom() {
       }));
     });
 
-    // Host: respond to guest's manual re-sync request
     socket.on('sync-request-from-guest', ({ guestId }: { guestId: string }) => {
-      // The VideoPlayer will handle sending the actual response
-      // We emit a custom event that the VideoPlayer listens for
       window.dispatchEvent(new CustomEvent('sync-request-from-guest', { detail: { guestId } }));
     });
 
@@ -153,9 +133,7 @@ export function useRoom() {
     };
   }, []);
 
-
-  // ── Actions ─────────────────────────────────────────────────────────
-  const createRoom = useCallback(({ username }: CreateRoomOptions): Promise<string> => {
+  const createRoom = useCallback(({ username }: { username: string }): Promise<string> => {
     return new Promise((resolve, reject) => {
       socket.connect();
       socket.emit('create-room', { username }, (res: { success: boolean; roomCode?: string; error?: string }) => {
@@ -176,7 +154,7 @@ export function useRoom() {
     });
   }, []);
 
-  const joinRoom = useCallback(({ username, roomCode }: JoinRoomOptions): Promise<void> => {
+  const joinRoom = useCallback(({ username, roomCode }: { username: string; roomCode: string }): Promise<void> => {
     return new Promise((resolve, reject) => {
       socket.connect();
       socket.emit('join-room', { username, roomCode }, (res: {
@@ -265,5 +243,6 @@ export function useRoom() {
     emitPlay,
     emitPause,
     emitSeek,
+    rttRef
   };
 }
