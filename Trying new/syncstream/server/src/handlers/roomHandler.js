@@ -34,7 +34,8 @@ function registerRoomHandlers(io, socket) {
         playbackState: room.playbackState,
         hostId: room.hostId,
         subtitleText: room.subtitleText,
-        controlsOpen: room.controlsOpen
+        controlsOpen: room.controlsOpen,
+        playlist: room.playlist
       });
     }
 

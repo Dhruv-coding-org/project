@@ -15,6 +15,10 @@ function App() {
     joinRoom,
     leaveRoom,
     sendChat,
+    sendReaction,
+    updatePlaylist,
+    playNextInPlaylist,
+    updateVoiceStatus,
     changeSource,
     changeSubtitles,
     togglePermissions,
@@ -54,6 +58,10 @@ function App() {
         state={state}
         onLeave={leaveRoom}
         onSendChat={sendChat}
+        onSendReaction={sendReaction}
+        onUpdatePlaylist={updatePlaylist}
+        onPlayNextInPlaylist={playNextInPlaylist}
+        onUpdateVoiceStatus={updateVoiceStatus}
         onChangeSource={changeSource}
         onChangeSubtitles={changeSubtitles}
         onTogglePermissions={togglePermissions}

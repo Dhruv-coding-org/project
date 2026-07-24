@@ -64,6 +64,42 @@ function registerSyncHandlers(io, socket) {
       io.to(guestId).emit('sync-response', { currentTime, playing, serverTimestamp });
     }
   });
+
+  // Reaction events
+  socket.on('send-reaction', ({ emoji }) => {
+    const room = roomManager.getRoom(socket.roomCode);
+    if (room) {
+      const user = room.users.get(socket.id);
+      io.to(socket.roomCode).emit('reaction-received', {
+        id: `react-${Date.now()}-${Math.random()}`,
+        emoji,
+        username: user?.username || 'Guest',
+        senderId: socket.id
+      });
+    }
+  });
+
+  // Playlist management
+  socket.on('playlist-update', ({ playlist }) => {
+    const room = roomManager.getRoom(socket.roomCode);
+    if (room) {
+      if (room.hostId !== socket.id && !room.controlsOpen) return;
+      room.playlist = playlist || [];
+      io.to(socket.roomCode).emit('playlist-changed', { playlist: room.playlist });
+    }
+  });
+
+  socket.on('playlist-next', () => {
+    const room = roomManager.getRoom(socket.roomCode);
+    if (room && room.playlist.length > 0) {
+      if (room.hostId !== socket.id && !room.controlsOpen) return;
+      const nextSource = room.playlist.shift();
+      room.videoSource = nextSource;
+      room.playbackState = { playing: false, currentTime: 0 };
+      io.to(socket.roomCode).emit('playlist-changed', { playlist: room.playlist });
+      io.to(socket.roomCode).emit('source-changed', { sourceType: nextSource.sourceType, url: nextSource.url });
+    }
+  });
 }
 
 module.exports = registerSyncHandlers;

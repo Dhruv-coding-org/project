@@ -7,21 +7,68 @@ import './Chat.css';
 interface ChatProps {
   messages: ChatMessage[];
   onSend: (message: string) => void;
+  onSendReaction?: (emoji: string) => void;
+  onSeek?: (seconds: number) => void;
   mySocketId: string | undefined;
 }
 
-export function Chat({ messages, onSend, mySocketId }: ChatProps) {
+const EMOJI_REACTIONS = ['❤️', '😂', '🔥', '😮', '🎉', '🍿'];
+
+function parseTimestampToSeconds(text: string): number | null {
+  const parts = text.split(':').map(Number);
+  if (parts.some(isNaN)) return null;
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return null;
+}
+
+function renderMessageWithTimestamps(text: string, onSeek?: (seconds: number) => void) {
+  const timestampRegex = /\b(\d{1,2}:\d{2}(?::\d{2})?)\b/g;
+  const parts = [];
+  let lastIdx = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = timestampRegex.exec(text)) !== null) {
+    if (match.index > lastIdx) {
+      parts.push(text.slice(lastIdx, match.index));
+    }
+    const tsStr = match[1];
+    const seconds = parseTimestampToSeconds(tsStr);
+
+    if (seconds !== null && onSeek) {
+      parts.push(
+        <button
+          key={`${tsStr}-${match.index}`}
+          className="chat-timestamp-btn"
+          onClick={() => onSeek(seconds)}
+          title={`Seek video to ${tsStr}`}
+        >
+          ⏱️ {tsStr}
+        </button>
+      );
+    } else {
+      parts.push(tsStr);
+    }
+    lastIdx = match.index + match[0].length;
+  }
+
+  if (lastIdx < text.length) {
+    parts.push(text.slice(lastIdx));
+  }
+
+  return parts.length > 0 ? parts : text;
+}
+
+export function Chat({ messages, onSend, onSendReaction, onSeek, mySocketId }: ChatProps) {
   const [input, setInput] = useState('');
   const [showSkeleton, setShowSkeleton] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Show skeleton briefly
   useEffect(() => {
     const timer = setTimeout(() => setShowSkeleton(false), 500);
     return () => clearTimeout(timer);
   }, []);
 
-  // Auto-scroll to latest message
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -73,7 +120,9 @@ export function Chat({ messages, onSend, mySocketId }: ChatProps) {
                     <span className="chat-sender">{msg.username}</span>
                   )}
                   <div className="chat-bubble">
-                    <span className="chat-text">{msg.message}</span>
+                    <span className="chat-text">
+                      {renderMessageWithTimestamps(msg.message, onSeek)}
+                    </span>
                     <span className="chat-time">{formatTime(msg.timestamp)}</span>
                   </div>
                 </>
@@ -84,12 +133,28 @@ export function Chat({ messages, onSend, mySocketId }: ChatProps) {
         <div ref={bottomRef} />
       </div>
 
+      {/* Floating Emoji Bar */}
+      {onSendReaction && (
+        <div className="chat-emoji-bar">
+          {EMOJI_REACTIONS.map(emoji => (
+            <button
+              key={emoji}
+              className="chat-emoji-btn"
+              onClick={() => onSendReaction(emoji)}
+              title={`React ${emoji}`}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
+
       <form className="chat-input-row" onSubmit={handleSubmit}>
         <input
           id="chat-input"
           className="input chat-input"
           type="text"
-          placeholder="Type a message…"
+          placeholder="Type a message (e.g. 02:15)..."
           value={input}
           onChange={e => setInput(e.target.value)}
           maxLength={300}

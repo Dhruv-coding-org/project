@@ -9,9 +9,28 @@ interface UserListProps {
   hostId: string | null;
   roomCode: string;
   onLeave: () => void;
+  voiceActive?: boolean;
+  isMuted?: boolean;
+  isDeafened?: boolean;
+  onJoinVoice?: () => void;
+  onLeaveVoice?: () => void;
+  onToggleMic?: () => void;
+  onToggleDeafen?: () => void;
 }
 
-export function UserList({ users, hostId, roomCode, onLeave }: UserListProps) {
+export function UserList({
+  users,
+  hostId,
+  roomCode,
+  onLeave,
+  voiceActive,
+  isMuted,
+  isDeafened,
+  onJoinVoice,
+  onLeaveVoice,
+  onToggleMic,
+  onToggleDeafen,
+}: UserListProps) {
   const myId = socket.id;
   const [showSkeleton, setShowSkeleton] = useState(true);
 
@@ -23,7 +42,7 @@ export function UserList({ users, hostId, roomCode, onLeave }: UserListProps) {
   async function copyCode() {
     try {
       await navigator.clipboard.writeText(roomCode);
-    } catch { /* fallback — just ignore */ }
+    } catch { /* fallback */ }
   }
 
   if (showSkeleton) {
@@ -66,6 +85,39 @@ export function UserList({ users, hostId, roomCode, onLeave }: UserListProps) {
         </button>
       </div>
 
+      {/* Voice Chat Control Box */}
+      <div className="voice-control-box">
+        {!voiceActive ? (
+          <button className="btn btn-primary voice-join-btn" onClick={onJoinVoice}>
+            🎙️ Join Voice Chat
+          </button>
+        ) : (
+          <div className="voice-controls-active">
+            <button
+              className={`btn-icon voice-action-btn ${isMuted ? 'muted' : 'active'}`}
+              onClick={onToggleMic}
+              title={isMuted ? 'Unmute Mic' : 'Mute Mic'}
+            >
+              {isMuted ? '🔇' : '🎙️'}
+            </button>
+            <button
+              className={`btn-icon voice-action-btn ${isDeafened ? 'deafened' : 'active'}`}
+              onClick={onToggleDeafen}
+              title={isDeafened ? 'Undeafen' : 'Deafen'}
+            >
+              {isDeafened ? '🚫' : '🎧'}
+            </button>
+            <button
+              className="btn btn-ghost btn-sm voice-disconnect-btn"
+              onClick={onLeaveVoice}
+              title="Leave Voice Chat"
+            >
+              Disconnect
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* User list */}
       <div className="userlist-title">
         <span>Watching</span>
@@ -89,6 +141,8 @@ export function UserList({ users, hostId, roomCode, onLeave }: UserListProps) {
                 {user.username}
                 {isMe && <span className="userlist-you"> (you)</span>}
               </span>
+              {user.isMuted && <span className="voice-status-tag" title="Muted">🔇</span>}
+              {user.isDeafened && <span className="voice-status-tag" title="Deafened">🎧🚫</span>}
               {isHost && (
                 <span className="userlist-host-badge" title="Host">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">

@@ -5,10 +5,11 @@ import type { ChangeEvent } from 'react';
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 import { socket } from '../../socket';
-import type { VideoSource } from '../../types';
+import type { VideoSource, EmojiReaction } from '../../types';
 import type { SubtitleCue } from '../../utils/subtitleParser';
 import { VideoPlayerSkeleton } from '../Skeleton/Skeleton';
 import { SubtitleOverlay } from './SubtitleOverlay';
+import { EmojiReactions } from './EmojiReactions';
 import './VideoPlayer.css';
 
 interface VideoPlayerProps {
@@ -16,9 +17,11 @@ interface VideoPlayerProps {
   canControl: boolean;
   videoSource: VideoSource | null;
   subtitleCues: SubtitleCue[];
+  activeReactions?: EmojiReaction[];
   onPlay: (currentTime: number) => void;
   onPause: (currentTime: number) => void;
   onSeek: (currentTime: number) => void;
+  onEnded?: () => void;
   onLocalStream: (stream: MediaStream) => void;
   remoteStreamRef: React.MutableRefObject<MediaStream | null>;
   onRequestStream: () => void;
@@ -63,9 +66,11 @@ export function VideoPlayer({
   canControl,
   videoSource,
   subtitleCues,
+  activeReactions = [],
   onPlay,
   onPause,
   onSeek,
+  onEnded,
   onLocalStream,
   remoteStreamRef,
   onRequestStream,
@@ -73,10 +78,13 @@ export function VideoPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
+  const [audioBoost, setAudioBoost] = useState(1); // 1.0 = 100%, 3.0 = 300%
+  const [ambientGlow, setAmbientGlow] = useState(true);
   const [muted, setMuted] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
@@ -275,9 +283,14 @@ export function VideoPlayer({
         source = ctx.createMediaElementSource(video);
         connectedAudioSources.current.set(video, source);
       }
+      const gainNode = ctx.createGain();
+      gainNode.gain.value = audioBoost;
+      gainNodeRef.current = gainNode;
+
       const dest = ctx.createMediaStreamDestination();
-      source.connect(dest);
-      source.connect(ctx.destination); // Host local playback
+      source.connect(gainNode);
+      gainNode.connect(dest);
+      gainNode.connect(ctx.destination); // Host local playback
       audioSourceRef.current = source;
       audioDestRef.current = dest;
 
@@ -643,7 +656,30 @@ export function VideoPlayer({
   }
 
   function handleNativePause() { setPlaying(false); }
-  function handleNativeEnded() { setPlaying(false); }
+  function handleNativeEnded() {
+    setPlaying(false);
+    if (onEnded) onEnded();
+  }
+
+  function handleAudioBoostChange(e: ChangeEvent<HTMLInputElement>) {
+    const val = parseFloat(e.target.value);
+    setAudioBoost(val);
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = val;
+    }
+  }
+
+  async function togglePiP() {
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (videoRef.current && document.pictureInPictureEnabled) {
+        await videoRef.current.requestPictureInPicture();
+      }
+    } catch (err) {
+      console.warn('[VideoPlayer] PiP error:', err);
+    }
+  }
   function handleNativeWaiting() {
     setIsLoading(true);
     setLoadingStatus('Buffering…');
@@ -835,13 +871,15 @@ export function VideoPlayer({
 
   return (
     <div
-      className={`vp-container ${showControls || !playing ? 'show-controls' : 'hide-controls'}`}
+      className={`vp-container ${ambientGlow ? 'ambient-glow' : ''} ${showControls || !playing ? 'show-controls' : 'hide-controls'}`}
       ref={containerRef}
       onMouseMove={resetHideTimer}
       onMouseLeave={() => { if (playing) setShowControls(false); }}
       onTouchStart={resetHideTimer}
       tabIndex={0}
     >
+      {/* Live Floating Emoji Reactions Overlay */}
+      <EmojiReactions reactions={activeReactions} />
       {/* Native Video element (for Local Files + Direct URLs) */}
       {(!hasSource || !isEmbedProvider) && (
         <video
@@ -1147,6 +1185,41 @@ export function VideoPlayer({
           </div>
 
           <div className="vp-right-controls">
+            {/* Audio Booster Control */}
+            <div className="vp-volume-group vp-boost-group" title="Audio Booster (up to 300%)">
+              <span className="vp-boost-label">⚡ {Math.round(audioBoost * 100)}%</span>
+              <input
+                type="range"
+                className="vp-volume-slider vp-boost-slider"
+                min={1}
+                max={3}
+                step={0.1}
+                value={audioBoost}
+                onChange={handleAudioBoostChange}
+                aria-label="Audio Boost"
+              />
+            </div>
+
+            {/* Ambient Glow Toggle */}
+            <button
+              className={`btn-icon vp-btn ${ambientGlow ? 'active' : ''}`}
+              onClick={() => setAmbientGlow(g => !g)}
+              title={ambientGlow ? 'Ambient Glow: ON' : 'Ambient Glow: OFF'}
+              aria-label="Toggle Ambient Glow"
+            >
+              ✨
+            </button>
+
+            {/* Picture in Picture Button */}
+            <button
+              className="btn-icon vp-btn"
+              onClick={togglePiP}
+              title="Picture-in-Picture Mode"
+              aria-label="Picture-in-Picture"
+            >
+              📺
+            </button>
+
             {/* Subtitle CC toggle */}
             {subtitleCues.length > 0 && (
               <button

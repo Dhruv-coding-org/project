@@ -1,10 +1,11 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { RoomState, VideoSource } from '../../hooks/useRoom';
 import { useWebRTC } from '../../hooks/useWebRTC';
 import { VideoPlayer } from '../VideoPlayer/VideoPlayer';
 import { UserList } from '../UserList/UserList';
 import { Chat } from '../Chat/Chat';
 import { SourcePicker } from '../SourcePicker/SourcePicker';
+import { PlaylistModal } from '../Playlist/PlaylistModal';
 import { RoomSkeleton } from '../Skeleton/Skeleton';
 import { parseSubtitles } from '../../utils/subtitleParser';
 import type { SubtitleCue } from '../../utils/subtitleParser';
@@ -15,6 +16,10 @@ interface RoomProps {
   state: RoomState;
   onLeave: () => void;
   onSendChat: (msg: string) => void;
+  onSendReaction?: (emoji: string) => void;
+  onUpdatePlaylist?: (playlist: VideoSource[]) => void;
+  onPlayNextInPlaylist?: () => void;
+  onUpdateVoiceStatus?: (isMuted: boolean, isDeafened: boolean) => void;
   onChangeSource: (source: VideoSource) => void;
   onChangeSubtitles: (text: string | null) => void;
   onTogglePermissions: (open: boolean) => void;
@@ -27,6 +32,10 @@ export function Room({
   state,
   onLeave,
   onSendChat,
+  onSendReaction,
+  onUpdatePlaylist,
+  onPlayNextInPlaylist,
+  onUpdateVoiceStatus,
   onChangeSource,
   onChangeSubtitles,
   onTogglePermissions,
@@ -35,14 +44,26 @@ export function Room({
   onEmitSeek,
 }: RoomProps) {
   const [showSourcePicker, setShowSourcePicker] = useState(false);
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [copiedToast, setCopiedToast] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
 
-  const { requestStream, remoteStream } = useWebRTC({
+  const {
+    requestStream,
+    remoteStream,
+    voiceActive,
+    isMuted,
+    isDeafened,
+    joinVoice,
+    leaveVoice,
+    toggleMic,
+    toggleDeafen
+  } = useWebRTC({
     isHost: state.isHost,
     hostId: state.hostId,
     localStream,
+    onVoiceStatusChange: onUpdateVoiceStatus
   });
 
   const canControl = state.isHost || state.controlsOpen;
@@ -65,7 +86,6 @@ export function Room({
 
     function handleSyncRequest(e: Event) {
       const detail = (e as CustomEvent).detail;
-      // Get current time from whichever player element is active
       const videoEl = document.querySelector('.vp-video') as HTMLVideoElement | null;
       let currentTime = 0;
       let playing = false;
@@ -87,7 +107,6 @@ export function Room({
   }, [state.isHost]);
 
   function handleLocalStream(stream: MediaStream) {
-    console.log('[Room] Captured local stream. Tracks:', stream.getTracks().map(t => `${t.kind}(${t.label})`));
     setLocalStream(stream);
   }
 
@@ -100,22 +119,23 @@ export function Room({
     onChangeSubtitles(text);
   }
 
-  // Host clicks logo → reload room (re-sync everything)
-  const handleLogoClick = useCallback(() => {
-    if (!state.isHost) return;
-    if (state.videoSource) {
-      onChangeSource({ ...state.videoSource });
-    }
-  }, [state.isHost, state.videoSource, onChangeSource]);
-
-  // Copy room code with toast feedback
-  const handleCopyCode = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(state.roomCode ?? '');
+  function handleCopyCode() {
+    if (!state.roomCode) return;
+    navigator.clipboard.writeText(state.roomCode).then(() => {
       setCopiedToast(true);
-      setTimeout(() => setCopiedToast(false), 2000);
-    } catch { /* fallback — ignore */ }
-  }, [state.roomCode]);
+      setTimeout(() => setCopiedToast(false), 2500);
+    });
+  }
+
+  function handleLogoClick() {
+    if (state.isHost) {
+      const videoEl = document.querySelector('.vp-video') as HTMLVideoElement | null;
+      if (videoEl) {
+        if (!videoEl.paused) onEmitPlay(videoEl.currentTime);
+        else onEmitPause(videoEl.currentTime);
+      }
+    }
+  }
 
   if (showSkeleton) {
     return <RoomSkeleton />;
@@ -177,7 +197,7 @@ export function Room({
           {state.isHost && (
             <span className="badge badge-accent">
               <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-                <path d="M5 1L6.5 3.5H9L7 5.5L7.5 8.5L5 7L2.5 8.5L3 5.5L1 3.5H3.5L5 1Z" fill="currentColor"/>
+                <path d="M5 1L6.5 3.5H9L7 5.5L7.5 8.5L5 7L2.5 8.5L3 5.5L1 3.5H5 1Z" fill="currentColor"/>
               </svg>
               Host
             </span>
@@ -190,6 +210,15 @@ export function Room({
         </div>
 
         <div className="room-header-right">
+          {/* Playlist Queue Button */}
+          <button
+            className="btn btn-ghost room-playlist-btn"
+            onClick={() => setShowPlaylistModal(true)}
+            title="View Queue / Playlist"
+          >
+            📜 Queue ({state.playlist?.length || 0})
+          </button>
+
           {/* Permissions toggle (host-only) */}
           {state.isHost && (
             <button
@@ -211,6 +240,7 @@ export function Room({
               )}
             </button>
           )}
+
           {state.isHost && (
             <button
               className="btn btn-ghost room-source-btn"
@@ -224,6 +254,7 @@ export function Room({
               Load Video
             </button>
           )}
+
           <button
             className="btn btn-ghost room-leave-btn"
             onClick={onLeave}
@@ -248,9 +279,11 @@ export function Room({
             canControl={canControl}
             videoSource={state.videoSource}
             subtitleCues={subtitleCues}
+            activeReactions={state.activeReactions}
             onPlay={onEmitPlay}
             onPause={onEmitPause}
             onSeek={onEmitSeek}
+            onEnded={onPlayNextInPlaylist}
             onLocalStream={handleLocalStream}
             remoteStreamRef={remoteStream}
             onRequestStream={requestStream}
@@ -264,10 +297,19 @@ export function Room({
             hostId={state.hostId}
             roomCode={state.roomCode!}
             onLeave={onLeave}
+            voiceActive={voiceActive}
+            isMuted={isMuted}
+            isDeafened={isDeafened}
+            onJoinVoice={joinVoice}
+            onLeaveVoice={leaveVoice}
+            onToggleMic={toggleMic}
+            onToggleDeafen={toggleDeafen}
           />
           <Chat
             messages={state.chatMessages}
             onSend={onSendChat}
+            onSendReaction={onSendReaction}
+            onSeek={onEmitSeek}
             mySocketId={socket.id}
           />
         </aside>
@@ -281,7 +323,17 @@ export function Room({
           onClose={() => setShowSourcePicker(false)}
         />
       )}
+
+      {/* Playlist modal */}
+      {showPlaylistModal && (
+        <PlaylistModal
+          playlist={state.playlist || []}
+          canControl={canControl}
+          onUpdatePlaylist={onUpdatePlaylist || (() => {})}
+          onPlayNext={onPlayNextInPlaylist || (() => {})}
+          onClose={() => setShowPlaylistModal(false)}
+        />
+      )}
     </div>
   );
 }
-

@@ -1,0 +1,53 @@
+.emoji-reactions-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 25;
+}
+
+.emoji-particle {
+  position: absolute;
+  bottom: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: floatUp 2.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.emoji-char {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  transform: scale(1);
+}
+
+.emoji-sender {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-top: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  white-space: nowrap;
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.6) translateX(0);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-30px) scale(1.1) translateX(var(--drift));
+  }
+  80% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-280px) scale(0.85) translateX(calc(var(--drift) * 1.5));
+  }
+}

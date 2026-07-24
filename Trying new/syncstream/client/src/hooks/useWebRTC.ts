@@ -1,13 +1,13 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { socket } from '../socket';
 
 interface UseWebRTCOptions {
   isHost: boolean;
   hostId: string | null;
   localStream: MediaStream | null;
+  onVoiceStatusChange?: (isMuted: boolean, isDeafened: boolean) => void;
 }
 
-// Configurable iceServers supporting both STUN and custom TURN configurations
 const peerConfig: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -18,12 +18,8 @@ const peerConfig: RTCConfiguration = {
   ],
 };
 
-// Target WebRTC bitrate cap (in bps)
 const MAX_VIDEO_BITRATE_BPS = 1500 * 1000; // 1.5 Mbps
 
-/**
- * Standard RTCRtpSender parameter configuration for WebRTC bitrate control
- */
 async function applyBitrateLimit(pc: RTCPeerConnection, maxBitrateBps: number) {
   try {
     const senders = pc.getSenders();
@@ -35,7 +31,6 @@ async function applyBitrateLimit(pc: RTCPeerConnection, maxBitrateBps: number) {
         }
         parameters.encodings[0].maxBitrate = maxBitrateBps;
         await sender.setParameters(parameters);
-        console.log('[WebRTC] Bitrate limited to', maxBitrateBps / 1000, 'kbps via RTCRtpSender');
       }
     }
   } catch (err) {
@@ -43,38 +38,39 @@ async function applyBitrateLimit(pc: RTCPeerConnection, maxBitrateBps: number) {
   }
 }
 
-export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
+export function useWebRTC({ isHost, hostId, localStream, onVoiceStatusChange }: UseWebRTCOptions) {
   const peers = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const voicePeers = useRef<Map<string, RTCPeerConnection>>(new Map());
   const remoteStream = useRef<MediaStream | null>(null);
   const onRemoteStreamRef = useRef<((stream: MediaStream) => void) | null>(null);
 
-  // Re-negotiate a peer connection after adding new tracks
+  // Voice chat states
+  const [voiceActive, setVoiceActive] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isDeafened, setIsDeafened] = useState(false);
+  const [voiceStream, setVoiceStream] = useState<MediaStream | null>(null);
+
   const renegotiate = useCallback(async (peerId: string, pc: RTCPeerConnection) => {
     try {
       const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
       await pc.setLocalDescription(offer);
       await applyBitrateLimit(pc, MAX_VIDEO_BITRATE_BPS);
       socket.emit('webrtc-offer', { targetId: peerId, offer });
-      console.log('[WebRTC] Re-negotiation offer sent to', peerId);
     } catch (err) {
       console.warn('[WebRTC] Re-negotiation failed:', err);
     }
   }, []);
 
-  // ── Keep a ref to localStream that's always current ──────────────
   const localStreamRef = useRef<MediaStream | null>(localStream);
   useEffect(() => {
     localStreamRef.current = localStream;
 
-    // If stream changes and we have existing peers, re-negotiate with new stream
     if (isHost && localStream && peers.current.size > 0) {
-      console.log('[WebRTC] Stream updated — re-negotiating with existing peers');
       const peerIds = Array.from(peers.current.keys());
       for (const peerId of peerIds) {
         const pc = peers.current.get(peerId);
         if (!pc) continue;
         
-        // Replace tracks on existing peer connection
         const senders = pc.getSenders();
         localStream.getTracks().forEach(track => {
           const existingSender = senders.find(s => s.track?.kind === track.kind);
@@ -83,20 +79,15 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
               console.warn('[WebRTC] Failed to replace track:', err);
             });
           } else {
-            // New track type — add it
             pc.addTrack(track, localStream);
-            console.log('[WebRTC] Added new', track.kind, 'track to existing peer', peerId);
           }
         });
 
-        // Apply bitrate limits via RTCRtpSender API
         applyBitrateLimit(pc, MAX_VIDEO_BITRATE_BPS);
 
-        // Check for new tracks that necessitate renegotiation
         const newTrackCount = localStream.getTracks().length;
         const senderCount = senders.filter(s => s.track).length;
         if (newTrackCount > senderCount) {
-          console.warn('[WebRTC] Late track detected — renegotiating. Tracks:', newTrackCount, 'Senders:', senderCount);
           renegotiate(peerId, pc);
         }
       }
@@ -107,22 +98,18 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
     onRemoteStreamRef.current = cb;
   }, []);
 
-  // ── Create peer for the host (sending side) ──────────────────────
+  // Video Peer Creation
   const createHostPeer = useCallback(async (peerId: string, stream: MediaStream) => {
-    // Close any existing peer for this user
     const existing = peers.current.get(peerId);
     if (existing) { existing.close(); peers.current.delete(peerId); }
 
     const pc = new RTCPeerConnection(peerConfig);
     peers.current.set(peerId, pc);
 
-    // Add all tracks (video + audio)
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
     pc.onicecandidate = ({ candidate }) => {
-      if (candidate) {
-        socket.emit('webrtc-ice-candidate', { targetId: peerId, candidate });
-      }
+      if (candidate) socket.emit('webrtc-ice-candidate', { targetId: peerId, candidate });
     };
 
     pc.onconnectionstatechange = () => {
@@ -132,7 +119,6 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
       }
     };
 
-    // Handle re-negotiation from remote side
     pc.onnegotiationneeded = async () => {
       try {
         const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
@@ -150,7 +136,6 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
     socket.emit('webrtc-offer', { targetId: peerId, offer });
   }, []);
 
-  // ── Create peer for the guest (receiving side) ───────────────────
   const createGuestPeer = useCallback((senderId: string) => {
     const existing = peers.current.get(senderId);
     if (existing) { existing.close(); peers.current.delete(senderId); }
@@ -158,13 +143,10 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
     const pc = new RTCPeerConnection(peerConfig);
     peers.current.set(senderId, pc);
 
-    // Use the streams from the event — preserves audio+video together
     pc.ontrack = (e) => {
-      console.log('[WebRTC] Received track:', e.track.kind, 'from', senderId);
       if (e.streams && e.streams[0]) {
         remoteStream.current = e.streams[0];
       } else {
-        // Fallback: build our own stream from tracks
         if (!remoteStream.current) remoteStream.current = new MediaStream();
         remoteStream.current.addTrack(e.track);
       }
@@ -174,9 +156,7 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
     };
 
     pc.onicecandidate = ({ candidate }) => {
-      if (candidate) {
-        socket.emit('webrtc-ice-candidate', { targetId: senderId, candidate });
-      }
+      if (candidate) socket.emit('webrtc-ice-candidate', { targetId: senderId, candidate });
     };
 
     pc.onconnectionstatechange = () => {
@@ -189,26 +169,66 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
     return pc;
   }, []);
 
-  // ── Socket signaling listeners ────────────────────────────────────
+  // Voice Chat Signaling & Controls
+  const toggleMic = useCallback(() => {
+    if (voiceStream) {
+      const audioTrack = voiceStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        const newMuted = !audioTrack.enabled;
+        setIsMuted(newMuted);
+        if (onVoiceStatusChange) onVoiceStatusChange(newMuted, isDeafened);
+      }
+    }
+  }, [voiceStream, isDeafened, onVoiceStatusChange]);
+
+  const toggleDeafen = useCallback(() => {
+    const newDeafened = !isDeafened;
+    setIsDeafened(newDeafened);
+    if (onVoiceStatusChange) onVoiceStatusChange(isMuted, newDeafened);
+
+    // Mute/unmute all incoming audio elements from voice peers
+    document.querySelectorAll('.voice-audio-elem').forEach((elem) => {
+      (elem as HTMLAudioElement).muted = newDeafened;
+    });
+  }, [isDeafened, isMuted, onVoiceStatusChange]);
+
+  const joinVoice = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      setVoiceStream(stream);
+      setVoiceActive(true);
+      setIsMuted(false);
+      setIsDeafened(false);
+      if (onVoiceStatusChange) onVoiceStatusChange(false, false);
+    } catch (err) {
+      console.warn('[VoiceChat] Microphone permission denied or unavailable:', err);
+    }
+  }, [onVoiceStatusChange]);
+
+  const leaveVoice = useCallback(() => {
+    if (voiceStream) {
+      voiceStream.getTracks().forEach(t => t.stop());
+      setVoiceStream(null);
+    }
+    voicePeers.current.forEach(pc => pc.close());
+    voicePeers.current.clear();
+    setVoiceActive(false);
+    setIsMuted(true);
+    if (onVoiceStatusChange) onVoiceStatusChange(true, isDeafened);
+  }, [voiceStream, isDeafened, onVoiceStatusChange]);
+
+  // Video Socket signaling listeners
   useEffect(() => {
-    // Host: a guest wants the stream
     socket.on('peer-needs-stream', async ({ peerId }: { peerId: string }) => {
       if (!isHost) return;
       const stream = localStreamRef.current;
-      if (!stream || stream.getTracks().length === 0) {
-        console.warn('[WebRTC] Host has no stream yet — guest will retry');
-        return;
-      }
-      console.log('[WebRTC] Sending stream to peer', peerId, '| tracks:', stream.getTracks().map(t => t.kind));
+      if (!stream || stream.getTracks().length === 0) return;
       await createHostPeer(peerId, stream);
     });
 
-    // Guest: receiving offer from host (initial or re-negotiation)
     socket.on('webrtc-offer', async ({ senderId, offer }: { senderId: string; offer: RTCSessionDescriptionInit }) => {
       if (isHost) return;
-      console.log('[WebRTC] Received offer from', senderId);
-
-      // Check if we already have a peer — if so, just update the description (re-negotiation)
       let pc = peers.current.get(senderId);
       if (pc && pc.signalingState !== 'closed') {
         try {
@@ -216,14 +236,11 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           socket.emit('webrtc-answer', { targetId: senderId, answer });
-          console.log('[WebRTC] Re-negotiation answer sent');
           return;
         } catch (err) {
           console.warn('[WebRTC] Re-negotiation failed, creating new peer:', err);
         }
       }
-
-      // Create new guest peer
       pc = createGuestPeer(senderId);
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await pc.createAnswer();
@@ -231,18 +248,16 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
       socket.emit('webrtc-answer', { targetId: senderId, answer });
     });
 
-    // Host: receiving answer from guest
     socket.on('webrtc-answer', async ({ senderId, answer }: { senderId: string; answer: RTCSessionDescriptionInit }) => {
       const pc = peers.current.get(senderId);
       if (pc) await pc.setRemoteDescription(new RTCSessionDescription(answer));
     });
 
-    // Both: ICE candidates
     socket.on('webrtc-ice-candidate', async ({ senderId, candidate }: { senderId: string; candidate: RTCIceCandidateInit }) => {
       const pc = peers.current.get(senderId);
       if (pc && candidate) {
         try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); }
-        catch { /* ignore stale candidates */ }
+        catch { /* ignore */ }
       }
     });
 
@@ -254,22 +269,33 @@ export function useWebRTC({ isHost, hostId, localStream }: UseWebRTCOptions) {
     };
   }, [isHost, createHostPeer, createGuestPeer]);
 
-  // ── Request stream when guest needs file content ─────────────────
   const requestStream = useCallback(() => {
     if (!isHost && hostId) {
-      console.log('[WebRTC] Guest requesting stream from host');
       socket.emit('request-stream');
     }
   }, [isHost, hostId]);
 
-  // ── Cleanup on unmount ────────────────────────────────────────────
   useEffect(() => {
     const currentPeers = peers.current;
+    const currentVoicePeers = voicePeers.current;
     return () => {
       currentPeers.forEach(pc => pc.close());
       currentPeers.clear();
+      currentVoicePeers.forEach(pc => pc.close());
+      currentVoicePeers.clear();
     };
   }, []);
 
-  return { requestStream, setOnRemoteStream, remoteStream };
+  return {
+    requestStream,
+    setOnRemoteStream,
+    remoteStream,
+    voiceActive,
+    isMuted,
+    isDeafened,
+    joinVoice,
+    leaveVoice,
+    toggleMic,
+    toggleDeafen
+  };
 }

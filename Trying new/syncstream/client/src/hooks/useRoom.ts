@@ -5,10 +5,11 @@ import type {
   VideoSource,
   PlaybackState,
   RoomState,
-  ChatMessage
+  ChatMessage,
+  EmojiReaction
 } from '../types';
 
-export type { RoomUser, VideoSource, PlaybackState, RoomState, ChatMessage } from '../types';
+export type { RoomUser, VideoSource, PlaybackState, RoomState, ChatMessage, EmojiReaction } from '../types';
 
 export function useRoom() {
   const [state, setState] = useState<RoomState>({
@@ -24,6 +25,8 @@ export function useRoom() {
     error: null,
     subtitleText: null,
     controlsOpen: false,
+    playlist: [],
+    activeReactions: [],
   });
 
   const rttRef = useRef<number>(0);
@@ -114,6 +117,31 @@ export function useRoom() {
       }));
     });
 
+    socket.on('reaction-received', (reaction: EmojiReaction) => {
+      setState(s => ({
+        ...s,
+        activeReactions: [...s.activeReactions, reaction]
+      }));
+      // Auto-clear reaction particle after animation duration (3 seconds)
+      setTimeout(() => {
+        setState(s => ({
+          ...s,
+          activeReactions: s.activeReactions.filter(r => r.id !== reaction.id)
+        }));
+      }, 3000);
+    });
+
+    socket.on('playlist-changed', ({ playlist }: { playlist: VideoSource[] }) => {
+      setState(s => ({ ...s, playlist: playlist || [] }));
+    });
+
+    socket.on('voice-status-changed', ({ socketId, isMuted, isDeafened }: { socketId: string; isMuted: boolean; isDeafened: boolean }) => {
+      setState(s => ({
+        ...s,
+        users: s.users.map(u => u.socketId === socketId ? { ...u, isMuted, isDeafened } : u)
+      }));
+    });
+
     socket.on('sync-request-from-guest', ({ guestId }: { guestId: string }) => {
       window.dispatchEvent(new CustomEvent('sync-request-from-guest', { detail: { guestId } }));
     });
@@ -126,16 +154,20 @@ export function useRoom() {
       socket.off('user-left');
       socket.off('host-changed');
       socket.off('source-changed');
-      socket.off('chat-message');
-      socket.off('sync-request-from-guest');
       socket.off('subtitles-changed');
       socket.off('permissions-changed');
+      socket.off('chat-message');
+      socket.off('reaction-received');
+      socket.off('playlist-changed');
+      socket.off('voice-status-changed');
+      socket.off('sync-request-from-guest');
     };
   }, []);
 
   const createRoom = useCallback(({ username }: { username: string }): Promise<string> => {
     return new Promise((resolve, reject) => {
-      socket.connect();
+      if (!socket.connected) socket.connect();
+
       socket.emit('create-room', { username }, (res: { success: boolean; roomCode?: string; error?: string }) => {
         if (res.success && res.roomCode) {
           setState(s => ({
@@ -143,7 +175,7 @@ export function useRoom() {
             roomCode: res.roomCode!,
             username,
             isHost: true,
-            hostId: socket.id ?? null,
+            hostId: socket.id || null,
             error: null,
           }));
           resolve(res.roomCode);
@@ -156,30 +188,32 @@ export function useRoom() {
 
   const joinRoom = useCallback(({ username, roomCode }: { username: string; roomCode: string }): Promise<void> => {
     return new Promise((resolve, reject) => {
-      socket.connect();
+      if (!socket.connected) socket.connect();
+
       socket.emit('join-room', { username, roomCode }, (res: {
         success: boolean;
         roomCode?: string;
-        isHost?: boolean;
-        videoSource?: VideoSource;
+        videoSource?: VideoSource | null;
         playbackState?: PlaybackState;
         hostId?: string;
-        error?: string;
         subtitleText?: string | null;
         controlsOpen?: boolean;
+        playlist?: VideoSource[];
+        error?: string;
       }) => {
-        if (res.success) {
+        if (res.success && res.roomCode) {
           setState(s => ({
             ...s,
             roomCode: res.roomCode!,
             username,
             isHost: false,
-            hostId: res.hostId ?? null,
-            videoSource: res.videoSource ?? null,
-            playbackState: res.playbackState ?? { playing: false, currentTime: 0 },
+            hostId: res.hostId || null,
+            videoSource: res.videoSource || null,
+            playbackState: res.playbackState || { playing: false, currentTime: 0 },
             error: null,
             subtitleText: res.subtitleText ?? null,
             controlsOpen: res.controlsOpen ?? false,
+            playlist: res.playlist || [],
           }));
           resolve();
         } else {
@@ -205,11 +239,26 @@ export function useRoom() {
       error: null,
       subtitleText: null,
       controlsOpen: false,
+      playlist: [],
+      activeReactions: [],
     });
   }, []);
 
   const sendChat = useCallback((message: string) => {
     socket.emit('chat-message', { message });
+  }, []);
+
+  const sendReaction = useCallback((emoji: string) => {
+    socket.emit('send-reaction', { emoji });
+  }, []);
+
+  const updatePlaylist = useCallback((playlist: VideoSource[]) => {
+    socket.emit('playlist-update', { playlist });
+    setState(s => ({ ...s, playlist }));
+  }, []);
+
+  const playNextInPlaylist = useCallback(() => {
+    socket.emit('playlist-next');
   }, []);
 
   const changeSource = useCallback((source: VideoSource) => {
@@ -227,6 +276,14 @@ export function useRoom() {
     setState(s => ({ ...s, controlsOpen: open }));
   }, []);
 
+  const updateVoiceStatus = useCallback((isMuted: boolean, isDeafened: boolean) => {
+    socket.emit('voice-status-change', { isMuted, isDeafened });
+    setState(s => ({
+      ...s,
+      users: s.users.map(u => u.socketId === socket.id ? { ...u, isMuted, isDeafened } : u)
+    }));
+  }, []);
+
   const emitPlay  = useCallback((currentTime: number) => socket.emit('sync-play',  { currentTime }), []);
   const emitPause = useCallback((currentTime: number) => socket.emit('sync-pause', { currentTime }), []);
   const emitSeek  = useCallback((currentTime: number) => socket.emit('sync-seek',  { currentTime }), []);
@@ -237,9 +294,13 @@ export function useRoom() {
     joinRoom,
     leaveRoom,
     sendChat,
+    sendReaction,
+    updatePlaylist,
+    playNextInPlaylist,
     changeSource,
     changeSubtitles,
     togglePermissions,
+    updateVoiceStatus,
     emitPlay,
     emitPause,
     emitSeek,

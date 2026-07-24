@@ -2,11 +2,14 @@ export interface RoomUser {
   socketId: string;
   username: string;
   isHost: boolean;
+  isMuted?: boolean;
+  isDeafened?: boolean;
 }
 
 export interface VideoSource {
   sourceType: 'url' | 'file';
   url: string;
+  title?: string;
   subtitleText?: string;
   subtitleName?: string;
 }
@@ -26,6 +29,13 @@ export interface ChatMessage {
   isMine: boolean;
 }
 
+export interface EmojiReaction {
+  id: string;
+  emoji: string;
+  username: string;
+  senderId: string;
+}
+
 export interface RoomState {
   roomCode: string | null;
   username: string;
@@ -39,4 +49,6 @@ export interface RoomState {
   error: string | null;
   subtitleText: string | null;
   controlsOpen: boolean;
+  playlist: VideoSource[];
+  activeReactions: EmojiReaction[];
 }

@@ -36,7 +36,9 @@ class RoomManager {
       playbackState: { playing: false, currentTime: 0 },
       hostId: socketId,
       subtitleText: null,
-      controlsOpen: false
+      controlsOpen: false,
+      playlist: [],
+      playlistIndex: 0
     };
     room.users.set(socketId, { username, isHost: true });
     this.rooms.set(roomCode, room);

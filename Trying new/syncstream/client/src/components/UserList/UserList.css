@@ -99,6 +99,49 @@
   font-family: var(--font-mono);
 }
 
+/* ── Voice Chat Box ──────────────────────────────── */
+.voice-control-box {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.voice-join-btn {
+  width: 100%;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+}
+
+.voice-controls-active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.voice-action-btn {
+  font-size: 1.1rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.voice-action-btn.muted,
+.voice-action-btn.deafened {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.voice-status-tag {
+  font-size: 0.8rem;
+  margin-left: auto;
+}
+
+
 /* ── User items ───────────────────────────────────── */
 .userlist-users {
   list-style: none;
