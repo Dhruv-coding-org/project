@@ -33,6 +33,29 @@ export function saveProfileToStorage(profile: UserProfile) {
   } catch { /* ignore */ }
 }
 
+const SESSION_KEY = 'syncstream_active_session';
+
+export function getActiveSession(): { roomCode: string; username: string; avatar: string; isHost: boolean } | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveActiveSession(session: { roomCode: string; username: string; avatar?: string; isHost?: boolean }) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } catch { /* ignore */ }
+}
+
+export function clearActiveSession() {
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch { /* ignore */ }
+}
+
 export function useRoom() {
   const [state, setState] = useState<RoomState>({
     roomCode: null,
@@ -206,6 +229,7 @@ export function useRoom() {
         clearTimeout(timeoutTimer);
 
         if (res && res.success && res.roomCode) {
+          saveActiveSession({ roomCode: res.roomCode, username, avatar, isHost: true });
           setState(s => ({
             ...s,
             roomCode: res.roomCode!,
@@ -216,6 +240,7 @@ export function useRoom() {
           }));
           resolve(res.roomCode);
         } else {
+          saveActiveSession({ roomCode: localCode, username, avatar, isHost: true });
           setState(s => ({
             ...s,
             roomCode: localCode,
@@ -274,6 +299,7 @@ export function useRoom() {
         clearTimeout(timeoutTimer);
 
         if (res && res.success) {
+          saveActiveSession({ roomCode: res.roomCode!, username, avatar, isHost: false });
           setState(s => ({
             ...s,
             roomCode: res.roomCode!,
@@ -290,6 +316,7 @@ export function useRoom() {
           resolve();
         } else {
           // Fallback join
+          saveActiveSession({ roomCode, username, avatar, isHost: false });
           setState(s => ({
             ...s,
             roomCode,
@@ -309,6 +336,7 @@ export function useRoom() {
   }, []);
 
   const leaveRoom = useCallback(() => {
+    clearActiveSession();
     socket.emit('leave-room');
     setState({
       roomCode: null,

@@ -1,13 +1,15 @@
 import './App.css';
 import { useState, useEffect } from 'react';
-import { useRoom } from './hooks/useRoom';
+import { useRoom, getActiveSession } from './hooks/useRoom';
 import { Lobby } from './components/Lobby/Lobby';
 import { Room } from './components/Room/Room';
+import { ProfilePage } from './components/Profile/ProfilePage';
 import { SplashScreen } from './components/Skeleton/Skeleton';
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [splashFading, setSplashFading] = useState(false);
+  const [viewingProfile, setViewingProfile] = useState(false);
 
   const {
     state,
@@ -33,9 +35,18 @@ function App() {
     const timer = setTimeout(() => {
       setSplashFading(true);
       setTimeout(() => setShowSplash(false), 400);
-    }, 1200);
+    }, 1000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Auto-session recovery on page refresh (F5 Guard)
+  useEffect(() => {
+    const session = getActiveSession();
+    if (session && session.roomCode && session.username && !state.roomCode) {
+      console.log('[App] Restoring session from sessionStorage:', session.roomCode);
+      joinRoom({ username: session.username, roomCode: session.roomCode, avatar: session.avatar }).catch(() => {});
+    }
+  }, [joinRoom, state.roomCode]);
 
   async function handleCreateRoom(username: string, avatar?: string, statusMessage?: string) {
     await createRoom({ username, avatar, statusMessage });
@@ -50,6 +61,18 @@ function App() {
       <div className={splashFading ? 'splash-screen fade-out' : ''}>
         <SplashScreen />
       </div>
+    );
+  }
+
+  if (viewingProfile) {
+    return (
+      <ProfilePage
+        onBack={() => setViewingProfile(false)}
+        onLaunchVideo={(source) => {
+          changeSource(source);
+          setViewingProfile(false);
+        }}
+      />
     );
   }
 
@@ -78,6 +101,7 @@ function App() {
     <Lobby
       onCreateRoom={handleCreateRoom}
       onJoinRoom={handleJoinRoom}
+      onOpenProfile={() => setViewingProfile(true)}
     />
   );
 }

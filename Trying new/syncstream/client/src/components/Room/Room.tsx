@@ -64,9 +64,11 @@ export function Room({
     voiceActive,
     isMuted,
     isDeafened,
+    isCameraActive,
     joinVoice,
     leaveVoice,
     toggleMic,
+    toggleCamera,
     toggleDeafen
   } = useWebRTC({
     isHost: state.isHost,
@@ -254,6 +256,33 @@ export function Room({
         </div>
 
         <div className="room-header-right">
+          {/* Quick Voice & Camera Controls */}
+          {voiceActive && (
+            <div className="room-media-toggles">
+              <button
+                className={`btn btn-ghost btn-sm ${isMuted ? 'muted' : 'active'}`}
+                onClick={toggleMic}
+                title={isMuted ? 'Unmute Mic' : 'Mute Mic'}
+              >
+                {isMuted ? '🎙️ Muted' : '🎙️ Mic On'}
+              </button>
+              <button
+                className={`btn btn-ghost btn-sm ${isCameraActive ? 'active' : ''}`}
+                onClick={toggleCamera}
+                title={isCameraActive ? 'Turn Off Camera' : 'Turn On Camera'}
+              >
+                {isCameraActive ? '📹 Cam On' : '📹 Cam Off'}
+              </button>
+              <button
+                className={`btn btn-ghost btn-sm ${isDeafened ? 'deafened' : ''}`}
+                onClick={toggleDeafen}
+                title={isDeafened ? 'Undeafen' : 'Deafen Room Audio'}
+              >
+                {isDeafened ? '🎧 Deafened' : '🎧 Audio'}
+              </button>
+            </div>
+          )}
+
           {/* Theater Mode Toggle */}
           <button
             className={`btn btn-ghost room-header-btn ${isTheaterMode ? 'active' : ''}`}

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import type { ChatMessage } from '../../hooks/useRoom';
 import { ChatSkeleton } from '../Skeleton/Skeleton';
+import { EmojiKeyboard } from './EmojiKeyboard';
 import './Chat.css';
 
 interface ChatProps {
@@ -62,6 +63,7 @@ function renderMessageWithTimestamps(text: string, onSeek?: (seconds: number) =>
 export function Chat({ messages, onSend, onSendReaction, onSeek, mySocketId }: ChatProps) {
   const [input, setInput] = useState('');
   const [showSkeleton, setShowSkeleton] = useState(true);
+  const [showEmojiKeyboard, setShowEmojiKeyboard] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -149,7 +151,27 @@ export function Chat({ messages, onSend, onSendReaction, onSeek, mySocketId }: C
         </div>
       )}
 
+      {showEmojiKeyboard && (
+        <div className="chat-emoji-keyboard-popover">
+          <EmojiKeyboard
+            onSelectEmoji={(emoji) => {
+              setInput(prev => prev + emoji);
+            }}
+            onSendReaction={onSendReaction}
+            onClose={() => setShowEmojiKeyboard(false)}
+          />
+        </div>
+      )}
+
       <form className="chat-input-row" onSubmit={handleSubmit}>
+        <button
+          type="button"
+          className="btn-icon chat-emoji-toggle-btn"
+          onClick={() => setShowEmojiKeyboard(prev => !prev)}
+          title="Open Emoji Keyboard"
+        >
+          😊
+        </button>
         <input
           id="chat-input"
           className="input chat-input"

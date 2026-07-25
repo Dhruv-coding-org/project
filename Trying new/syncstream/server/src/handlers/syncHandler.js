@@ -111,6 +111,16 @@ function registerSyncHandlers(io, socket) {
       io.to(socket.roomCode).emit('source-changed', { sourceType: nextSource.sourceType, url: nextSource.url });
     }
   });
+  socket.on('change-source', (source) => {
+    const room = roomManager.getRoom(socket.roomCode);
+    if (!room) return;
+    if (room.hostId !== socket.id && !room.controlsOpen) return;
+
+    room.videoSource = source;
+    room.playbackState = { playing: false, currentTime: 0 };
+    io.to(socket.roomCode).emit('source-changed', source);
+    console.log(`✦ Source changed in room ${socket.roomCode}:`, source?.title || source?.url);
+  });
 }
 
 module.exports = registerSyncHandlers;

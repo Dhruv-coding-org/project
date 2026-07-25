@@ -44,11 +44,46 @@ export function useWebRTC({ isHost, hostId, localStream, onVoiceStatusChange }: 
   const remoteStream = useRef<MediaStream | null>(null);
   const onRemoteStreamRef = useRef<((stream: MediaStream) => void) | null>(null);
 
-  // Voice chat states
+  // Voice & Video Chat states
   const [voiceActive, setVoiceActive] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isDeafened, setIsDeafened] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const [voiceStream, setVoiceStream] = useState<MediaStream | null>(null);
+
+  const toggleMic = useCallback(() => {
+    if (voiceStream) {
+      const audioTrack = voiceStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        const newMuted = !audioTrack.enabled;
+        setIsMuted(newMuted);
+        if (onVoiceStatusChange) onVoiceStatusChange(newMuted, isDeafened);
+      }
+    }
+  }, [voiceStream, isDeafened, onVoiceStatusChange]);
+
+  const toggleCamera = useCallback(async () => {
+    if (!voiceStream) return;
+    const existingVideo = voiceStream.getVideoTracks()[0];
+    if (existingVideo) {
+      existingVideo.enabled = !existingVideo.enabled;
+      setIsCameraActive(existingVideo.enabled);
+    } else {
+      try {
+        const webcamStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 360, frameRate: 30 }
+        });
+        const vTrack = webcamStream.getVideoTracks()[0];
+        if (vTrack) {
+          voiceStream.addTrack(vTrack);
+          setIsCameraActive(true);
+        }
+      } catch (err) {
+        console.warn('[WebRTC] Webcam capture failed:', err);
+      }
+    }
+  }, [voiceStream]);
 
   const renegotiate = useCallback(async (peerId: string, pc: RTCPeerConnection) => {
     try {
@@ -170,18 +205,6 @@ export function useWebRTC({ isHost, hostId, localStream, onVoiceStatusChange }: 
   }, []);
 
   // Voice Chat Signaling & Controls
-  const toggleMic = useCallback(() => {
-    if (voiceStream) {
-      const audioTrack = voiceStream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        const newMuted = !audioTrack.enabled;
-        setIsMuted(newMuted);
-        if (onVoiceStatusChange) onVoiceStatusChange(newMuted, isDeafened);
-      }
-    }
-  }, [voiceStream, isDeafened, onVoiceStatusChange]);
-
   const toggleDeafen = useCallback(() => {
     const newDeafened = !isDeafened;
     setIsDeafened(newDeafened);
@@ -293,9 +316,11 @@ export function useWebRTC({ isHost, hostId, localStream, onVoiceStatusChange }: 
     voiceActive,
     isMuted,
     isDeafened,
+    isCameraActive,
     joinVoice,
     leaveVoice,
     toggleMic,
+    toggleCamera,
     toggleDeafen
   };
 }

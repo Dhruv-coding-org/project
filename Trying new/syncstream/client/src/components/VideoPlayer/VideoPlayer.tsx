@@ -10,6 +10,7 @@ import type { SubtitleCue } from '../../utils/subtitleParser';
 import { VideoPlayerSkeleton } from '../Skeleton/Skeleton';
 import { SubtitleOverlay } from './SubtitleOverlay';
 import { EmojiReactions } from './EmojiReactions';
+import { starVideoDB } from '../../db/db';
 import './VideoPlayer.css';
 
 interface VideoPlayerProps {
@@ -107,6 +108,17 @@ export function VideoPlayer({
   const plyrInitialized = useRef(false);
   const [subtitlesVisible, setSubtitlesVisible] = useState(true);
   const [guestLocalFileUrl, setGuestLocalFileUrl] = useState<string | null>(null);
+  const [isStarred, setIsStarred] = useState(false);
+
+  async function handleStarVideo() {
+    if (!videoSource) return;
+    await starVideoDB({
+      title: videoSource.title || videoSource.url,
+      url: videoSource.url,
+      sourceType: videoSource.sourceType,
+    });
+    setIsStarred(true);
+  }
 
   // Web Audio API refs for persistent audio streaming
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -1282,6 +1294,17 @@ export function VideoPlayer({
                 aria-label="Audio Boost"
               />
             </div>
+
+            {/* Star Video Button */}
+            {hasSource && (
+              <button
+                className={`btn-icon vp-btn ${isStarred ? 'starred' : ''}`}
+                onClick={handleStarVideo}
+                title={isStarred ? 'Saved to Favorites ⭐' : 'Star Video (Save to Library)'}
+              >
+                {isStarred ? '⭐' : '☆'}
+              </button>
+            )}
 
             {/* Ambient Glow Toggle */}
             <button

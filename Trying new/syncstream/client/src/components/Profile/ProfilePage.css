@@ -1,0 +1,373 @@
+/* ─────────────────────────────────────────────────────────
+   ProfilePage v3.0 — MNC Grade Customization Dashboard
+   ───────────────────────────────────────────────────────── */
+
+.profile-page {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+.profile-navbar {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+
+.profile-navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.profile-back-btn {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profile-navbar-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.profile-content {
+  flex: 1;
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── Banner Card ─────────────────────────────────────── */
+.profile-banner-card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 28px;
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.profile-avatar-large {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  border: 2px solid var(--accent-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  flex-shrink: 0;
+  box-shadow: 0 0 24px var(--accent-glow);
+}
+
+.profile-banner-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile-banner-info h2 {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.profile-bio-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.profile-meta-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* ── Tabs ───────────────────────────────────────────── */
+.profile-tabs {
+  display: flex;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  padding: 4px;
+  border-radius: var(--radius-md);
+}
+
+.profile-tab {
+  flex: 1;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.profile-tab:hover {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.profile-tab.active {
+  color: #fff;
+  background: var(--accent-grad);
+  box-shadow: 0 2px 12px var(--accent-glow);
+}
+
+/* ── Form ───────────────────────────────────────────── */
+.profile-form {
+  padding: 32px;
+  border-radius: var(--radius-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-field.full-width {
+  grid-column: span 2;
+}
+
+.profile-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.profile-avatar-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.profile-avatar-item {
+  font-size: 1.3rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.profile-avatar-item:hover,
+.profile-avatar-item.selected {
+  background: rgba(124, 58, 237, 0.35);
+  border-color: var(--accent-light);
+  transform: scale(1.12);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* ── Theme Switcher Grid ────────────────────────────── */
+.profile-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.theme-card:hover,
+.theme-card.selected {
+  border-color: var(--accent-light);
+  background: rgba(124, 58, 237, 0.12);
+  transform: translateY(-2px);
+}
+
+.theme-preview {
+  width: 100%;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-void-preview {
+  background: linear-gradient(135deg, #05070e, #7c3aed);
+}
+
+.cyber-neon-preview {
+  background: linear-gradient(135deg, #090d16, #22d3ee);
+}
+
+.midnight-preview {
+  background: linear-gradient(135deg, #0d1117, #38bdf8);
+}
+
+.theme-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.profile-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.profile-submit-btn {
+  padding: 12px 28px;
+  font-size: 14px;
+}
+
+/* ── Starred Library ─────────────────────────────────── */
+.profile-starred-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-starred-header {
+  display: flex;
+}
+
+.profile-starred-search {
+  width: 100%;
+}
+
+.profile-starred-empty {
+  padding: 48px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  border-radius: var(--radius-xl);
+}
+
+.empty-icon {
+  font-size: 48px;
+}
+
+.profile-starred-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.starred-video-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  transition: all var(--transition-fast);
+}
+
+.starred-video-card:hover {
+  border-color: var(--accent-border);
+  background: rgba(124, 58, 237, 0.05);
+}
+
+.starred-card-icon {
+  font-size: 24px;
+  padding: 10px;
+  background: rgba(124, 58, 237, 0.15);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--accent-border);
+  flex-shrink: 0;
+}
+
+.starred-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.starred-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.starred-url {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.starred-date {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.starred-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.starred-remove-btn {
+  color: var(--text-muted);
+}
+.starred-remove-btn:hover {
+  color: var(--error);
+}
+
+@media (max-width: 768px) {
+  .profile-form-grid,
+  .profile-starred-grid,
+  .profile-theme-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-field.full-width {
+    grid-column: span 1;
+  }
+  .profile-banner-card {
+    flex-direction: column;
+    text-align: center;
+  }
+}

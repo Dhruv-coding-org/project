@@ -209,3 +209,20 @@
 .chat-send-btn:not(:disabled):active {
   transform: scale(0.9);
 }
+
+.chat-emoji-keyboard-popover {
+  position: absolute;
+  bottom: 70px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: center;
+  z-index: 40;
+}
+
+.chat-emoji-toggle-btn {
+  font-size: 16px;
+  padding: 6px;
+  flex-shrink: 0;
+}
+

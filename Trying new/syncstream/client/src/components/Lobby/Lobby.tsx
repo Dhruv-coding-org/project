@@ -9,6 +9,7 @@ import './Lobby.css';
 interface LobbyProps {
   onCreateRoom: (username: string, avatar?: string, statusMessage?: string) => Promise<void>;
   onJoinRoom: (username: string, roomCode: string, avatar?: string, statusMessage?: string) => Promise<void>;
+  onOpenProfile?: () => void;
 }
 
 type Tab = 'create' | 'join';
@@ -40,7 +41,7 @@ function saveRecentRoom(code: string) {
   }
 }
 
-export function Lobby({ onCreateRoom, onJoinRoom }: LobbyProps) {
+export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
   const saved = getSavedProfile();
   const [tab, setTab] = useState<Tab>('create');
   const [username, setUsername] = useState(saved.username || '');
@@ -114,6 +115,14 @@ export function Lobby({ onCreateRoom, onJoinRoom }: LobbyProps) {
         </div>
 
         <div className="lobby-navbar-actions">
+          {onOpenProfile && (
+            <button
+              className="btn btn-ghost lobby-nav-btn"
+              onClick={onOpenProfile}
+            >
+              👤 Profile
+            </button>
+          )}
           <button
             className="btn btn-ghost lobby-nav-btn"
             onClick={() => setShowFeaturesModal(true)}
