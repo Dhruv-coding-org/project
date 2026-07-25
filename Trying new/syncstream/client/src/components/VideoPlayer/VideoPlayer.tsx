@@ -27,6 +27,8 @@ interface VideoPlayerProps {
   onRequestStream: () => void;
 }
 
+const ALLOWED_MEDIA_TYPES = "video/*,audio/*,.mp4,.webm,.mkv,.mov,.avi,.flv,.wmv,.m4v,.3gp,.ogv,.ts,.mts,.m2ts,.divx,.mp3,.wav,.flac,.aac,.m4a,.ogg,.opus,.wma";
+
 function formatDuration(secs: number): string {
   if (!isFinite(secs) || isNaN(secs) || secs < 0) return '0:00';
   const h = Math.floor(secs / 3600);
@@ -371,16 +373,14 @@ export function VideoPlayer({
       const video = videoRef.current;
       if (!video) return;
 
-      if (isHost) {
+      if (isHost || guestLocalFileUrl) {
         usingObjectStream.current = false;
         setUsingObjectStreamState(false);
         setIsLoading(true);
-        setLoadingStatus('Loading video file…');
+        setLoadingStatus('Loading local media file…');
         if (video.srcObject) video.srcObject = null;
-        video.src = videoSource.url;
+        video.src = guestLocalFileUrl || videoSource.url;
         video.load();
-        // Audio bridge is now initialized on-demand via composeStreamWithAudio()
-        // No premature setTimeout — waits for loadeddata/canplaythrough events
       } else {
         usingObjectStream.current = false;
         setUsingObjectStreamState(false);
@@ -609,6 +609,27 @@ export function VideoPlayer({
     setLoadingStatus('Buffering audio…');
   }
 
+  function tryComposeStream() {
+    if (!isHost || !isFile || streamCaptured.current) return;
+    const video = videoRef.current as VideoEl | null;
+    if (!video) return;
+
+    console.log('[VideoPlayer] Composing master stream for local file…');
+    composeStreamWithAudio(video).then(masterStream => {
+      if (masterStream && !streamCaptured.current) {
+        const aTracks = masterStream.getAudioTracks();
+        const vTracks = masterStream.getVideoTracks();
+        console.log('[Compositor] Master stream composed — audio:', aTracks.length, 'video:', vTracks.length);
+        onLocalStream(masterStream);
+        streamCaptured.current = true;
+        setVideoReady(vTracks.length > 0);
+        setAudioReady(aTracks.length > 0);
+      }
+    }).catch(err => {
+      console.warn('[Compositor] Stream composition error:', err);
+    });
+  }
+
   function handleNativeLoadedData() {
     const video = videoRef.current;
     if (!video) return;
@@ -619,49 +640,24 @@ export function VideoPlayer({
     video.volume = volume;
     video.muted = muted;
     setVideoReady(true);
-    setLoadingStatus('Checking audio…');
+    setIsLoading(false);
+    setLoadingStatus('Ready');
 
     console.log('[VideoPlayer] loadeddata — volume:', video.volume, 'muted:', video.muted, 'duration:', d);
+    tryComposeStream();
   }
 
-  // Capture stream on canplaythrough — single-pass compositor, zero retries
+  // Capture stream on canplaythrough
   function handleNativeCanPlayThrough() {
     setIsLoading(false);
     setAudioReady(true);
-
-    if (!isHost || !isFile) return;
-    const video = videoRef.current as VideoEl | null;
-    if (!video || streamCaptured.current) return;
-
-    console.log('[VideoPlayer] canplaythrough fired — composing master stream');
-    composeStreamWithAudio(video).then(masterStream => {
-      if (masterStream && !streamCaptured.current) {
-        const aTracks = masterStream.getAudioTracks();
-        const vTracks = masterStream.getVideoTracks();
-        console.log('[Compositor] Master stream ready — audio:', aTracks.length, 'video:', vTracks.length);
-        onLocalStream(masterStream);
-        streamCaptured.current = true;
-        setVideoReady(vTracks.length > 0);
-        setAudioReady(aTracks.length > 0);
-      }
-    });
+    tryComposeStream();
   }
 
   function handleNativePlay() {
     setPlaying(true);
     setIsLoading(false);
-    if (isHost && isFile && !streamCaptured.current) {
-      const video = videoRef.current as VideoEl | null;
-      if (!video) return;
-      console.log('[VideoPlayer] Fallback: composing stream on play event');
-      composeStreamWithAudio(video).then(masterStream => {
-        if (masterStream && !streamCaptured.current) {
-          onLocalStream(masterStream);
-          streamCaptured.current = true;
-          setAudioReady(masterStream.getAudioTracks().length > 0);
-        }
-      });
-    }
+    tryComposeStream();
   }
 
   function handleNativePause() { setPlaying(false); }
@@ -699,9 +695,27 @@ export function VideoPlayer({
     setIsLoading(false);
   }
 
+  function handleGuestFileSelect(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (guestLocalFileUrl && guestLocalFileUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(guestLocalFileUrl);
+    }
+    const objUrl = URL.createObjectURL(file);
+    setGuestLocalFileUrl(objUrl);
+    const video = videoRef.current;
+    if (video) {
+      if (video.srcObject) video.srcObject = null;
+      video.src = objUrl;
+      video.load();
+    }
+  }
+
   function handleNativeError() {
+    const video = videoRef.current;
+    console.error('[VideoPlayer] Native video error:', video?.error);
     setIsLoading(false);
-    setVideoError('Failed to load video file. Please check the file format.');
+    setVideoError('Failed to load video file. Please check the file format or try an MP4/WebM file.');
   }
 
   // ── (6) CONTROLS ───────────────────────────────────────────────
@@ -1018,6 +1032,28 @@ export function VideoPlayer({
             </svg>
             <p>Click to enable audio</p>
             <span>Browser blocked autoplay — tap anywhere to join audio</span>
+          </div>
+        </div>
+      )}
+
+      {/* Guest local file choice overlay */}
+      {!isHost && isFile && !guestLocalFileUrl && (
+        <div className="vp-guest-file-prompt animate-fade-in">
+          <div className="vp-guest-prompt-box glass">
+            <div className="vp-prompt-icon">🍿</div>
+            <div className="vp-prompt-text">
+              <h3>Host selected local file: "{videoSource?.title || 'Video File'}"</h3>
+              <p>For instant 1080p/4K playback from your PC, select your local copy of this file.</p>
+            </div>
+            <label className="btn btn-primary vp-select-local-btn">
+              📁 Select Local File Copy
+              <input
+                type="file"
+                accept={ALLOWED_MEDIA_TYPES}
+                onChange={handleGuestFileSelect}
+                style={{ display: 'none' }}
+              />
+            </label>
           </div>
         </div>
       )}

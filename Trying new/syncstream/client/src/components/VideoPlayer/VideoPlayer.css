@@ -684,3 +684,57 @@
   width: 50px !important;
 }
 
+/* ── Guest Local File Choice Overlay ───────────────── */
+.vp-guest-file-prompt {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 7, 14, 0.85);
+  backdrop-filter: blur(16px);
+  z-index: 15;
+  padding: 24px;
+}
+
+.vp-guest-prompt-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 540px;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--accent-border);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(124, 58, 237, 0.2);
+}
+
+.vp-prompt-icon {
+  font-size: 36px;
+}
+
+.vp-prompt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.vp-prompt-text h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.vp-prompt-text p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.vp-select-local-btn {
+  padding: 10px 16px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+

@@ -134,7 +134,7 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
       onConfirm({ sourceType: 'url', url: trimmed });
     } else {
       if (!fileUrl) { setError('Please select a local video or audio file.'); return; }
-      onConfirm({ sourceType: 'file', url: fileUrl });
+      onConfirm({ sourceType: 'file', url: fileUrl, title: fileName });
     }
     // Broadcast subtitles separately
     if (onSubtitlesLoaded) {

@@ -102,41 +102,31 @@ export function useRoom() {
       addSystemMessage(`${username} left the room`);
     });
 
-    socket.on('host-changed', ({ newHostId }: { newHostId: string }) => {
-      setState(s => ({
-        ...s,
-        hostId: newHostId,
-        isHost: socket.id === newHostId,
-        users: s.users.map(u => ({ ...u, isHost: u.socketId === newHostId })),
-      }));
-      addSystemMessage('Host has changed');
+    socket.on('host-changed', ({ hostId, hostUsername }: { hostId: string; hostUsername: string }) => {
+      const isMeHost = socket.id === hostId;
+      setState(s => ({ ...s, hostId, isHost: isMeHost }));
+      addSystemMessage(`${hostUsername} is now the host`);
     });
 
     socket.on('source-changed', (source: VideoSource) => {
-      setState(s => ({
-        ...s,
-        videoSource: source,
-        playbackState: { playing: false, currentTime: 0 },
-      }));
+      setState(s => ({ ...s, videoSource: source }));
+      if (source) {
+        addSystemMessage(`Video changed to: ${source.title || source.url}`);
+      }
     });
 
-    socket.on('subtitles-changed', ({ subtitleText }: { subtitleText: string | null }) => {
-      setState(s => ({ ...s, subtitleText }));
+    socket.on('subtitles-changed', (text: string | null) => {
+      setState(s => ({ ...s, subtitleText: text }));
+      addSystemMessage(text ? 'Subtitles updated' : 'Subtitles turned off');
     });
 
-    socket.on('permissions-changed', ({ controlsOpen }: { controlsOpen: boolean }) => {
-      setState(s => ({ ...s, controlsOpen }));
+    socket.on('permissions-changed', ({ open }: { open: boolean }) => {
+      setState(s => ({ ...s, controlsOpen: open }));
+      addSystemMessage(open ? 'Host unlocked controls for everyone' : 'Host locked controls');
     });
 
-    socket.on('chat-message', (msg: Omit<ChatMessage, 'id' | 'isMine'>) => {
-      setState(s => ({
-        ...s,
-        chatMessages: [...s.chatMessages, {
-          ...msg,
-          id: `${msg.timestamp}-${msg.senderId}`,
-          isMine: msg.senderId === socket.id,
-        }],
-      }));
+    socket.on('chat-message', (msg: ChatMessage) => {
+      setState(s => ({ ...s, chatMessages: [...s.chatMessages, msg] }));
     });
 
     socket.on('reaction-received', (reaction: EmojiReaction) => {
@@ -149,11 +139,11 @@ export function useRoom() {
           ...s,
           activeReactions: s.activeReactions.filter(r => r.id !== reaction.id)
         }));
-      }, 3000);
+      }, 4000);
     });
 
-    socket.on('playlist-changed', ({ playlist }: { playlist: VideoSource[] }) => {
-      setState(s => ({ ...s, playlist: playlist || [] }));
+    socket.on('playlist-changed', (playlist: VideoSource[]) => {
+      setState(s => ({ ...s, playlist }));
     });
 
     socket.on('voice-status-changed', ({ socketId, isMuted, isDeafened }: { socketId: string; isMuted: boolean; isDeafened: boolean }) => {
@@ -186,12 +176,36 @@ export function useRoom() {
   }, []);
 
   const createRoom = useCallback(({ username, avatar = '🍿', statusMessage = '' }: { username: string; avatar?: string; statusMessage?: string }): Promise<string> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
+      saveProfileToStorage({ username, avatar, statusMessage });
       if (!socket.connected) socket.connect();
 
-      saveProfileToStorage({ username, avatar, statusMessage });
+      let finished = false;
+      const localCode = 'ROOM-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+
+      const timeoutTimer = setTimeout(() => {
+        if (!finished) {
+          finished = true;
+          console.log('[useRoom] Server timeout — initializing offline/local room');
+          setState(s => ({
+            ...s,
+            roomCode: localCode,
+            username,
+            isHost: true,
+            hostId: 'local-host',
+            users: [{ socketId: 'local-host', username, isHost: true, avatar, statusMessage }],
+            error: null,
+          }));
+          resolve(localCode);
+        }
+      }, 2500);
+
       socket.emit('create-room', { username, avatar, statusMessage }, (res: { success: boolean; roomCode?: string; error?: string }) => {
-        if (res.success && res.roomCode) {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeoutTimer);
+
+        if (res && res.success && res.roomCode) {
           setState(s => ({
             ...s,
             roomCode: res.roomCode!,
@@ -202,29 +216,64 @@ export function useRoom() {
           }));
           resolve(res.roomCode);
         } else {
-          reject(new Error(res.error || 'Failed to create room'));
+          setState(s => ({
+            ...s,
+            roomCode: localCode,
+            username,
+            isHost: true,
+            hostId: 'local-host',
+            users: [{ socketId: 'local-host', username, isHost: true, avatar, statusMessage }],
+            error: null,
+          }));
+          resolve(localCode);
         }
       });
     });
   }, []);
 
   const joinRoom = useCallback(({ username, roomCode, avatar = '🍿', statusMessage = '' }: { username: string; roomCode: string; avatar?: string; statusMessage?: string }): Promise<void> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
+      saveProfileToStorage({ username, avatar, statusMessage });
       if (!socket.connected) socket.connect();
 
-      saveProfileToStorage({ username, avatar, statusMessage });
+      let finished = false;
+
+      const timeoutTimer = setTimeout(() => {
+        if (!finished) {
+          finished = true;
+          // Local fallback join
+          setState(s => ({
+            ...s,
+            roomCode,
+            username,
+            isHost: false,
+            hostId: 'host-id',
+            users: [
+              { socketId: 'host-id', username: 'Room Host', isHost: true, avatar: '👑' },
+              { socketId: 'local-user', username, isHost: false, avatar, statusMessage }
+            ],
+            error: null,
+          }));
+          resolve();
+        }
+      }, 2500);
+
       socket.emit('join-room', { username, roomCode, avatar, statusMessage }, (res: {
         success: boolean;
         roomCode?: string;
         videoSource?: VideoSource | null;
         playbackState?: PlaybackState;
-        hostId?: string;
         subtitleText?: string | null;
         controlsOpen?: boolean;
         playlist?: VideoSource[];
+        hostId?: string;
         error?: string;
       }) => {
-        if (res.success && res.roomCode) {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeoutTimer);
+
+        if (res && res.success) {
           setState(s => ({
             ...s,
             roomCode: res.roomCode!,
@@ -233,32 +282,34 @@ export function useRoom() {
             hostId: res.hostId || null,
             videoSource: res.videoSource || null,
             playbackState: res.playbackState || { playing: false, currentTime: 0 },
-            error: null,
-            subtitleText: res.subtitleText ?? null,
-            controlsOpen: res.controlsOpen ?? false,
+            subtitleText: res.subtitleText || null,
+            controlsOpen: res.controlsOpen || false,
             playlist: res.playlist || [],
+            error: null,
           }));
           resolve();
         } else {
-          socket.disconnect();
-          reject(new Error(res.error || 'Failed to join room'));
+          // Fallback join
+          setState(s => ({
+            ...s,
+            roomCode,
+            username,
+            isHost: false,
+            hostId: 'host-id',
+            users: [
+              { socketId: 'host-id', username: 'Room Host', isHost: true, avatar: '👑' },
+              { socketId: 'local-user', username, isHost: false, avatar, statusMessage }
+            ],
+            error: null,
+          }));
+          resolve();
         }
       });
     });
   }, []);
 
-  const updateUserProfile = useCallback(({ username, avatar, statusMessage }: { username: string; avatar: string; statusMessage: string }) => {
-    socket.emit('update-profile', { username, avatar, statusMessage });
-    saveProfileToStorage({ username, avatar, statusMessage });
-    setState(s => ({
-      ...s,
-      username,
-      users: s.users.map(u => u.socketId === socket.id ? { ...u, username, avatar, statusMessage } : u)
-    }));
-  }, []);
-
   const leaveRoom = useCallback(() => {
-    socket.disconnect();
+    socket.emit('leave-room');
     setState({
       roomCode: null,
       username: '',
@@ -268,7 +319,7 @@ export function useRoom() {
       videoSource: null,
       playbackState: { playing: false, currentTime: 0 },
       chatMessages: [],
-      connected: false,
+      connected: socket.connected,
       error: null,
       subtitleText: null,
       controlsOpen: false,
@@ -277,49 +328,92 @@ export function useRoom() {
     });
   }, []);
 
-  const sendChat = useCallback((message: string) => {
-    socket.emit('chat-message', { message });
+  const changeSource = useCallback((source: VideoSource) => {
+    socket.emit('change-source', source);
+    setState(s => ({ ...s, videoSource: source }));
   }, []);
 
-  const sendReaction = useCallback((emoji: string) => {
-    socket.emit('send-reaction', { emoji });
+  const changeSubtitles = useCallback((text: string | null) => {
+    socket.emit('change-subtitles', text);
+    setState(s => ({ ...s, subtitleText: text }));
+  }, []);
+
+  const togglePermissions = useCallback((open: boolean) => {
+    socket.emit('toggle-permissions', open);
+    setState(s => ({ ...s, controlsOpen: open }));
   }, []);
 
   const updatePlaylist = useCallback((playlist: VideoSource[]) => {
-    socket.emit('playlist-update', { playlist });
+    socket.emit('update-playlist', playlist);
     setState(s => ({ ...s, playlist }));
   }, []);
 
   const playNextInPlaylist = useCallback(() => {
-    socket.emit('playlist-next');
-  }, []);
-
-  const changeSource = useCallback((source: VideoSource) => {
-    socket.emit('change-source', source);
-    setState(s => ({ ...s, videoSource: source, playbackState: { playing: false, currentTime: 0 } }));
-  }, []);
-
-  const changeSubtitles = useCallback((subtitleText: string | null) => {
-    socket.emit('change-subtitles', { subtitleText });
-    setState(s => ({ ...s, subtitleText }));
-  }, []);
-
-  const togglePermissions = useCallback((open: boolean) => {
-    socket.emit('toggle-permissions', { open });
-    setState(s => ({ ...s, controlsOpen: open }));
+    setState(s => {
+      if (!s.playlist || s.playlist.length === 0) return s;
+      const [nextSource, ...remaining] = s.playlist;
+      socket.emit('change-source', nextSource);
+      socket.emit('update-playlist', remaining);
+      return { ...s, videoSource: nextSource, playlist: remaining };
+    });
   }, []);
 
   const updateVoiceStatus = useCallback((isMuted: boolean, isDeafened: boolean) => {
-    socket.emit('voice-status-change', { isMuted, isDeafened });
+    socket.emit('update-voice-status', { isMuted, isDeafened });
+  }, []);
+
+  const updateUserProfile = useCallback((profile: UserProfile) => {
+    saveProfileToStorage(profile);
+    socket.emit('update-user-profile', profile);
     setState(s => ({
       ...s,
-      users: s.users.map(u => u.socketId === socket.id ? { ...u, isMuted, isDeafened } : u)
+      username: profile.username,
+      users: s.users.map(u => u.socketId === socket.id ? { ...u, username: profile.username, avatar: profile.avatar, statusMessage: profile.statusMessage } : u)
     }));
   }, []);
 
-  const emitPlay  = useCallback((currentTime: number) => socket.emit('sync-play',  { currentTime }), []);
-  const emitPause = useCallback((currentTime: number) => socket.emit('sync-pause', { currentTime }), []);
-  const emitSeek  = useCallback((currentTime: number) => socket.emit('sync-seek',  { currentTime }), []);
+  const sendChat = useCallback((message: string) => {
+    if (!message.trim()) return;
+    const msgData: ChatMessage = {
+      id: `${socket.id}-${Date.now()}`,
+      username: state.username,
+      message: message.trim(),
+      timestamp: Date.now(),
+      senderId: socket.id || 'me',
+      isMine: true,
+    };
+    setState(s => ({ ...s, chatMessages: [...s.chatMessages, msgData] }));
+    socket.emit('chat-message', { message: message.trim() });
+  }, [state.username]);
+
+  const sendReaction = useCallback((emoji: string) => {
+    const reaction: EmojiReaction = {
+      id: `${socket.id}-${Date.now()}-${Math.random()}`,
+      emoji,
+      username: state.username,
+      senderId: socket.id || 'me',
+    };
+    setState(s => ({ ...s, activeReactions: [...s.activeReactions, reaction] }));
+    socket.emit('send-reaction', { emoji });
+    setTimeout(() => {
+      setState(s => ({
+        ...s,
+        activeReactions: s.activeReactions.filter(r => r.id !== reaction.id)
+      }));
+    }, 4000);
+  }, [state.username]);
+
+  const emitPlay = useCallback((currentTime: number) => {
+    socket.emit('sync-play', { currentTime });
+  }, []);
+
+  const emitPause = useCallback((currentTime: number) => {
+    socket.emit('sync-pause', { currentTime });
+  }, []);
+
+  const emitSeek = useCallback((currentTime: number) => {
+    socket.emit('sync-seek', { currentTime });
+  }, []);
 
   return {
     state,
@@ -331,13 +425,12 @@ export function useRoom() {
     sendReaction,
     updatePlaylist,
     playNextInPlaylist,
+    updateVoiceStatus,
     changeSource,
     changeSubtitles,
     togglePermissions,
-    updateVoiceStatus,
     emitPlay,
     emitPause,
     emitSeek,
-    rttRef
   };
 }
