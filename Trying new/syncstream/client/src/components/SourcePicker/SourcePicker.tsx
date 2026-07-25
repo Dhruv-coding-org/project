@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, DragEvent } from 'react';
 import type { VideoSource } from '../../hooks/useRoom';
 import './SourcePicker.css';
 
@@ -11,31 +11,90 @@ interface SourcePickerProps {
 
 type PickerTab = 'url' | 'file';
 
+const ALLOWED_MEDIA_TYPES = "video/*,audio/*,.mp4,.webm,.mkv,.mov,.avi,.flv,.wmv,.m4v,.3gp,.ogv,.ts,.mts,.m2ts,.divx,.mp3,.wav,.flac,.aac,.m4a,.ogg,.opus,.wma";
+const ALLOWED_SUBTITLE_TYPES = ".vtt,.srt,.ass,.ssa,.sub,.txt,text/vtt,text/plain";
+
+const DEMO_STREAMS = [
+  { label: '🎬 Big Buck Bunny (1080p MP4)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
+  { label: '🚀 Tears of Steel (4K MP4)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4' },
+  { label: '🐘 Elephant Dream (HD MP4)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
+  { label: '🚗 For Bigger Blazes (720p MP4)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
+];
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
+function getMediaKind(filename: string): { label: string; icon: string } {
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  if (['mp3', 'wav', 'flac', 'aac', 'm4a', 'ogg', 'opus', 'wma'].includes(ext)) {
+    return { label: `AUDIO (${ext.toUpperCase()})`, icon: '🎵' };
+  }
+  if (['mkv', 'avi', 'mov', 'flv', 'wmv'].includes(ext)) {
+    return { label: `CONTAINER (${ext.toUpperCase()})`, icon: '📦' };
+  }
+  return { label: `VIDEO (${ext.toUpperCase() || 'MEDIA'})`, icon: '🎬' };
+}
+
 export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePickerProps) {
   const [tab, setTab] = useState<PickerTab>('url');
   const [url, setUrl] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [fileName, setFileName] = useState('');
+  const [fileSize, setFileSize] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState('');
 
   // Subtitle state
   const [subtitleText, setSubtitleText] = useState<string | null>(null);
   const [subtitleName, setSubtitleName] = useState('');
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  function processFileObj(file: File) {
     if (!file) return;
-    // Revoke previous blob URL to prevent memory leaks on large files
+    // Revoke previous blob URL to prevent memory leaks
     if (fileUrl && fileUrl.startsWith('blob:')) {
       URL.revokeObjectURL(fileUrl);
     }
     const objectUrl = URL.createObjectURL(file);
     setFileUrl(objectUrl);
     setFileName(file.name);
+    setFileSize(file.size);
     setError('');
   }
 
-  // Cleanup blob URL on unmount to prevent memory leaks
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) processFileObj(file);
+  }
+
+  function handleDragOver(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFileObj(file);
+    }
+  }
+
+  // Cleanup blob URL on unmount
   useEffect(() => {
     return () => {
       if (fileUrl && fileUrl.startsWith('blob:')) {
@@ -74,7 +133,7 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
       try { new URL(trimmed); } catch { setError('Please enter a valid URL.'); return; }
       onConfirm({ sourceType: 'url', url: trimmed });
     } else {
-      if (!fileUrl) { setError('Please select a video file.'); return; }
+      if (!fileUrl) { setError('Please select a local video or audio file.'); return; }
       onConfirm({ sourceType: 'file', url: fileUrl });
     }
     // Broadcast subtitles separately
@@ -82,6 +141,8 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
       onSubtitlesLoaded(subtitleText);
     }
   }
+
+  const mediaMeta = fileName ? getMediaKind(fileName) : null;
 
   return (
     <div className="source-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -97,7 +158,7 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
                 </linearGradient>
               </defs>
             </svg>
-            Choose Video Source
+            Choose Media Source
           </h2>
           <button className="btn-icon" onClick={onClose} id="source-close-btn" aria-label="Close">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -112,29 +173,21 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
             onClick={() => { setTab('url'); setError(''); }}
             id="source-tab-url"
           >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M5.5 8.5a3.5 3.5 0 000-3 3.5 3.5 0 000 3zM8.5 5.5a3.5 3.5 0 010 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              <path d="M2 7a5 5 0 0110 0 5 5 0 01-10 0z" stroke="currentColor" strokeWidth="1.2"/>
-            </svg>
-            Stream URL
+            🌐 Stream URL / YouTube
           </button>
           <button
             className={`source-tab ${tab === 'file' ? 'active' : ''}`}
             onClick={() => { setTab('file'); setError(''); }}
             id="source-tab-file"
           >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M2 3a1 1 0 011-1h5l3 3v7a1 1 0 01-1 1H3a1 1 0 01-1-1V3z" stroke="currentColor" strokeWidth="1.2"/>
-              <path d="M8 2v3h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-            </svg>
-            Local File
+            📁 Local File (Video / Audio)
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="source-form">
           {tab === 'url' ? (
             <div className="source-field">
-              <label htmlFor="source-url-input" className="source-label">Video URL (mp4, webm, etc.)</label>
+              <label htmlFor="source-url-input" className="source-label">Stream or Video URL</label>
               <input
                 id="source-url-input"
                 className="input"
@@ -144,48 +197,78 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
                 onChange={e => { setUrl(e.target.value); setError(''); }}
                 autoFocus
               />
-              <p className="source-hint">Paste a link to YouTube, Vimeo, Twitch, or a direct mp4/webm file.</p>
+              <p className="source-hint">Supports YouTube, Vimeo, Twitch, and direct MP4 / WebM / HLS links.</p>
+
+              {/* Demo presets */}
+              <div className="source-presets-container">
+                <span className="source-preset-title">Quick Demo Streams:</span>
+                <div className="source-preset-chips">
+                  {DEMO_STREAMS.map(stream => (
+                    <button
+                      key={stream.url}
+                      type="button"
+                      className="source-preset-chip"
+                      onClick={() => setUrl(stream.url)}
+                      title={`Load ${stream.label}`}
+                    >
+                      {stream.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : (
             <div className="source-field">
-              <label className="source-label">Select a video file</label>
-              <label className="source-file-label" htmlFor="source-file-input">
+              <label className="source-label">Select Video or Audio File</label>
+              <label
+                className={`source-file-label ${isDragging ? 'dragging' : ''} ${fileName ? 'has-file' : ''}`}
+                htmlFor="source-file-input"
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 {fileName ? (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M3 8l4 4 6-7" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span className="source-file-name">{fileName}</span>
-                  </>
+                  <div className="source-file-selected-box">
+                    <div className="source-file-icon">{mediaMeta?.icon}</div>
+                    <div className="source-file-meta">
+                      <span className="source-file-name">{fileName}</span>
+                      <div className="source-file-tags">
+                        <span className="badge badge-accent">{mediaMeta?.label}</span>
+                        {fileSize && <span className="source-file-size">{formatBytes(fileSize)}</span>}
+                      </div>
+                    </div>
+                  </div>
                 ) : (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M8 3v8M4 7l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M2 13h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  <div className="source-file-placeholder">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 4v12M8 8l4-4 4 4" stroke="var(--accent-bright)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M4 18h16" stroke="var(--border-strong)" strokeWidth="2" strokeLinecap="round"/>
                     </svg>
-                    <span>Click to choose a file</span>
-                  </>
+                    <span>Drag & drop local media file here or click to browse</span>
+                  </div>
                 )}
               </label>
               <input
                 id="source-file-input"
                 type="file"
-                accept="video/*"
+                accept={ALLOWED_MEDIA_TYPES}
                 onChange={handleFile}
                 className="source-file-input-hidden"
-                aria-label="Select video file"
+                aria-label="Select local video or audio file"
               />
-              <p className="source-hint">mp4, webm, mov, mkv supported. File stays local to you.</p>
+              <p className="source-hint">
+                <strong>Supported Formats:</strong> MP4, WebM, MKV, MOV, AVI, FLV, WMV, M4V, 3GP, OGV, TS, MP3, WAV, FLAC, AAC, M4A, OGG, OPUS, WMA. (Plays locally on your device with 0 upload delay).
+              </p>
             </div>
           )}
 
-          {/* ── Subtitle file (optional) ─────────────────── */}
+          {/* ── Subtitle File (Optional) ─────────────────── */}
           <div className="source-subtitle-section">
             <div className="source-subtitle-divider">
-              <span>Optional</span>
+              <span>Optional Subtitles</span>
             </div>
             <div className="source-field">
-              <label className="source-label">Subtitle File (.srt, .vtt)</label>
+              <label className="source-label">Subtitle File (.vtt, .srt, .ass, .ssa, .txt)</label>
               <label className="source-file-label source-subtitle-label" htmlFor="source-subtitle-input">
                 {subtitleName ? (
                   <>
@@ -210,19 +293,19 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
                       <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.1"/>
                       <path d="M3 8h4M3 10h6" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
                     </svg>
-                    <span>Add subtitles (optional)</span>
+                    <span>Add subtitles (.srt, .vtt, .ass, .ssa)</span>
                   </>
                 )}
               </label>
               <input
                 id="source-subtitle-input"
                 type="file"
-                accept=".vtt,.srt"
+                accept={ALLOWED_SUBTITLE_TYPES}
                 onChange={handleSubtitleFile}
                 className="source-file-input-hidden"
                 aria-label="Select subtitle file"
               />
-              <p className="source-hint">Foreign language? Add .srt or .vtt subtitles for everyone in the room.</p>
+              <p className="source-hint">Broadcasting subtitles will synchronize subtitle cues for all watchers in the room.</p>
             </div>
           </div>
 
@@ -245,7 +328,7 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
                 <path d="M4 7l4-3v6L4 7z" fill="currentColor"/>
                 <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
               </svg>
-              Load Video
+              Load Media
             </button>
           </div>
         </form>
@@ -253,4 +336,3 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
     </div>
   );
 }
-

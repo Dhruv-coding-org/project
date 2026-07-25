@@ -1,8 +1,8 @@
 /**
- * subtitleParser.ts — Lightweight SRT / WebVTT parser
+ * subtitleParser.ts — Enhanced SRT / WebVTT / ASS / SSA / SUB Subtitle Parser
  *
- * Accepts the raw text content of a .srt or .vtt file and returns
- * an array of SubtitleCue objects with times in seconds.
+ * Accepts the raw text content of subtitle files (.srt, .vtt, .ass, .ssa, .txt)
+ * and returns an array of SubtitleCue objects with times in seconds.
  */
 
 export interface SubtitleCue {
@@ -12,8 +12,8 @@ export interface SubtitleCue {
 }
 
 /**
- * Convert a timestamp string like "01:23:45,678" or "01:23:45.678"
- * to total seconds.  Also handles the short form "MM:SS,mmm".
+ * Convert a timestamp string like "01:23:45,678", "01:23:45.678", or "1:23:45.67"
+ * to total seconds.
  */
 function parseTimestamp(raw: string): number {
   const cleaned = raw.trim().replace(',', '.');
@@ -33,22 +33,29 @@ function parseTimestamp(raw: string): number {
 }
 
 /**
- * Parse raw .srt or .vtt text into an array of cues.
- *
- * Handles:
- *  - WEBVTT header (ignored)
- *  - Numeric cue indices (ignored)
- *  - Timestamps with commas (SRT) or dots (VTT)
- *  - Multi-line cue text
- *  - Basic HTML tags like <i>, <b> are preserved for rendering
+ * Clean subtitle text tags (strip ASS/SSA format overrides like {\pos(...)} or {\b1})
+ */
+function cleanSubtitleText(raw: string): string {
+  return raw
+    .replace(/\\N/gi, '\n') // ASS/SSA newline token
+    .replace(/\{[^}]+\}/g, '') // Strip ASS style tags
+    .trim();
+}
+
+/**
+ * Parse raw subtitle text into an array of cues.
+ * Supports: SRT, WebVTT, ASS, SSA format lines.
  */
 export function parseSubtitles(rawText: string): SubtitleCue[] {
   const normalized = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   const lines = normalized.split('\n');
   const cues: SubtitleCue[] = [];
 
-  const timeRegex =
-    /(\d{1,2}:\d{2}:\d{2}[.,]\d{2,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[.,]\d{2,3})/;
+  // SRT / WebVTT Regex: 00:01:20,000 --> 00:01:23,500 or 01:20.000 --> 01:23.500
+  const srtTimeRegex = /(\d{1,2}:\d{2}(?::\d{2})?[.,]\d{2,3})\s*-->\s*(\d{1,2}:\d{2}(?::\d{2})?[.,]\d{2,3})/;
+
+  // ASS / SSA Regex: Dialogue: 0,0:01:20.00,0:01:23.50,Default,,0,0,0,,Text
+  const assDialogueRegex = /^Dialogue:\s*[^,]*,\s*(\d+:\d{2}:\d{2}[.,]\d+)\s*,\s*(\d+:\d{2}:\d{2}[.,]\d+)\s*,\s*[^,]*(?:,[^,]*){5},(.*)$/i;
 
   let currentCue: Partial<SubtitleCue> = {};
   let textLines: string[] = [];
@@ -56,17 +63,35 @@ export function parseSubtitles(rawText: string): SubtitleCue[] {
   for (const rawLine of lines) {
     const line = rawLine.trim();
 
-    // Skip WEBVTT header, NOTE blocks, STYLE blocks
-    if (line === 'WEBVTT' || line.startsWith('NOTE') || line.startsWith('STYLE')) {
+    // Check ASS / SSA line match
+    const assMatch = line.match(assDialogueRegex);
+    if (assMatch) {
+      cues.push({
+        startTime: parseTimestamp(assMatch[1]),
+        endTime: parseTimestamp(assMatch[2]),
+        text: cleanSubtitleText(assMatch[3]),
+      });
       continue;
     }
 
-    const match = line.match(timeRegex);
+    // Skip WebVTT / ASS header metadata
+    if (
+      line === 'WEBVTT' ||
+      line.startsWith('NOTE') ||
+      line.startsWith('STYLE') ||
+      line.startsWith('[Script Info]') ||
+      line.startsWith('[V4+ Styles]') ||
+      line.startsWith('Format:')
+    ) {
+      continue;
+    }
+
+    const match = line.match(srtTimeRegex);
 
     if (match) {
       // Flush previous cue if any
       if (currentCue.startTime !== undefined && textLines.length > 0) {
-        currentCue.text = textLines.join('\n');
+        currentCue.text = cleanSubtitleText(textLines.join('\n'));
         cues.push(currentCue as SubtitleCue);
         textLines = [];
       }
@@ -77,7 +102,7 @@ export function parseSubtitles(rawText: string): SubtitleCue[] {
     } else if (line === '' && currentCue.startTime !== undefined) {
       // Blank line = end of cue
       if (textLines.length > 0) {
-        currentCue.text = textLines.join('\n');
+        currentCue.text = cleanSubtitleText(textLines.join('\n'));
         cues.push(currentCue as SubtitleCue);
         currentCue = {};
         textLines = [];
@@ -91,16 +116,16 @@ export function parseSubtitles(rawText: string): SubtitleCue[] {
 
   // Flush last cue
   if (currentCue.startTime !== undefined && textLines.length > 0) {
-    currentCue.text = textLines.join('\n');
+    currentCue.text = cleanSubtitleText(textLines.join('\n'));
     cues.push(currentCue as SubtitleCue);
   }
 
-  return cues;
+  // Sort cues chronologically
+  return cues.sort((a, b) => a.startTime - b.startTime);
 }
 
 /**
  * Binary-search the cues array for the active cue at a given time.
- * Returns the cue text or empty string.
  */
 export function getActiveCueText(cues: SubtitleCue[], time: number): string {
   if (cues.length === 0) return '';
