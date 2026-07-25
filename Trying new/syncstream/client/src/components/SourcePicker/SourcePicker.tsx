@@ -59,7 +59,14 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
     if (fileUrl && fileUrl.startsWith('blob:')) {
       URL.revokeObjectURL(fileUrl);
     }
-    const objectUrl = URL.createObjectURL(file);
+
+    let mediaBlob: Blob = file;
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (ext === 'mkv' || ext === 'avi' || ext === 'mov' || ext === 'flv' || ext === 'wmv') {
+      mediaBlob = new Blob([file], { type: 'video/mp4' });
+    }
+
+    const objectUrl = URL.createObjectURL(mediaBlob);
     setFileUrl(objectUrl);
     setFileName(file.name);
     setFileSize(file.size);

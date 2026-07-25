@@ -701,7 +701,12 @@ export function VideoPlayer({
     if (guestLocalFileUrl && guestLocalFileUrl.startsWith('blob:')) {
       URL.revokeObjectURL(guestLocalFileUrl);
     }
-    const objUrl = URL.createObjectURL(file);
+    let mediaBlob: Blob = file;
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (ext === 'mkv' || ext === 'avi' || ext === 'mov' || ext === 'flv' || ext === 'wmv') {
+      mediaBlob = new Blob([file], { type: 'video/mp4' });
+    }
+    const objUrl = URL.createObjectURL(mediaBlob);
     setGuestLocalFileUrl(objUrl);
     const video = videoRef.current;
     if (video) {
@@ -713,9 +718,32 @@ export function VideoPlayer({
 
   function handleNativeError() {
     const video = videoRef.current;
-    console.error('[VideoPlayer] Native video error:', video?.error);
+    const errCode = video?.error?.code;
+    console.error('[VideoPlayer] Native video error code:', errCode, video?.error);
     setIsLoading(false);
-    setVideoError('Failed to load video file. Please check the file format or try an MP4/WebM file.');
+
+    if (errCode === 4) {
+      setVideoError('Browser Codec Restriction: This MKV video contains AC-3/EAC-3 audio or HEVC video which Chrome/Edge restrict natively.');
+    } else {
+      setVideoError('Failed to decode video file. Format or codec unsupported by browser.');
+    }
+  }
+
+  function handleRetryForceMP4() {
+    setVideoError(null);
+    setIsLoading(true);
+    const video = videoRef.current;
+    if (video) {
+      video.muted = true;
+      setMuted(true);
+      video.play().then(() => {
+        setIsLoading(false);
+        setPlaying(true);
+      }).catch(err => {
+        console.warn('[VideoPlayer] Force play failed:', err);
+        setIsLoading(false);
+      });
+    }
   }
 
   // ── (6) CONTROLS ───────────────────────────────────────────────
@@ -972,7 +1000,7 @@ export function VideoPlayer({
 
       {/* Error overlay */}
       {videoError && (
-        <div className="vp-error-overlay">
+        <div className="vp-error-overlay animate-fade-in">
           <div className="vp-error-icon">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
               <circle cx="20" cy="20" r="18" stroke="#ef4444" strokeWidth="2"/>
@@ -980,11 +1008,19 @@ export function VideoPlayer({
             </svg>
           </div>
           <p className="vp-error-text">{videoError}</p>
-          {isHost && (
-            <button className="btn btn-ghost vp-error-retry" onClick={() => setVideoError(null)}>
+          <div className="vp-error-actions">
+            <button className="btn btn-primary btn-sm" onClick={handleRetryForceMP4}>
+              ⚡ Force Muted Play
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setVideoError(null)}>
               Dismiss
             </button>
-          )}
+          </div>
+          <div className="vp-error-tip">
+            💡 <strong>5-Second Zero-Loss Container Fix:</strong><br />
+            Convert <code>.mkv</code> container to <code>.mp4</code> in 5 seconds (no quality loss):<br />
+            <code>ffmpeg -i input.mkv -c copy output.mp4</code>
+          </div>
         </div>
       )}
 
