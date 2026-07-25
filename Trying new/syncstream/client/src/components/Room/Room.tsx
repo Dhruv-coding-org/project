@@ -7,6 +7,7 @@ import { Chat } from '../Chat/Chat';
 import { SourcePicker } from '../SourcePicker/SourcePicker';
 import { PlaylistModal } from '../Playlist/PlaylistModal';
 import { ProfileModal } from '../Profile/ProfileModal';
+import { ShortcutsModal } from '../Shortcuts/ShortcutsModal';
 import { RoomSkeleton } from '../Skeleton/Skeleton';
 import { parseSubtitles } from '../../utils/subtitleParser';
 import type { SubtitleCue } from '../../utils/subtitleParser';
@@ -50,6 +51,9 @@ export function Room({
   const [showSourcePicker, setShowSourcePicker] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [isTheaterMode, setIsTheaterMode] = useState(false);
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'chat' | 'users'>('chat');
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [copiedToast, setCopiedToast] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
@@ -81,8 +85,43 @@ export function Room({
 
   // Show skeleton briefly on mount
   useEffect(() => {
-    const timer = setTimeout(() => setShowSkeleton(false), 500);
+    const timer = setTimeout(() => setShowSkeleton(false), 450);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.getAttribute('contenteditable') === 'true'
+      );
+
+      if (e.key === '?' && !isInput) {
+        e.preventDefault();
+        setShowShortcutsModal(prev => !prev);
+      } else if (e.altKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        setIsTheaterMode(prev => !prev);
+      } else if (e.altKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        setActiveSidebarTab('chat');
+      } else if (e.altKey && e.key.toLowerCase() === 'u') {
+        e.preventDefault();
+        setActiveSidebarTab('users');
+      } else if (e.altKey && e.key.toLowerCase() === 'q') {
+        e.preventDefault();
+        setShowPlaylistModal(prev => !prev);
+      } else if (e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        setShowSourcePicker(prev => !prev);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Host responds to guest's sync request with current playback position
@@ -147,7 +186,7 @@ export function Room({
   }
 
   return (
-    <div className="room animate-fade-in">
+    <div className={`room animate-fade-in ${isTheaterMode ? 'room-theater-mode' : ''}`}>
       {/* Toast notification */}
       {copiedToast && (
         <div className="toast-container">
@@ -215,6 +254,24 @@ export function Room({
         </div>
 
         <div className="room-header-right">
+          {/* Theater Mode Toggle */}
+          <button
+            className={`btn btn-ghost room-header-btn ${isTheaterMode ? 'active' : ''}`}
+            onClick={() => setIsTheaterMode(prev => !prev)}
+            title="Toggle Theater / Cinema Mode (Alt+T)"
+          >
+            🎬 {isTheaterMode ? 'Exit Theater' : 'Theater Mode'}
+          </button>
+
+          {/* Shortcuts Modal Trigger */}
+          <button
+            className="btn btn-ghost room-header-btn"
+            onClick={() => setShowShortcutsModal(true)}
+            title="Keyboard Shortcuts (?)"
+          >
+            ⌨️ Shortcuts
+          </button>
+
           {/* Profile Settings Button */}
           <button
             className="btn btn-ghost room-profile-btn"
@@ -228,7 +285,7 @@ export function Room({
           <button
             className="btn btn-ghost room-playlist-btn"
             onClick={() => setShowPlaylistModal(true)}
-            title="View Queue / Playlist"
+            title="View Queue / Playlist (Alt+Q)"
           >
             📜 Queue ({state.playlist?.length || 0})
           </button>
@@ -260,6 +317,7 @@ export function Room({
               className="btn btn-ghost room-source-btn"
               onClick={() => setShowSourcePicker(true)}
               id="open-source-picker-btn"
+              title="Load Video Source (Alt+S)"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <rect x="1" y="2" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
@@ -305,28 +363,55 @@ export function Room({
         </main>
 
         {/* Right sidebar */}
-        <aside className="room-sidebar glass">
-          <UserList
-            users={state.users}
-            hostId={state.hostId}
-            roomCode={state.roomCode!}
-            onLeave={onLeave}
-            voiceActive={voiceActive}
-            isMuted={isMuted}
-            isDeafened={isDeafened}
-            onJoinVoice={joinVoice}
-            onLeaveVoice={leaveVoice}
-            onToggleMic={toggleMic}
-            onToggleDeafen={toggleDeafen}
-          />
-          <Chat
-            messages={state.chatMessages}
-            onSend={onSendChat}
-            onSendReaction={onSendReaction}
-            onSeek={onEmitSeek}
-            mySocketId={socket.id}
-          />
-        </aside>
+        {!isTheaterMode && (
+          <aside className="room-sidebar glass">
+            {/* Unified Sidebar Navigation Tabs */}
+            <div className="room-sidebar-tabs">
+              <button
+                className={`room-sidebar-tab ${activeSidebarTab === 'chat' ? 'active' : ''}`}
+                onClick={() => setActiveSidebarTab('chat')}
+                title="Chat Panel (Alt+C)"
+              >
+                💬 Chat
+              </button>
+              <button
+                className={`room-sidebar-tab ${activeSidebarTab === 'users' ? 'active' : ''}`}
+                onClick={() => setActiveSidebarTab('users')}
+                title="Watchers & Voice Panel (Alt+U)"
+              >
+                👥 Watchers ({state.users.length})
+              </button>
+            </div>
+
+            {/* Sidebar Content Switcher */}
+            <div className="room-sidebar-content">
+              {activeSidebarTab === 'users' && (
+                <UserList
+                  users={state.users}
+                  hostId={state.hostId}
+                  roomCode={state.roomCode!}
+                  onLeave={onLeave}
+                  voiceActive={voiceActive}
+                  isMuted={isMuted}
+                  isDeafened={isDeafened}
+                  onJoinVoice={joinVoice}
+                  onLeaveVoice={leaveVoice}
+                  onToggleMic={toggleMic}
+                  onToggleDeafen={toggleDeafen}
+                />
+              )}
+              {activeSidebarTab === 'chat' && (
+                <Chat
+                  messages={state.chatMessages}
+                  onSend={onSendChat}
+                  onSendReaction={onSendReaction}
+                  onSeek={onEmitSeek}
+                  mySocketId={socket.id}
+                />
+              )}
+            </div>
+          </aside>
+        )}
       </div>
 
       {/* Source picker modal */}
@@ -361,6 +446,12 @@ export function Room({
           onClose={() => setShowProfileModal(false)}
         />
       )}
+
+      {/* Shortcuts modal */}
+      <ShortcutsModal
+        isOpen={showShortcutsModal}
+        onClose={() => setShowShortcutsModal(false)}
+      />
     </div>
   );
 }

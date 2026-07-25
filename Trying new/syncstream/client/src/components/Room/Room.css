@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────
-   Room v3.0 — Spacious layout + enhanced header
+   Room v3.0 — MNC Grade Header, Theater Mode & Navigation
    ───────────────────────────────────────────────────────── */
 
 .room {
@@ -34,7 +34,7 @@
   bottom: -1px;
   left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent-border), rgba(34, 211, 238, 0.15), var(--accent-border), transparent);
+  background: linear-gradient(90deg, transparent, var(--accent-border), rgba(34, 211, 238, 0.2), var(--accent-border), transparent);
   pointer-events: none;
 }
 
@@ -168,6 +168,18 @@
   gap: 8px;
 }
 
+.room-header-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.room-header-btn.active {
+  background: rgba(124, 58, 237, 0.2) !important;
+  border-color: var(--accent-light) !important;
+  color: var(--accent-bright) !important;
+}
+
 .room-permissions-btn {
   padding: 7px 12px;
   font-size: 12px;
@@ -218,6 +230,7 @@
   background: var(--bg-base);
   overflow: hidden;
   position: relative;
+  transition: all 0.3s var(--ease);
 }
 
 /* radial glow behind the video */
@@ -234,7 +247,7 @@
 
 /* ── Sidebar ──────────────────────────────────────── */
 .room-sidebar {
-  width: 340px;
+  width: 360px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -244,6 +257,58 @@
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
   overflow: hidden;
   min-height: 0;
+  transition: all 0.3s var(--ease);
+}
+
+.room-sidebar-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+  padding: 6px;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.room-sidebar-tab {
+  flex: 1;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.room-sidebar-tab:hover {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.room-sidebar-tab.active {
+  color: #fff;
+  background: var(--accent-grad);
+  box-shadow: 0 2px 10px var(--accent-glow);
+}
+
+.room-sidebar-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Theater Mode ─────────────────────────────────── */
+.room-theater-mode .room-main {
+  padding: 0;
+  background: #000;
+}
+
+.room-theater-mode .room-sidebar {
+  display: none;
 }
 
 /* ── Toast override for room scope ────────────────── */
@@ -256,7 +321,7 @@
 
 /* ── Responsive: tablet (900-1200px) ─────────────────── */
 @media (max-width: 1200px) {
-  .room-sidebar { width: 300px; }
+  .room-sidebar { width: 320px; }
   .room-header-name { display: none; }
 }
 
@@ -307,11 +372,13 @@
     height: 48px;
   }
   .room-source-btn span,
-  .room-leave-btn span {
+  .room-leave-btn span,
+  .room-header-btn span {
     display: none;
   }
   .room-source-btn,
-  .room-leave-btn {
+  .room-leave-btn,
+  .room-header-btn {
     padding: 7px 8px;
     min-width: 32px;
   }

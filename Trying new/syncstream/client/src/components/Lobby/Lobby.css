@@ -1,16 +1,71 @@
 /* ─────────────────────────────────────────────────────────
-   Lobby v3.0 — Premium glassmorphism + animated border
+   Lobby v3.0 — MNC Grade Glassmorphic Layout & Navigation
    ───────────────────────────────────────────────────────── */
 
 .lobby {
   min-height: 100svh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 80px 24px 32px;
   position: relative;
   overflow: hidden;
   background: var(--bg-base);
+}
+
+/* ── Landing Top Navbar ───────────────────────────────── */
+.lobby-navbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  background: rgba(10, 14, 28, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  z-index: 20;
+}
+
+.lobby-navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lobby-navbar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lobby-navbar-title {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.navbar-badge {
+  font-size: 9px;
+  padding: 2px 8px;
+}
+
+.lobby-navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lobby-nav-btn {
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
 }
 
 /* ── Grid pattern background ──────────────────────── */
@@ -19,11 +74,11 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(124, 58, 237, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.035) 1px, transparent 1px);
   background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, black 30%, transparent 70%);
-  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, black 30%, transparent 70%);
+  mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 40%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 40%, transparent 80%);
   pointer-events: none;
 }
 
@@ -57,12 +112,13 @@
 /* ── Card ─────────────────────────────────────────── */
 .lobby-card {
   width: 100%;
-  max-width: 460px;
-  padding: 44px;
+  max-width: 480px;
+  padding: 40px;
   position: relative;
   z-index: 1;
   box-shadow: var(--shadow-xl), var(--shadow-glow);
-  border: 1px solid rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.16);
+  border-radius: var(--radius-xl);
 }
 
 /* animated gradient border on top */
@@ -82,10 +138,10 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 36px;
+  margin-bottom: 28px;
 }
 .lobby-logo-icon {
-  width: 56px; height: 56px;
+  width: 54px; height: 54px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -108,7 +164,7 @@
 
 .lobby-logo-name {
   font-size: 26px;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: -0.04em;
   background: var(--accent-grad-h);
   background-size: 200% auto;
@@ -120,19 +176,19 @@
 }
 .lobby-logo-tagline {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin: 3px 0 0;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 /* ── Tabs ─────────────────────────────────────────── */
 .lobby-tabs {
   display: flex;
-  background: var(--bg-glass-2);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 4px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
   gap: 4px;
 }
 .lobby-tab {
@@ -152,7 +208,63 @@
 .lobby-tab.active {
   background: var(--accent-grad);
   color: #fff;
-  box-shadow: 0 2px 12px var(--accent-glow);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+/* ── Recent Rooms ──────────────────────────────────── */
+.lobby-recent-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(168, 85, 247, 0.2);
+  border-radius: var(--radius-md);
+}
+
+.lobby-recent-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.lobby-recent-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lobby-recent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(124, 58, 237, 0.12);
+  border: 1px solid var(--accent-border);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.lobby-recent-chip:hover {
+  background: rgba(124, 58, 237, 0.25);
+  border-color: var(--accent-light);
+  transform: translateY(-1px);
+}
+
+.recent-code {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--accent-bright);
+}
+
+.recent-time {
+  font-size: 10px;
+  color: var(--text-muted);
 }
 
 /* ── Form ─────────────────────────────────────────── */
@@ -162,41 +274,12 @@
   gap: 18px;
 }
 
-.lobby-avatar-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-}
-
-.lobby-avatar-item {
-  font-size: 1.25rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.lobby-avatar-item:hover,
-.lobby-avatar-item.selected {
-  background: rgba(124, 58, 237, 0.35);
-  border-color: #a855f7;
-  transform: scale(1.15);
-}
 .lobby-field {
   display: flex;
   flex-direction: column;
   gap: 7px;
 }
+
 .lobby-label {
   font-size: 11px;
   font-weight: 700;
@@ -204,6 +287,43 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+
+.required-star {
+  color: var(--accent-rose);
+}
+
+.lobby-avatar-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+}
+
+.lobby-avatar-item {
+  font-size: 1.25rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.lobby-avatar-item:hover,
+.lobby-avatar-item.selected {
+  background: rgba(124, 58, 237, 0.35);
+  border-color: var(--accent-light);
+  transform: scale(1.15);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
 .lobby-code-input {
   text-transform: uppercase;
   letter-spacing: 0.3em;
@@ -229,7 +349,7 @@
   width: 100%;
   padding: 13px;
   font-size: 15px;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .lobby-spinner {
@@ -239,6 +359,40 @@
   border-radius: 50%;
   display: inline-block;
   animation: spin 0.7s linear infinite;
+}
+
+/* ── Features Showcase Grid ──────────────────────────── */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin: 10px 0;
+}
+
+.feature-card {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feature-icon {
+  font-size: 20px;
+}
+
+.feature-card h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.feature-card p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 /* ── Footer ───────────────────────────────────────── */
@@ -251,14 +405,20 @@
 }
 
 /* ── Responsive ───────────────────────────────────── */
-@media (max-width: 480px) {
+@media (max-width: 580px) {
+  .lobby-navbar {
+    padding: 0 16px;
+  }
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
   .lobby-card {
-    padding: 28px 24px;
+    padding: 24px 20px;
   }
   .lobby-logo-name {
     font-size: 20px;
   }
   .lobby-logo-icon {
-    width: 46px; height: 46px;
+    width: 44px; height: 44px;
   }
 }
