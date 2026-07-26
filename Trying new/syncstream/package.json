@@ -1,0 +1,45 @@
+{
+  "name": "syncstream-desktop",
+  "version": "1.0.0",
+  "description": "SyncStream Desktop Watch Party Application",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron electron/main.js",
+    "dev:server": "cd server && npm start",
+    "dev:client": "cd client && npm run dev",
+    "electron:dev": "concurrently \"npm run dev:server\" \"npm run dev:client\" \"wait-on http://localhost:5173 && electron .\"",
+    "dist": "cd client && npm run build && cd .. && electron-builder"
+  },
+  "build": {
+    "appId": "com.syncstream.desktop",
+    "productName": "SyncStream",
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "files": [
+      "electron/**/*",
+      "client/dist/**/*",
+      "server/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^30.0.0",
+    "electron-builder": "^25.1.8",
+    "wait-on": "^7.2.0"
+  }
+}

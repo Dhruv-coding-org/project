@@ -12,9 +12,6 @@ const peerConfig: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
   ],
 };
 
@@ -141,8 +138,6 @@ export function useWebRTC({ isHost, hostId, localStream, onVoiceStatusChange }: 
     const pc = new RTCPeerConnection(peerConfig);
     peers.current.set(peerId, pc);
 
-    stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
     pc.onicecandidate = ({ candidate }) => {
       if (candidate) socket.emit('webrtc-ice-candidate', { targetId: peerId, candidate });
     };
@@ -165,10 +160,7 @@ export function useWebRTC({ isHost, hostId, localStream, onVoiceStatusChange }: 
       }
     };
 
-    const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
-    await pc.setLocalDescription(offer);
-    await applyBitrateLimit(pc, MAX_VIDEO_BITRATE_BPS);
-    socket.emit('webrtc-offer', { targetId: peerId, offer });
+    stream.getTracks().forEach(track => pc.addTrack(track, stream));
   }, []);
 
   const createGuestPeer = useCallback((senderId: string) => {

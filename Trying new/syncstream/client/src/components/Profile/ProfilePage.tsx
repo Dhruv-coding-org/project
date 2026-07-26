@@ -17,6 +17,7 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
     bio: '',
     statusMessage: '',
     theme: 'dark-void',
+    // eslint-disable-next-line react-hooks/purity
     updatedAt: Date.now(),
   });
   const [starredVideos, setStarredVideos] = useState<StarredVideoDB[]>([]);

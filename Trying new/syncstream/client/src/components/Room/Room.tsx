@@ -60,6 +60,7 @@ export function Room({
 
   const {
     requestStream,
+    setOnRemoteStream,
     remoteStream,
     voiceActive,
     isMuted,
@@ -132,11 +133,11 @@ export function Room({
 
     function handleSyncRequest(e: Event) {
       const detail = (e as CustomEvent).detail;
-      const videoEl = document.querySelector('.vp-video') as HTMLVideoElement | null;
+      const videoEl = document.querySelector('video') as HTMLVideoElement | null;
       let currentTime = 0;
       let playing = false;
 
-      if (videoEl && videoEl.tagName === 'VIDEO') {
+      if (videoEl) {
         currentTime = videoEl.currentTime || 0;
         playing = !videoEl.paused;
       }
@@ -388,6 +389,7 @@ export function Room({
             onLocalStream={handleLocalStream}
             remoteStreamRef={remoteStream}
             onRequestStream={requestStream}
+            setOnRemoteStream={setOnRemoteStream}
           />
         </main>
 

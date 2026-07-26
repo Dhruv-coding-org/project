@@ -55,19 +55,20 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
 
   function processFileObj(file: File) {
     if (!file) return;
-    // Revoke previous blob URL to prevent memory leaks
     if (fileUrl && fileUrl.startsWith('blob:')) {
       URL.revokeObjectURL(fileUrl);
     }
 
-    let mediaBlob: Blob = file;
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (ext === 'mkv' || ext === 'avi' || ext === 'mov' || ext === 'flv' || ext === 'wmv') {
-      mediaBlob = new Blob([file], { type: 'video/mp4' });
+    // Use zero-RAM HTTP Range Request streaming if absolute disk path is available
+    const diskPath = (file as unknown as { path?: string }).path;
+    if (diskPath) {
+      const streamUrl = `http://localhost:3001/api/stream?path=${encodeURIComponent(diskPath)}`;
+      setFileUrl(streamUrl);
+    } else {
+      const objectUrl = URL.createObjectURL(file);
+      setFileUrl(objectUrl);
     }
 
-    const objectUrl = URL.createObjectURL(mediaBlob);
-    setFileUrl(objectUrl);
     setFileName(file.name);
     setFileSize(file.size);
     setError('');

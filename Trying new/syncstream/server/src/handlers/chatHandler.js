@@ -14,21 +14,23 @@ function registerChatHandlers(io, socket) {
     }
   });
 
-  socket.on('change-subtitles', ({ subtitleText }) => {
+  socket.on('change-subtitles', (data) => {
     const room = roomManager.getRoom(socket.roomCode);
     if (room) {
       if (room.hostId !== socket.id) return;
-      room.subtitleText = subtitleText;
-      socket.to(socket.roomCode).emit('subtitles-changed', { subtitleText });
+      const subtitleText = typeof data === 'object' && data !== null ? data.subtitleText : data;
+      room.subtitleText = subtitleText || null;
+      socket.to(socket.roomCode).emit('subtitles-changed', subtitleText || null);
     }
   });
 
-  socket.on('toggle-permissions', ({ open }) => {
+  socket.on('toggle-permissions', (data) => {
     const room = roomManager.getRoom(socket.roomCode);
     if (room) {
       if (room.hostId !== socket.id) return;
-      room.controlsOpen = !!open;
-      io.to(socket.roomCode).emit('permissions-changed', { controlsOpen: room.controlsOpen });
+      const open = typeof data === 'object' && data !== null ? !!data.open : !!data;
+      room.controlsOpen = open;
+      io.to(socket.roomCode).emit('permissions-changed', { open: room.controlsOpen });
       console.log(`✦ Room ${socket.roomCode} controls ${room.controlsOpen ? 'opened' : 'locked'}`);
     }
   });

@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  syncstream-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: syncstream-server
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+    restart: always
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/', (r) => { if (r.statusCode !== 200) process.exit(1); })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

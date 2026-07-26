@@ -10,8 +10,13 @@ const registerSyncHandlers = require('./src/handlers/syncHandler');
 const registerWebRTCHandlers = require('./src/handlers/webrtcHandler');
 const registerChatHandlers = require('./src/handlers/chatHandler');
 
+const { handleStreamRequest } = require('./src/handlers/streamHandler');
+
 const app = express();
 app.use(cors());
+
+// Local HTTP Range Request Streaming Endpoint (0-RAM 4GB+ File Support)
+app.get('/api/stream', handleStreamRequest);
 
 const server = http.createServer(app);
 const io = new Server(server, {

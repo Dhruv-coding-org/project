@@ -26,6 +26,7 @@ interface VideoPlayerProps {
   onLocalStream: (stream: MediaStream) => void;
   remoteStreamRef: React.MutableRefObject<MediaStream | null>;
   onRequestStream: () => void;
+  setOnRemoteStream?: (cb: (stream: MediaStream) => void) => void;
 }
 
 const ALLOWED_MEDIA_TYPES = "video/*,audio/*,.mp4,.webm,.mkv,.mov,.avi,.flv,.wmv,.m4v,.3gp,.ogv,.ts,.mts,.m2ts,.divx,.mp3,.wav,.flac,.aac,.m4a,.ogg,.opus,.wma";
@@ -77,6 +78,7 @@ export function VideoPlayer({
   onLocalStream,
   remoteStreamRef,
   onRequestStream,
+  setOnRemoteStream,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
@@ -555,43 +557,52 @@ export function VideoPlayer({
     onRequestStream();
     console.log('[VideoPlayer] Guest waiting for WebRTC stream...');
 
+    function applyRemoteStream(stream: MediaStream) {
+      const video = videoRef.current;
+      if (!video || !stream) return;
+      const audioTracks = stream.getAudioTracks();
+      const videoTracks = stream.getVideoTracks();
+      console.log('[VideoPlayer] Stream tracks — audio:', audioTracks.length, 'video:', videoTracks.length);
+
+      usingObjectStream.current = true;
+      setUsingObjectStreamState(true);
+      video.removeAttribute('src');
+      video.srcObject = stream;
+      video.volume = volume;
+      video.muted = false;
+      setMuted(false);
+      setVideoReady(videoTracks.length > 0);
+      setAudioReady(audioTracks.length > 0);
+      video.play().then(() => {
+        setGuestAudioBlocked(false);
+      }).catch(err => {
+        console.warn('[VideoPlayer] Autoplay blocked:', err.message);
+        video.muted = true;
+        setMuted(true);
+        setGuestAudioBlocked(true);
+        video.play().catch(() => {});
+      });
+      setIsLoading(false);
+    }
+
+    if (setOnRemoteStream) {
+      setOnRemoteStream((stream) => {
+        applyRemoteStream(stream);
+      });
+    }
+
     const interval = setInterval(() => {
       const video = videoRef.current;
       if (!video) return;
       if (remoteStreamRef.current && !usingObjectStream.current) {
-        console.log('[VideoPlayer] Remote stream arrived, applying to video element');
-        const stream = remoteStreamRef.current;
-        const audioTracks = stream.getAudioTracks();
-        const videoTracks = stream.getVideoTracks();
-        console.log('[VideoPlayer] Stream tracks — audio:', audioTracks.length, 'video:', videoTracks.length);
-
-        usingObjectStream.current = true;
-        setUsingObjectStreamState(true);
-        video.removeAttribute('src');
-        video.srcObject = stream;
-        video.volume = volume;
-        video.muted = false;
-        setMuted(false);
-        setVideoReady(videoTracks.length > 0);
-        setAudioReady(audioTracks.length > 0);
-        video.play().then(() => {
-          setGuestAudioBlocked(false);
-        }).catch(err => {
-          console.warn('[VideoPlayer] Autoplay blocked:', err.message);
-          // Fallback: play muted and show interactive unmute overlay
-          video.muted = true;
-          setMuted(true);
-          setGuestAudioBlocked(true);
-          video.play().catch(() => {});
-        });
-        setIsLoading(false);
+        applyRemoteStream(remoteStreamRef.current);
         clearInterval(interval);
       }
     }, 300);
 
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHost, isFile]);
+  }, [isHost, isFile, setOnRemoteStream]);
 
   // ── (5) NATIVE VIDEO EVENT HANDLERS ─────────────────────────────
   function handleNativeTimeUpdate() {
@@ -657,6 +668,10 @@ export function VideoPlayer({
 
     console.log('[VideoPlayer] loadeddata — volume:', video.volume, 'muted:', video.muted, 'duration:', d);
     tryComposeStream();
+
+    if (!isHost) {
+      socket.emit('request-sync');
+    }
   }
 
   // Capture stream on canplaythrough
@@ -713,12 +728,7 @@ export function VideoPlayer({
     if (guestLocalFileUrl && guestLocalFileUrl.startsWith('blob:')) {
       URL.revokeObjectURL(guestLocalFileUrl);
     }
-    let mediaBlob: Blob = file;
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (ext === 'mkv' || ext === 'avi' || ext === 'mov' || ext === 'flv' || ext === 'wmv') {
-      mediaBlob = new Blob([file], { type: 'video/mp4' });
-    }
-    const objUrl = URL.createObjectURL(mediaBlob);
+    const objUrl = URL.createObjectURL(file);
     setGuestLocalFileUrl(objUrl);
     const video = videoRef.current;
     if (video) {
@@ -744,10 +754,12 @@ export function VideoPlayer({
   function handleRetryForceMP4() {
     setVideoError(null);
     setIsLoading(true);
+    setLoadingStatus('Reloading muted stream…');
     const video = videoRef.current;
     if (video) {
       video.muted = true;
       setMuted(true);
+      video.load();
       video.play().then(() => {
         setIsLoading(false);
         setPlaying(true);
@@ -930,10 +942,6 @@ export function VideoPlayer({
   const hasSource = !!videoSource;
   const guestWaitingForStream = !isHost && isFile && !usingObjectStreamState && !guestLocalFileUrl;
 
-  if (showSkeleton) {
-    return <VideoPlayerSkeleton />;
-  }
-
   return (
     <div
       className={`vp-container ${ambientGlow ? 'ambient-glow' : ''} ${showControls || !playing ? 'show-controls' : 'hide-controls'}`}
@@ -943,6 +951,13 @@ export function VideoPlayer({
       onTouchStart={resetHideTimer}
       tabIndex={0}
     >
+      {/* Skeleton overlay on mount */}
+      {showSkeleton && (
+        <div className="vp-skeleton-overlay" style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'var(--bg-card)' }}>
+          <VideoPlayerSkeleton />
+        </div>
+      )}
+
       {/* Live Floating Emoji Reactions Overlay */}
       <EmojiReactions reactions={activeReactions} />
       {/* Native Video element (for Local Files + Direct URLs) */}
@@ -963,6 +978,7 @@ export function VideoPlayer({
           onError={handleNativeError}
           onClick={canControl ? togglePlay : undefined}
           playsInline
+          crossOrigin="anonymous"
           muted={false}
         />
       )}
