@@ -41,8 +41,14 @@ function createWindow() {
   });
 
   // Load client app
-  const startUrl = process.env.ELECTRON_START_URL || 'http://localhost:5173';
-  mainWindow.loadURL(startUrl);
+  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  if (isDev && process.env.ELECTRON_START_URL) {
+    mainWindow.loadURL(process.env.ELECTRON_START_URL);
+  } else if (isDev) {
+    mainWindow.loadURL('http://localhost:5173');
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../client/dist/index.html'));
+  }
 
   mainWindow.on('closed', () => {
     mainWindow = null;
