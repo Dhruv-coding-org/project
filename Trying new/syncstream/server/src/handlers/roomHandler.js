@@ -58,8 +58,11 @@ function registerRoomHandlers(io, socket) {
       console.log(`✦ Room ${roomCode} dissolved (empty)`);
     } else {
       if (res.newHostId) {
-        io.to(roomCode).emit('host-changed', { newHostId: res.newHostId });
-        console.log(`✦ Host migrated in room ${roomCode}`);
+        const room = roomManager.getRoom(roomCode);
+        const newHost = room ? room.users.get(res.newHostId) : null;
+        const hostUsername = newHost ? newHost.username : 'Unknown';
+        io.to(roomCode).emit('host-changed', { hostId: res.newHostId, hostUsername });
+        console.log(`✦ Host migrated in room ${roomCode} to ${hostUsername}`);
         if (res.clearedSource) {
           io.to(roomCode).emit('source-changed', { sourceType: null, url: null });
         }

@@ -1,9 +1,7 @@
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
 
 let mainWindow;
-let serverProcess;
 
 // Enable hardware acceleration and native video decoding flags
 app.commandLine.appendSwitch('enable-accelerated-video-decode');
@@ -11,16 +9,15 @@ app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 
 function startBackendServer() {
-  const serverScript = path.join(__dirname, '../server/server.js');
-  console.log('[Electron] Starting embedded backend server:', serverScript);
-  serverProcess = spawn('node', [serverScript], {
-    stdio: 'inherit',
-    env: { ...process.env, PORT: '3001' },
-  });
-
-  serverProcess.on('error', (err) => {
+  try {
+    process.env.PORT = '3001';
+    const serverScript = path.join(__dirname, '../server/server.js');
+    console.log('[Electron] Starting embedded backend server:', serverScript);
+    require(serverScript);
+    console.log('[Electron] Embedded backend server running on port 3001');
+  } catch (err) {
     console.error('[Electron] Failed to start backend server:', err);
-  });
+  }
 }
 
 function createWindow() {
@@ -87,7 +84,6 @@ app.on('ready', () => {
 });
 
 app.on('window-all-closed', () => {
-  if (serverProcess) serverProcess.kill();
   if (process.platform !== 'darwin') {
     app.quit();
   }

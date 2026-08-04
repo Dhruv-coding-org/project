@@ -4,7 +4,8 @@ const getSocketUrl = () => {
   if (import.meta.env.VITE_SERVER_URL) return import.meta.env.VITE_SERVER_URL;
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:3001';
+    const protocol = window.location.protocol;
+    if (protocol === 'file:' || host === 'localhost' || host === '127.0.0.1' || host === '') return 'http://localhost:3001';
   }
   return 'https://syncstream-server.onrender.com';
 };
