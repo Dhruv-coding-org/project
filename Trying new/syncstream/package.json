@@ -2,6 +2,7 @@
   "name": "syncstream-desktop",
   "version": "1.0.0",
   "description": "SyncStream Desktop Watch Party Application",
+  "author": "SyncStream",
   "main": "electron/main.js",
   "scripts": {
     "start": "electron electron/main.js",
@@ -13,6 +14,7 @@
   "build": {
     "appId": "com.syncstream.desktop",
     "productName": "SyncStream",
+    "publish": null,
     "directories": {
       "output": "dist-desktop"
     },
