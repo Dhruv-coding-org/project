@@ -758,12 +758,15 @@ export function VideoPlayer({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const electron = (window as any).require ? (window as any).require('electron') : null;
       if (electron && electron.ipcRenderer) {
-        let targetUrl = videoSource.url;
-        if (videoSource.sourceType === 'file') {
-          targetUrl = `http://localhost:3001/api/stream?path=${encodeURIComponent(videoSource.url)}&raw=true`;
-        }
+        // For file sources, pass both the stream URL and the raw file path.
+        // The main process will extract the real file path and pass it directly to VLC.
+        const streamUrl = videoSource.sourceType === 'file'
+          ? `http://localhost:3001/api/stream?path=${encodeURIComponent(videoSource.url)}`
+          : videoSource.url;
+
         await electron.ipcRenderer.invoke('launch-vlc', {
-          streamUrl: targetUrl,
+          streamUrl,
+          filePath: videoSource.sourceType === 'file' ? videoSource.url : undefined,
           title: videoSource.title || 'Watch Party',
         });
       } else {

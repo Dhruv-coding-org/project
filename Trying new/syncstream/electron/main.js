@@ -3,22 +3,52 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const http = require('http');
+const net = require('net');
 
 let mainWindow;
 let vlcProcess = null;
+let serverStarted = false;
 
 // Enable hardware acceleration and native video decoding flags
 app.commandLine.appendSwitch('enable-accelerated-video-decode');
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 
-function startBackendServer() {
+// Check if a port is already in use
+function isPortInUse(port) {
+  return new Promise((resolve) => {
+    const tester = net.createServer()
+      .once('error', () => resolve(true))
+      .once('listening', () => {
+        tester.close();
+        resolve(false);
+      })
+      .listen(port, '127.0.0.1');
+  });
+}
+
+async function startBackendServer() {
+  if (serverStarted) {
+    console.log('[Electron] Server already started — skipping.');
+    return;
+  }
+
+  const port = 3001;
+  const inUse = await isPortInUse(port);
+
+  if (inUse) {
+    console.log(`[Electron] Port ${port} already in use — assuming embedded server is running.`);
+    serverStarted = true;
+    return;
+  }
+
   try {
-    process.env.PORT = '3001';
+    process.env.PORT = String(port);
     const serverScript = path.join(__dirname, '../server/server.js');
     console.log('[Electron] Starting embedded backend server:', serverScript);
     require(serverScript);
-    console.log('[Electron] Embedded backend server running on port 3001');
+    serverStarted = true;
+    console.log('[Electron] Embedded backend server running on port', port);
   } catch (err) {
     console.error('[Electron] Failed to start backend server:', err);
   }
@@ -106,17 +136,47 @@ ipcMain.handle('select-file', async () => {
 // IPC Handler: Detect system VLC installation
 ipcMain.handle('detect-vlc', async () => {
   const vlcPath = getVlcPath();
-  const installed = fs.existsSync('C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe') || fs.existsSync('C:\\Program Files\\VideoLAN\\VLC\\vlc.exe');
-  return { installed: true, vlcPath };
+  const installed = vlcPath !== 'vlc';
+  return { installed, vlcPath };
 });
 
 // IPC Handler: Launch System VLC Media Player with HTTP interface enabled
-ipcMain.handle('launch-vlc', async (event, { streamUrl, title }) => {
+// streamUrl can be either:
+//   - A local file path (e.g. C:\Movies\video.mkv)
+//   - An http:// stream URL from our embedded server
+//   - Or a full stream URL that wraps a local file path
+ipcMain.handle('launch-vlc', async (event, { streamUrl, filePath, title }) => {
   const vlcPath = getVlcPath();
-  console.log('[Electron] Launching System VLC with streamUrl:', streamUrl);
+
+  // Resolve the actual media path for VLC:
+  // If filePath is passed directly, use it. Otherwise try to decode path from stream URL.
+  let mediaTarget = filePath || streamUrl;
+
+  if (!filePath && streamUrl && streamUrl.includes('localhost:3001/api/stream')) {
+    try {
+      const urlObj = new URL(streamUrl);
+      const rawPath = urlObj.searchParams.get('path');
+      if (rawPath) {
+        // Decode the path (may be encoded twice due to URL embedding)
+        let decoded = decodeURIComponent(rawPath);
+        // If still a URL (double-encoded), decode again
+        if (decoded.startsWith('http://') || decoded.startsWith('https://')) {
+          const inner = new URL(decoded);
+          const innerPath = inner.searchParams.get('path');
+          if (innerPath) decoded = decodeURIComponent(innerPath);
+        }
+        mediaTarget = decoded;
+      }
+    } catch (e) {
+      console.warn('[Electron] Failed to parse streamUrl for VLC:', e.message);
+      mediaTarget = streamUrl;
+    }
+  }
+
+  console.log('[Electron] Launching System VLC with media target:', mediaTarget);
 
   const args = [
-    streamUrl,
+    mediaTarget,
     '--extraintf=http',
     '--http-port=8080',
     '--http-password=syncstream',
@@ -130,7 +190,7 @@ ipcMain.handle('launch-vlc', async (event, { streamUrl, title }) => {
   vlcProcess = spawn(vlcPath, args, { detached: true, stdio: 'ignore' });
   vlcProcess.unref();
 
-  return { success: true, message: 'VLC Launched' };
+  return { success: true, message: 'VLC Launched', target: mediaTarget };
 });
 
 // IPC Handler: Send command to VLC HTTP interface
@@ -162,9 +222,9 @@ ipcMain.handle('vlc-command', async (event, { command, val }) => {
   });
 });
 
-app.on('ready', () => {
-  startBackendServer();
-  setTimeout(createWindow, 1000);
+app.on('ready', async () => {
+  await startBackendServer();
+  setTimeout(createWindow, 500);
 });
 
 app.on('window-all-closed', () => {
