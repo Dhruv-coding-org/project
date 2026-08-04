@@ -1,5 +1,9 @@
 const fs = require('fs');
 const path = require('path');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 function getMimeType(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -41,7 +45,7 @@ function handleStreamRequest(req, res) {
 
   const fileSize = stat.size;
   const mimeType = getMimeType(filePath);
-  const range = req.headers.range;
+  const ext = path.extname(filePath).toLowerCase();
 
   // Enable CORS for stream requests
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -52,6 +56,47 @@ function handleStreamRequest(req, res) {
     return res.sendStatus(200);
   }
 
+  const forceTranscode = req.query.transcode === 'true';
+  const forceRaw = req.query.raw === 'true';
+
+  // If MKV or requested transcode (and not explicitly raw), transcode audio on-the-fly to AAC with zero video quality loss
+  if ((ext === '.mkv' || forceTranscode) && !forceRaw) {
+    console.log(`[StreamHandler] Transcoding MKV/audio on-the-fly (c:v copy, c:a aac) for: ${path.basename(filePath)}`);
+    res.writeHead(200, {
+      'Content-Type': 'video/mp4',
+      'Accept-Ranges': 'none',
+      'Cache-Control': 'no-cache',
+    });
+
+    const command = ffmpeg(filePath)
+      .outputOptions([
+        '-c:v copy', // Zero video loss, 0% CPU for video
+        '-c:a aac',  // Convert AC3/DTS/EAC3 audio to stereo AAC for Chrome/Electron compatibility
+        '-b:a 320k', // 320kbps high quality audio
+        '-ac 2',
+        '-movflags frag_keyframe+empty_moov+default_base_moof',
+        '-f mp4'
+      ])
+      .on('error', (err) => {
+        if (!err.message.includes('Output stream closed') && !err.message.includes('pipe:1')) {
+          console.error('[StreamHandler] FFmpeg transcode error:', err.message);
+        }
+      });
+
+    const ffmpegStream = command.pipe();
+    ffmpegStream.pipe(res);
+
+    res.on('close', () => {
+      try {
+        command.kill('SIGKILL');
+      } catch (e) {
+        // Ignore kill errors on close
+      }
+    });
+    return;
+  }
+
+  const range = req.headers.range;
   if (range) {
     const parts = range.replace(/bytes=/, '').split('-');
     const start = parseInt(parts[0], 10);

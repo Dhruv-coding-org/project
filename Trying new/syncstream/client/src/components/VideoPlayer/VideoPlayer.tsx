@@ -186,11 +186,12 @@ export function VideoPlayer({
         controls: [], // We use custom controls
         clickToPlay: false,
         youtube: {
-          noCookie: true,
+          noCookie: false,
           rel: 0,
           showinfo: 0,
           iv_load_policy: 3,
           modestbranding: 1,
+          origin: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001',
         },
         vimeo: {
           byline: false,
@@ -751,6 +752,28 @@ export function VideoPlayer({
     }
   }
 
+  async function handleOpenInVLC() {
+    if (!videoSource) return;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const electron = (window as any).require ? (window as any).require('electron') : null;
+      if (electron && electron.ipcRenderer) {
+        let targetUrl = videoSource.url;
+        if (videoSource.sourceType === 'file') {
+          targetUrl = `http://localhost:3001/api/stream?path=${encodeURIComponent(videoSource.url)}&raw=true`;
+        }
+        await electron.ipcRenderer.invoke('launch-vlc', {
+          streamUrl: targetUrl,
+          title: videoSource.title || 'Watch Party',
+        });
+      } else {
+        window.open(videoSource.url, '_blank');
+      }
+    } catch (err) {
+      console.warn('Failed to launch VLC:', err);
+    }
+  }
+
   function handleRetryForceMP4() {
     setVideoError(null);
     setIsLoading(true);
@@ -759,13 +782,14 @@ export function VideoPlayer({
     if (video) {
       video.muted = true;
       setMuted(true);
-      video.load();
+      video.volume = 0;
       video.play().then(() => {
         setIsLoading(false);
         setPlaying(true);
       }).catch(err => {
         console.warn('[VideoPlayer] Force play failed:', err);
         setIsLoading(false);
+        setVideoError('Muted playback failed. Click "Open in System VLC Player" below.');
       });
     }
   }
@@ -1037,6 +1061,9 @@ export function VideoPlayer({
           </div>
           <p className="vp-error-text">{videoError}</p>
           <div className="vp-error-actions">
+            <button className="btn btn-accent btn-sm" onClick={handleOpenInVLC}>
+              🚀 Open in System VLC Player
+            </button>
             <button className="btn btn-primary btn-sm" onClick={handleRetryForceMP4}>
               ⚡ Force Muted Play
             </button>
@@ -1045,9 +1072,8 @@ export function VideoPlayer({
             </button>
           </div>
           <div className="vp-error-tip">
-            💡 <strong>5-Second Zero-Loss Container Fix:</strong><br />
-            Convert <code>.mkv</code> container to <code>.mp4</code> in 5 seconds (no quality loss):<br />
-            <code>ffmpeg -i input.mkv -c copy output.mp4</code>
+            💡 <strong>System VLC Integration:</strong><br />
+            System VLC supports all MKV/AC3/DTS files without quality loss and automatically syncs playback with the room.
           </div>
         </div>
       )}
@@ -1296,6 +1322,17 @@ export function VideoPlayer({
           </div>
 
           <div className="vp-right-controls">
+            {/* Launch System VLC Player */}
+            {hasSource && (
+              <button
+                className="btn-icon vp-btn"
+                onClick={handleOpenInVLC}
+                title="Open in System VLC Player (Synced)"
+                aria-label="Open in System VLC Player"
+              >
+                🎥
+              </button>
+            )}
             {/* Audio Booster Control */}
             <div className="vp-volume-group vp-boost-group" title="Audio Booster (up to 300%)">
               <span className="vp-boost-label">⚡ {Math.round(audioBoost * 100)}%</span>

@@ -1,7 +1,11 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, session } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const { spawn } = require('child_process');
+const http = require('http');
 
 let mainWindow;
+let vlcProcess = null;
 
 // Enable hardware acceleration and native video decoding flags
 app.commandLine.appendSwitch('enable-accelerated-video-decode');
@@ -18,6 +22,17 @@ function startBackendServer() {
   } catch (err) {
     console.error('[Electron] Failed to start backend server:', err);
   }
+}
+
+function getVlcPath() {
+  const commonPaths = [
+    'C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe',
+    'C:\\Program Files\\VideoLAN\\VLC\\vlc.exe',
+  ];
+  for (const p of commonPaths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return 'vlc';
 }
 
 function createWindow() {
@@ -37,6 +52,16 @@ function createWindow() {
     },
   });
 
+  // Bypass YouTube embed Referer/Origin security policy in Electron file:// protocol
+  session.defaultSession.webRequest.onBeforeSendHeaders(
+    { urls: ['https://www.youtube.com/*', 'https://*.youtube-nocookie.com/*', 'https://*.googlevideo.com/*'] },
+    (details, callback) => {
+      details.requestHeaders['Referer'] = 'https://www.youtube.com/';
+      details.requestHeaders['Origin'] = 'https://www.youtube.com';
+      callback({ requestHeaders: details.requestHeaders });
+    }
+  );
+
   // Load client app
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
   if (isDev && process.env.ELECTRON_START_URL) {
@@ -52,7 +77,7 @@ function createWindow() {
   });
 }
 
-// Native IPC handler for selecting 4GB+ files via Windows file dialog
+// Native IPC handler for selecting files via Windows file dialog
 ipcMain.handle('select-file', async () => {
   if (!mainWindow) return null;
   const result = await dialog.showOpenDialog(mainWindow, {
@@ -78,12 +103,74 @@ ipcMain.handle('select-file', async () => {
   };
 });
 
+// IPC Handler: Detect system VLC installation
+ipcMain.handle('detect-vlc', async () => {
+  const vlcPath = getVlcPath();
+  const installed = fs.existsSync('C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe') || fs.existsSync('C:\\Program Files\\VideoLAN\\VLC\\vlc.exe');
+  return { installed: true, vlcPath };
+});
+
+// IPC Handler: Launch System VLC Media Player with HTTP interface enabled
+ipcMain.handle('launch-vlc', async (event, { streamUrl, title }) => {
+  const vlcPath = getVlcPath();
+  console.log('[Electron] Launching System VLC with streamUrl:', streamUrl);
+
+  const args = [
+    streamUrl,
+    '--extraintf=http',
+    '--http-port=8080',
+    '--http-password=syncstream',
+    `--meta-title=SyncStream - ${title || 'Watch Party'}`,
+  ];
+
+  if (vlcProcess) {
+    try { vlcProcess.kill(); } catch (e) {}
+  }
+
+  vlcProcess = spawn(vlcPath, args, { detached: true, stdio: 'ignore' });
+  vlcProcess.unref();
+
+  return { success: true, message: 'VLC Launched' };
+});
+
+// IPC Handler: Send command to VLC HTTP interface
+ipcMain.handle('vlc-command', async (event, { command, val }) => {
+  return new Promise((resolve) => {
+    let url = `http://localhost:8080/requests/status.json?command=${command}`;
+    if (val !== undefined && val !== null) {
+      url += `&val=${encodeURIComponent(val)}`;
+    }
+
+    const auth = Buffer.from(':syncstream').toString('base64');
+    const req = http.get(url, {
+      headers: { 'Authorization': `Basic ${auth}` }
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          resolve({ success: true, status: JSON.parse(data) });
+        } catch (e) {
+          resolve({ success: true, raw: data });
+        }
+      });
+    });
+
+    req.on('error', (err) => {
+      resolve({ success: false, error: err.message });
+    });
+  });
+});
+
 app.on('ready', () => {
   startBackendServer();
   setTimeout(createWindow, 1000);
 });
 
 app.on('window-all-closed', () => {
+  if (vlcProcess) {
+    try { vlcProcess.kill(); } catch (e) {}
+  }
   if (process.platform !== 'darwin') {
     app.quit();
   }
