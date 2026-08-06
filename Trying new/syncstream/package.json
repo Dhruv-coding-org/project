@@ -9,7 +9,10 @@
     "dev:server": "cd server && npm start",
     "dev:client": "cd client && npm run dev",
     "electron:dev": "concurrently \"npm run dev:client\" \"wait-on http://localhost:5173 && electron .\"",
-    "dist": "cd client && npm run build && cd .. && electron-builder"
+    "dist": "cd client && npm run build && cd .. && electron-builder",
+    "server:start": "npx pm2 start ecosystem.config.js",
+    "server:stop": "npx pm2 stop syncstream-server",
+    "server:status": "npx pm2 status syncstream-server"
   },
   "build": {
     "appId": "com.syncstream.desktop",
@@ -27,7 +30,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -49,6 +54,7 @@
     "concurrently": "^8.2.2",
     "electron": "^30.0.0",
     "electron-builder": "^25.1.8",
+    "pm2": "^7.0.3",
     "wait-on": "^7.2.0"
   }
 }

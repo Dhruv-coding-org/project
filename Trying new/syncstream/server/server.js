@@ -60,7 +60,20 @@ server.listen(PORT, async () => {
   console.log(`  ✦ Max room capacity: ${MAX_ROOM_SIZE} users`);
 
   try {
-    const tunnel = await localtunnel({ port: PORT, subdomain: `syncstream-${Math.random().toString(36).substring(7)}` });
+    const fs = require('fs');
+    const path = require('path');
+    const tunnelConfigFile = path.join(__dirname, 'syncstream_tunnel.json');
+    let subdomain = '';
+    
+    if (fs.existsSync(tunnelConfigFile)) {
+      const config = JSON.parse(fs.readFileSync(tunnelConfigFile, 'utf8'));
+      subdomain = config.subdomain;
+    } else {
+      subdomain = `syncstream-${Math.random().toString(36).substring(2, 10)}`;
+      fs.writeFileSync(tunnelConfigFile, JSON.stringify({ subdomain }));
+    }
+
+    const tunnel = await localtunnel({ port: PORT, subdomain });
     console.log(`\n  ======================================================`);
     console.log(`  🌐 PUBLIC SYNCSTREAM TUNNEL URL`);
     console.log(`  Use this URL to connect your mobile app/APK on the go:`);
