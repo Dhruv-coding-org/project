@@ -6,7 +6,6 @@ const http = require('http');
 const net = require('net');
 
 let mainWindow;
-let vlcProcess = null;
 let serverStarted = false;
 
 // Enable hardware acceleration and native video decoding flags
@@ -54,16 +53,7 @@ async function startBackendServer() {
   }
 }
 
-function getVlcPath() {
-  const commonPaths = [
-    'C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe',
-    'C:\\Program Files\\VideoLAN\\VLC\\vlc.exe',
-  ];
-  for (const p of commonPaths) {
-    if (fs.existsSync(p)) return p;
-  }
-  return 'vlc';
-}
+
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -133,94 +123,6 @@ ipcMain.handle('select-file', async () => {
   };
 });
 
-// IPC Handler: Detect system VLC installation
-ipcMain.handle('detect-vlc', async () => {
-  const vlcPath = getVlcPath();
-  const installed = vlcPath !== 'vlc';
-  return { installed, vlcPath };
-});
-
-// IPC Handler: Launch System VLC Media Player with HTTP interface enabled
-// streamUrl can be either:
-//   - A local file path (e.g. C:\Movies\video.mkv)
-//   - An http:// stream URL from our embedded server
-//   - Or a full stream URL that wraps a local file path
-ipcMain.handle('launch-vlc', async (event, { streamUrl, filePath, title }) => {
-  const vlcPath = getVlcPath();
-
-  // Resolve the actual media path for VLC:
-  // If filePath is passed directly, use it. Otherwise try to decode path from stream URL.
-  let mediaTarget = filePath || streamUrl;
-
-  if (!filePath && streamUrl && streamUrl.includes('localhost:3001/api/stream')) {
-    try {
-      const urlObj = new URL(streamUrl);
-      const rawPath = urlObj.searchParams.get('path');
-      if (rawPath) {
-        // Decode the path (may be encoded twice due to URL embedding)
-        let decoded = decodeURIComponent(rawPath);
-        // If still a URL (double-encoded), decode again
-        if (decoded.startsWith('http://') || decoded.startsWith('https://')) {
-          const inner = new URL(decoded);
-          const innerPath = inner.searchParams.get('path');
-          if (innerPath) decoded = decodeURIComponent(innerPath);
-        }
-        mediaTarget = decoded;
-      }
-    } catch (e) {
-      console.warn('[Electron] Failed to parse streamUrl for VLC:', e.message);
-      mediaTarget = streamUrl;
-    }
-  }
-
-  console.log('[Electron] Launching System VLC with media target:', mediaTarget);
-
-  const args = [
-    mediaTarget,
-    '--extraintf=http',
-    '--http-port=8080',
-    '--http-password=syncstream',
-    `--meta-title=SyncStream - ${title || 'Watch Party'}`,
-  ];
-
-  if (vlcProcess) {
-    try { vlcProcess.kill(); } catch (e) {}
-  }
-
-  vlcProcess = spawn(vlcPath, args, { detached: true, stdio: 'ignore' });
-  vlcProcess.unref();
-
-  return { success: true, message: 'VLC Launched', target: mediaTarget };
-});
-
-// IPC Handler: Send command to VLC HTTP interface
-ipcMain.handle('vlc-command', async (event, { command, val }) => {
-  return new Promise((resolve) => {
-    let url = `http://localhost:8080/requests/status.json?command=${command}`;
-    if (val !== undefined && val !== null) {
-      url += `&val=${encodeURIComponent(val)}`;
-    }
-
-    const auth = Buffer.from(':syncstream').toString('base64');
-    const req = http.get(url, {
-      headers: { 'Authorization': `Basic ${auth}` }
-    }, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          resolve({ success: true, status: JSON.parse(data) });
-        } catch (e) {
-          resolve({ success: true, raw: data });
-        }
-      });
-    });
-
-    req.on('error', (err) => {
-      resolve({ success: false, error: err.message });
-    });
-  });
-});
 
 app.on('ready', async () => {
   await startBackendServer();
@@ -228,9 +130,6 @@ app.on('ready', async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (vlcProcess) {
-    try { vlcProcess.kill(); } catch (e) {}
-  }
   if (process.platform !== 'darwin') {
     app.quit();
   }

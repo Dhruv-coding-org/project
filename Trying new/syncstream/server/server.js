@@ -11,7 +11,7 @@ const registerWebRTCHandlers = require('./src/handlers/webrtcHandler');
 const registerChatHandlers = require('./src/handlers/chatHandler');
 
 const { handleStreamRequest, handleStreamHealth, handleMediaInfo, handleSubtitleExtract } = require('./src/handlers/streamHandler');
-const { handleVlcStart, handleVlcStatus, handleVlcCommand, handleVlcCheck } = require('./src/handlers/vlcHandler');
+
 
 const app = express();
 app.use(cors());
@@ -22,11 +22,6 @@ app.get('/api/stream/health', handleStreamHealth);
 app.get('/api/media-info', handleMediaInfo);
 app.get('/api/subtitle/extract', handleSubtitleExtract);
 
-// VLC Integration
-app.post('/api/vlc/start', handleVlcStart);
-app.get('/api/vlc/status', handleVlcStatus);
-app.post('/api/vlc/command', handleVlcCommand);
-app.get('/api/vlc/check', handleVlcCheck);
 
 const server = http.createServer(app);
 const io = new Server(server, {

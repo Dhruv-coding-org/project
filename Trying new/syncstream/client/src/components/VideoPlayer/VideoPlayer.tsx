@@ -122,8 +122,6 @@ export function VideoPlayer({
   const [activeSubtitleTrackIndex, setActiveSubtitleTrackIndex] = useState<number | null>(null);
   
   // VLC Engine State
-  const [isVlcMode, setIsVlcMode] = useState(false);
-  const [vlcTime, setVlcTime] = useState(0);
   const [guestLocalFileUrl, setGuestLocalFileUrl] = useState<string | null>(null);
   const [isStarred, setIsStarred] = useState(false);
 
@@ -414,51 +412,7 @@ export function VideoPlayer({
       if (isHost || guestLocalFileUrl) {
         let targetUrl = guestLocalFileUrl || videoSource.url;
         
-        // VLC Auto-Launch for Host
-        if (isHost && targetUrl.includes('/api/stream')) {
-          const pathParam = new URL(targetUrl).searchParams.get('path');
-          if (pathParam) {
-            const decodedPath = decodeURIComponent(pathParam);
-            // Try IPC first (Electron desktop), then fall back to HTTP API
-            const tryElectronVlc = async () => {
-              try {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const electron = (window as any).require ? (window as any).require('electron') : null;
-                if (electron && electron.ipcRenderer) {
-                  const result = await electron.ipcRenderer.invoke('launch-vlc', {
-                    filePath: decodedPath,
-                    title: videoSource?.title || 'Watch Party',
-                  });
-                  if (result?.success) {
-                    setIsVlcMode(true);
-                    setIsLoading(false);
-                    return;
-                  }
-                }
-              } catch (e) {
-                console.warn('[VideoPlayer] Electron VLC IPC failed:', e);
-              }
-              // Fallback: try HTTP API
-              try {
-                const checkRes = await fetch(`${getServerUrl()}/api/vlc/check`);
-                const checkData = await checkRes.json();
-                if (checkData.installed) {
-                  setIsVlcMode(true);
-                  setIsLoading(false);
-                  await fetch(`${getServerUrl()}/api/vlc/start?path=${encodeURIComponent(decodedPath)}`, { method: 'POST' });
-                  return;
-                }
-              } catch (e) {
-                console.warn('[VideoPlayer] VLC HTTP API fallback failed:', e);
-              }
-              // Final fallback: use web transcoder
-              startWebTranscoder(targetUrl, video);
-            };
-            tryElectronVlc();
-            return;
-          }
-        }
-        
+        // Always use Web Transcoder for host streaming local files (enables inbuilt playback + WebRTC sync)
         startWebTranscoder(targetUrl, video);
       } else {
         usingObjectStream.current = false;
@@ -472,7 +426,6 @@ export function VideoPlayer({
     }
 
     function startWebTranscoder(targetUrl: string, video: HTMLVideoElement) {
-      setIsVlcMode(false);
       usingObjectStream.current = false;
       setUsingObjectStreamState(false);
       setIsLoading(true);
@@ -709,21 +662,7 @@ export function VideoPlayer({
   useEffect(() => {
     if (!isHost || !videoSource) return;
 
-    const interval = setInterval(() => {
-      if (isVlcMode) {
-        fetch(`${getServerUrl()}/api/vlc/status`).then(r => r.json()).then(data => {
-          if (!data || data.error) return;
-          const t = data.time || 0;
-          const isVlcPlaying = data.state === 'playing';
-          
-          setVlcTime(t);
-          if (isVlcPlaying !== playing) setPlaying(isVlcPlaying);
-          socket.emit('sync-heartbeat', { currentTime: t, playing: isVlcPlaying });
-        }).catch(() => {});
-        return;
-      }
-
-      let t = 0;
+    const interval = setInterval(() => {      let t = 0;
       if (isEmbedProvider && plyrRef.current) {
         t = plyrRef.current.currentTime;
       } else if (videoRef.current) {
@@ -733,7 +672,7 @@ export function VideoPlayer({
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [isHost, videoSource, isEmbedProvider, playing, isVlcMode]);
+  }, [isHost, videoSource, isEmbedProvider, playing]);
 
   // ── (4) GUEST WEBRTC STREAM — only for file-type sources ────────
   useEffect(() => {
@@ -957,48 +896,7 @@ export function VideoPlayer({
     }
   }
 
-  async function handleOpenInVLC() {
-    if (!videoSource) return;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const electron = (window as any).require ? (window as any).require('electron') : null;
-      if (!electron || !electron.ipcRenderer) {
-        window.open(videoSource.url, '_blank');
-        return;
-      }
 
-      // Try to extract the real filesystem path from the stream URL
-      let realFilePath: string | undefined;
-      if (videoSource.url.includes('/api/stream')) {
-        try {
-          const urlObj = new URL(videoSource.url);
-          const rawPath = urlObj.searchParams.get('path');
-          if (rawPath) realFilePath = decodeURIComponent(rawPath);
-        } catch (e) {
-          console.warn('[VideoPlayer] Failed to parse stream URL for VLC:', e);
-        }
-      }
-
-      // If we couldn't extract a real path (blob URL), use native dialog to re-pick the file
-      if (!realFilePath) {
-        console.log('[VideoPlayer] No real file path available, opening native file dialog for VLC...');
-        const result = await electron.ipcRenderer.invoke('select-file');
-        if (!result) return; // User cancelled
-        realFilePath = result.filePath;
-      }
-
-      console.log('[VideoPlayer] Launching VLC with path:', realFilePath);
-      await electron.ipcRenderer.invoke('launch-vlc', {
-        filePath: realFilePath,
-        title: videoSource.title || 'Watch Party',
-      });
-      setIsVlcMode(true);
-      setVideoError(null);
-      setIsLoading(false);
-    } catch (err) {
-      console.warn('Failed to launch VLC:', err);
-    }
-  }
 
   function handleRetryForceMP4() {
     setVideoError(null);
@@ -1024,19 +922,6 @@ export function VideoPlayer({
   const togglePlay = useCallback(() => {
     if (!canControl) return;
 
-    if (isHost && isVlcMode) {
-      if (playing) {
-        fetch(`${getServerUrl()}/api/vlc/command?command=pl_pause`, { method: 'POST' });
-        setPlaying(false);
-        onPause(vlcTime);
-      } else {
-        fetch(`${getServerUrl()}/api/vlc/command?command=pl_play`, { method: 'POST' });
-        setPlaying(true);
-        onPlay(vlcTime);
-      }
-      return;
-    }
-
     if (isEmbedProvider && plyrRef.current) {
       const player = plyrRef.current;
       if (player.paused) {
@@ -1061,18 +946,13 @@ export function VideoPlayer({
         onPause(video.currentTime);
       }
     }
-  }, [canControl, onPlay, onPause, isEmbedProvider, isHost, isVlcMode, playing, vlcTime]);
+  }, [canControl, onPlay, onPause, isEmbedProvider, isHost, playing]);
 
   function handleSeek(e: ChangeEvent<HTMLInputElement>) {
     if (!canControl) return;
     const t = Number(e.target.value);
     setCurrentTime(t);
     onSeek(t);
-
-    if (isHost && isVlcMode) {
-      fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${t}`, { method: 'POST' });
-      return;
-    }
 
     if (isEmbedProvider && plyrRef.current) {
       plyrRef.current.currentTime = t;
@@ -1205,20 +1085,7 @@ export function VideoPlayer({
     };
   }, []);
 
-  useEffect(() => {
-    if (!isVlcMode) return;
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`${getServerUrl()}/api/vlc/status`);
-        const data = await res.json();
-        setVlcTime(data.time);
-        setPlaying(data.state === 'playing');
-      } catch (e) {
-        console.error('VLC polling failed', e);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isVlcMode]);
+
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const bufferedPercent = duration > 0 ? (buffered / duration) * 100 : 0;
@@ -1251,34 +1118,6 @@ export function VideoPlayer({
     );
   }
   
-  if (isVlcMode) {
-    return (
-      <div className="videoplayer-empty" style={{ backgroundColor: '#111' }}>
-        <div className="videoplayer-empty-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ background: '#f05d23', padding: '1.5rem', borderRadius: '50%', marginBottom: '1rem' }}>
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" color="white">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-              <line x1="8" y1="21" x2="16" y2="21"></line>
-              <line x1="12" y1="17" x2="12" y2="21"></line>
-              <polygon points="10 7.5 15 10 10 12.5 10 7.5"></polygon>
-            </svg>
-          </div>
-          <h2>Playing in Native VLC</h2>
-          <p style={{ maxWidth: '400px', textAlign: 'center', lineHeight: 1.5, opacity: 0.8 }}>
-            Your video is currently open in a separate VLC Media Player window for maximum quality.
-          </p>
-          <div style={{ background: 'rgba(255,255,255,0.1)', padding: '10px 20px', borderRadius: '10px', marginTop: '1rem' }}>
-            <span style={{ fontSize: '1.2rem', fontFamily: 'monospace' }}>
-              {Math.floor(vlcTime / 60)}:{Math.floor(vlcTime % 60).toString().padStart(2, '0')}
-            </span>
-          </div>
-          <p style={{ fontSize: '0.8rem', opacity: 0.5, marginTop: '1rem' }}>
-            Playback actions (play/pause/seek) in VLC will automatically sync with your friends!
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -1375,9 +1214,6 @@ export function VideoPlayer({
           </div>
           <p className="vp-error-text">{videoError}</p>
           <div className="vp-error-actions">
-            <button className="btn btn-accent btn-sm" onClick={handleOpenInVLC}>
-              🚀 Open in System VLC Player
-            </button>
             <button className="btn btn-primary btn-sm" onClick={handleRetryForceMP4}>
               ⚡ Force Muted Play
             </button>
@@ -1386,8 +1222,8 @@ export function VideoPlayer({
             </button>
           </div>
           <div className="vp-error-tip">
-            💡 <strong>System VLC Integration:</strong><br />
-            System VLC supports all MKV/AC3/DTS files without quality loss and automatically syncs playback with the room.
+            💡 <strong>Inbuilt Transcoder:</strong><br />
+            SyncStream uses a powerful built-in web transcoder to play HEVC and MKV files seamlessly across browsers!
           </div>
         </div>
       )}
@@ -1636,17 +1472,6 @@ export function VideoPlayer({
           </div>
 
           <div className="vp-right-controls">
-            {/* Launch System VLC Player */}
-            {hasSource && (
-              <button
-                className="btn-icon vp-btn"
-                onClick={handleOpenInVLC}
-                title="Open in System VLC Player (Synced)"
-                aria-label="Open in System VLC Player"
-              >
-                🎥
-              </button>
-            )}
             {/* Audio Booster Control */}
             <div className="vp-volume-group vp-boost-group" title="Audio Booster (up to 300%)">
               <span className="vp-boost-label">⚡ {Math.round(audioBoost * 100)}%</span>

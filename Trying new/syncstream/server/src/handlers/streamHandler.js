@@ -85,7 +85,7 @@ function handleStreamRequest(req, res) {
         '-c:a aac',
         '-b:a 128k',
         '-ac 2',
-        '-movflags frag_keyframe+empty_moov+default_base_moof+faststart',
+        '-movflags frag_keyframe+empty_moov+default_base_moof',
         '-f mp4'
       ])
       .on('start', (cmd) => console.log(`[StreamHandler] FFmpeg started: ${cmd}`))
