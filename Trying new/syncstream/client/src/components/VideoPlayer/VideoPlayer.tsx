@@ -120,6 +120,10 @@ export function VideoPlayer({
   const [subtitlesVisible, setSubtitlesVisible] = useState(true);
   const [availableSubtitleTracks, setAvailableSubtitleTracks] = useState<EmbeddedSubtitleTrack[]>([]);
   const [activeSubtitleTrackIndex, setActiveSubtitleTrackIndex] = useState<number | null>(null);
+  
+  // VLC Engine State
+  const [isVlcMode, setIsVlcMode] = useState(false);
+  const [vlcTime, setVlcTime] = useState(0);
   const [guestLocalFileUrl, setGuestLocalFileUrl] = useState<string | null>(null);
   const [isStarred, setIsStarred] = useState(false);
 
@@ -408,31 +412,25 @@ export function VideoPlayer({
       if (!video) return;
 
       if (isHost || guestLocalFileUrl) {
-        usingObjectStream.current = false;
-        setUsingObjectStreamState(false);
-        setIsLoading(true);
-        const statusText = transcodeMode === 'full'
-          ? 'Transcoding video codec (H.265 to H.264)…'
-          : transcodeMode === 'remux'
-            ? 'Optimizing video container for playback…'
-            : 'Loading local media file…';
-        setLoadingStatus(statusText);
-        if (video.srcObject) video.srcObject = null;
-
         let targetUrl = guestLocalFileUrl || videoSource.url;
-        if (targetUrl.includes('/api/stream')) {
-          const cleanUrl = targetUrl.replace(/([?&])transcode=(true|full)/g, '');
-          if (transcodeMode === 'remux') {
-            targetUrl = cleanUrl.includes('?') ? `${cleanUrl}&transcode=true` : `${cleanUrl}?transcode=true`;
-          } else if (transcodeMode === 'full') {
-            targetUrl = cleanUrl.includes('?') ? `${cleanUrl}&transcode=full` : `${cleanUrl}?transcode=full`;
-          } else {
-            targetUrl = cleanUrl;
+        
+        // VLC Auto-Launch for Host
+        if (isHost && targetUrl.includes('/api/stream')) {
+          const pathParam = new URL(targetUrl).searchParams.get('path');
+          if (pathParam) {
+            fetch(`${getServerUrl()}/api/vlc/check`).then(res => res.json()).then(data => {
+              if (data.installed) {
+                setIsVlcMode(true);
+                fetch(`${getServerUrl()}/api/vlc/start?path=${encodeURIComponent(pathParam)}`, { method: 'POST' });
+              } else {
+                startWebTranscoder(targetUrl, video);
+              }
+            }).catch(() => startWebTranscoder(targetUrl, video));
+            return;
           }
         }
-
-        video.src = targetUrl;
-        video.load();
+        
+        startWebTranscoder(targetUrl, video);
       } else {
         usingObjectStream.current = false;
         setUsingObjectStreamState(false);
@@ -442,6 +440,34 @@ export function VideoPlayer({
         video.removeAttribute('src');
         video.load();
       }
+    }
+
+    function startWebTranscoder(targetUrl: string, video: HTMLVideoElement) {
+      setIsVlcMode(false);
+      usingObjectStream.current = false;
+      setUsingObjectStreamState(false);
+      setIsLoading(true);
+      const statusText = transcodeMode === 'full'
+        ? 'Transcoding video codec (H.265 to H.264)…'
+        : transcodeMode === 'remux'
+          ? 'Optimizing video container for playback…'
+          : 'Loading local media file…';
+      setLoadingStatus(statusText);
+      if (video.srcObject) video.srcObject = null;
+
+      if (targetUrl.includes('/api/stream')) {
+        const cleanUrl = targetUrl.replace(/([?&])transcode=(true|full)/g, '');
+        if (transcodeMode === 'remux') {
+          targetUrl = cleanUrl.includes('?') ? `${cleanUrl}&transcode=true` : `${cleanUrl}?transcode=true`;
+        } else if (transcodeMode === 'full') {
+          targetUrl = cleanUrl.includes('?') ? `${cleanUrl}&transcode=full` : `${cleanUrl}?transcode=full`;
+        } else {
+          targetUrl = cleanUrl;
+        }
+      }
+
+      video.src = targetUrl;
+      video.load();
     }
 
     return () => {
@@ -655,6 +681,19 @@ export function VideoPlayer({
     if (!isHost || !videoSource) return;
 
     const interval = setInterval(() => {
+      if (isVlcMode) {
+        fetch(`${getServerUrl()}/api/vlc/status`).then(r => r.json()).then(data => {
+          if (!data || data.error) return;
+          const t = data.time || 0;
+          const isVlcPlaying = data.state === 'playing';
+          
+          setVlcTime(t);
+          if (isVlcPlaying !== playing) setPlaying(isVlcPlaying);
+          socket.emit('sync-heartbeat', { currentTime: t, playing: isVlcPlaying });
+        }).catch(() => {});
+        return;
+      }
+
       let t = 0;
       if (isEmbedProvider && plyrRef.current) {
         t = plyrRef.current.currentTime;
@@ -665,7 +704,7 @@ export function VideoPlayer({
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [isHost, videoSource, isEmbedProvider, playing]);
+  }, [isHost, videoSource, isEmbedProvider, playing, isVlcMode]);
 
   // ── (4) GUEST WEBRTC STREAM — only for file-type sources ────────
   useEffect(() => {
@@ -1092,6 +1131,36 @@ export function VideoPlayer({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePlay, toggleMute, toggleFullscreen, canControl, currentTime, duration, isEmbedProvider, onSeek]);
 
+  const handleSyncSeek = (t: number) => {
+    if (isHost && isVlcMode) {
+      fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${t}`, { method: 'POST' });
+    } else {
+      socket.emit('sync-seek', { currentTime: t });
+    }
+  };
+
+  const handlePlay = () => {
+    setPlaying(true);
+    if (isHost && isVlcMode) {
+      fetch(`${getServerUrl()}/api/vlc/command?command=pl_play`, { method: 'POST' });
+    }
+    if (isHost && isFile && !usingObjectStreamState && !guestLocalFileUrl && !isVlcMode) {
+      console.log('[VideoPlayer] Host starting local file playback — emitting stream ready for guests');
+      onStreamReady();
+    }
+    const t = getPlayerTime();
+    socket.emit('sync-play', { currentTime: t });
+  };
+
+  const handlePause = () => {
+    setPlaying(false);
+    if (isHost && isVlcMode) {
+      fetch(`${getServerUrl()}/api/vlc/command?command=pl_pause`, { method: 'POST' });
+    }
+    const t = getPlayerTime();
+    socket.emit('sync-pause', { currentTime: t });
+  };
+
   useEffect(() => {
     const onFsChange = () => setFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', onFsChange);
@@ -1101,10 +1170,66 @@ export function VideoPlayer({
     };
   }, []);
 
+  useEffect(() => {
+    if (!isVlcMode) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${getServerUrl()}/api/vlc/status`);
+        const data = await res.json();
+        setVlcTime(data.time);
+        setPlaying(data.state === 'playing');
+      } catch (e) {
+        console.error('VLC polling failed', e);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isVlcMode]);
+
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const bufferedPercent = duration > 0 ? (buffered / duration) * 100 : 0;
   const hasSource = !!videoSource;
   const guestWaitingForStream = !isHost && isFile && !usingObjectStreamState && !guestLocalFileUrl;
+
+  // ── RENDER COMPONENT ───────────────────────────────────────────
+  if (!videoSource) {
+    return (
+      <div className="videoplayer-empty">
+        <div className="videoplayer-empty-content">
+          <Film size={64} opacity={0.5} />
+          <h2>No Media Selected</h2>
+          <p>
+            {isHost
+              ? "Select a file or enter a video link to start the watch party!"
+              : "Waiting for the host to select a video..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (isVlcMode) {
+    return (
+      <div className="videoplayer-empty" style={{ backgroundColor: '#111' }}>
+        <div className="videoplayer-empty-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ background: '#f05d23', padding: '1.5rem', borderRadius: '50%', marginBottom: '1rem' }}>
+            <MonitorPlay size={64} color="white" />
+          </div>
+          <h2>Playing in Native VLC</h2>
+          <p style={{ maxWidth: '400px', textAlign: 'center', lineHeight: 1.5, opacity: 0.8 }}>
+            Your video is currently open in a separate VLC Media Player window for maximum quality.
+          </p>
+          <div style={{ background: 'rgba(255,255,255,0.1)', padding: '10px 20px', borderRadius: '10px', marginTop: '1rem' }}>
+            <span style={{ fontSize: '1.2rem', fontFamily: 'monospace' }}>
+              {Math.floor(vlcTime / 60)}:{Math.floor(vlcTime % 60).toString().padStart(2, '0')}
+            </span>
+          </div>
+          <p style={{ fontSize: '0.8rem', opacity: 0.5, marginTop: '1rem' }}>
+            Playback actions (play/pause/seek) in VLC will automatically sync with your friends!
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

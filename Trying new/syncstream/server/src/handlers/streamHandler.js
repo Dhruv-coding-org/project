@@ -78,14 +78,17 @@ function handleStreamRequest(req, res) {
         '-preset ultrafast',
         '-tune zerolatency',
         '-threads 0',
-        '-vf scale=-2:1080', // Downscale to 1080p max to ensure real-time CPU encoding
-        '-crf 23',
+        '-vf scale=-2:1080',
+        '-pix_fmt yuv420p',
+        '-profile:v main',
+        '-crf 28', // Lower quality to ensure real-time speed on all CPUs
         '-c:a aac',
-        '-b:a 192k',
+        '-b:a 128k',
         '-ac 2',
-        '-movflags frag_keyframe+empty_moov+default_base_moof',
+        '-movflags frag_keyframe+empty_moov+default_base_moof+faststart',
         '-f mp4'
       ])
+      .on('start', (cmd) => console.log(`[StreamHandler] FFmpeg started: ${cmd}`))
       .on('error', (err) => {
         if (!err.message.includes('Output stream closed') && !err.message.includes('pipe:1')) {
           console.error('[StreamHandler] FFmpeg full transcode error:', err.message);
