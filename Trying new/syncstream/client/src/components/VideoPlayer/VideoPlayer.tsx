@@ -438,6 +438,31 @@ export function VideoPlayer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoSource, isHost, isEmbedProvider, transcodeMode]);
 
+  // Stall recovery timer
+  useEffect(() => {
+    let stallTimer: ReturnType<typeof setTimeout>;
+    
+    if (isLoading && videoSource?.sourceType === 'file' && videoSource.url.includes('/api/stream')) {
+      if (transcodeMode === 'none') {
+        stallTimer = setTimeout(() => {
+          console.warn('[VideoPlayer] Playback stalled (no loadeddata/canplay for 8s) — auto-recovering with container/audio remuxing...');
+          setLoadingStatus('Optimizing video container for playback… (Stall detected)');
+          setTranscodeMode('remux');
+        }, 8000);
+      } else if (transcodeMode === 'remux') {
+        stallTimer = setTimeout(() => {
+          console.warn('[VideoPlayer] Remux playback stalled (no loadeddata/canplay for 10s) — auto-recovering with full video transcoding...');
+          setLoadingStatus('Transcoding video codec (H.265 to H.264)… (Stall detected)');
+          setTranscodeMode('full');
+        }, 10000);
+      }
+    }
+    
+    return () => {
+      if (stallTimer) clearTimeout(stallTimer);
+    }
+  }, [isLoading, videoSource, transcodeMode]);
+
   // ── (2) VOLUME & MUTED ─────────────────────────────────────────
   useEffect(() => {
     if (isEmbedProvider && plyrRef.current) {
