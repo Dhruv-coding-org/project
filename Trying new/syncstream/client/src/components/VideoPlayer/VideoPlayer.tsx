@@ -418,14 +418,43 @@ export function VideoPlayer({
         if (isHost && targetUrl.includes('/api/stream')) {
           const pathParam = new URL(targetUrl).searchParams.get('path');
           if (pathParam) {
-            fetch(`${getServerUrl()}/api/vlc/check`).then(res => res.json()).then(data => {
-              if (data.installed) {
-                setIsVlcMode(true);
-                fetch(`${getServerUrl()}/api/vlc/start?path=${encodeURIComponent(pathParam)}`, { method: 'POST' });
-              } else {
-                startWebTranscoder(targetUrl, video);
+            const decodedPath = decodeURIComponent(pathParam);
+            // Try IPC first (Electron desktop), then fall back to HTTP API
+            const tryElectronVlc = async () => {
+              try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const electron = (window as any).require ? (window as any).require('electron') : null;
+                if (electron && electron.ipcRenderer) {
+                  const result = await electron.ipcRenderer.invoke('launch-vlc', {
+                    filePath: decodedPath,
+                    title: videoSource?.title || 'Watch Party',
+                  });
+                  if (result?.success) {
+                    setIsVlcMode(true);
+                    setIsLoading(false);
+                    return;
+                  }
+                }
+              } catch (e) {
+                console.warn('[VideoPlayer] Electron VLC IPC failed:', e);
               }
-            }).catch(() => startWebTranscoder(targetUrl, video));
+              // Fallback: try HTTP API
+              try {
+                const checkRes = await fetch(`${getServerUrl()}/api/vlc/check`);
+                const checkData = await checkRes.json();
+                if (checkData.installed) {
+                  setIsVlcMode(true);
+                  setIsLoading(false);
+                  await fetch(`${getServerUrl()}/api/vlc/start?path=${encodeURIComponent(decodedPath)}`, { method: 'POST' });
+                  return;
+                }
+              } catch (e) {
+                console.warn('[VideoPlayer] VLC HTTP API fallback failed:', e);
+              }
+              // Final fallback: use web transcoder
+              startWebTranscoder(targetUrl, video);
+            };
+            tryElectronVlc();
             return;
           }
         }
@@ -931,18 +960,24 @@ export function VideoPlayer({
   async function handleOpenInVLC() {
     if (!videoSource) return;
     try {
+      // Extract the real filesystem path from the stream URL
+      let realFilePath: string | undefined;
+      if (videoSource.sourceType === 'file' && videoSource.url.includes('/api/stream')) {
+        try {
+          const urlObj = new URL(videoSource.url);
+          const rawPath = urlObj.searchParams.get('path');
+          if (rawPath) realFilePath = decodeURIComponent(rawPath);
+        } catch (e) {
+          console.warn('[VideoPlayer] Failed to parse stream URL for VLC:', e);
+        }
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const electron = (window as any).require ? (window as any).require('electron') : null;
       if (electron && electron.ipcRenderer) {
-        // For file sources, pass both the stream URL and the raw file path.
-        // The main process will extract the real file path and pass it directly to VLC.
-        const streamUrl = videoSource.sourceType === 'file'
-          ? `http://localhost:3001/api/stream?path=${encodeURIComponent(videoSource.url)}`
-          : videoSource.url;
-
         await electron.ipcRenderer.invoke('launch-vlc', {
-          streamUrl,
-          filePath: videoSource.sourceType === 'file' ? videoSource.url : undefined,
+          streamUrl: videoSource.url,
+          filePath: realFilePath,
           title: videoSource.title || 'Watch Party',
         });
       } else {
