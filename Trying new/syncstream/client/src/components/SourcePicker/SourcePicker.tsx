@@ -53,6 +53,9 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
   // Subtitle state
   const [subtitleText, setSubtitleText] = useState<string | null>(null);
   const [subtitleName, setSubtitleName] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const electron = typeof window !== 'undefined' && (window as any).require ? (window as any).require('electron') : null;
+  const isElectron = !!electron;
 
   async function processFileObj(file: File) {
     if (!file) return;
@@ -60,27 +63,42 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
       URL.revokeObjectURL(fileUrl);
     }
 
+    // In Electron, File objects from <input type="file"> have a .path property
     const diskPath = (file as unknown as { path?: string }).path;
+    console.log('[SourcePicker] processFileObj — diskPath:', diskPath, 'fileName:', file.name);
+
     if (diskPath) {
-      try {
-        const check = await fetch(`${getServerUrl()}/api/stream/health`, { method: 'GET' });
-        if (check.ok) {
-          const streamUrl = `${getServerUrl()}/api/stream?path=${encodeURIComponent(diskPath)}`;
-          setFileUrl(streamUrl);
-        } else {
-          setFileUrl(URL.createObjectURL(file));
-        }
-      } catch {
-        setFileUrl(URL.createObjectURL(file));
-      }
+      const streamUrl = `${getServerUrl()}/api/stream?path=${encodeURIComponent(diskPath)}`;
+      console.log('[SourcePicker] Using stream URL:', streamUrl);
+      setFileUrl(streamUrl);
     } else {
+      // No disk path available (web browser or restricted Electron) — use blob URL
       const objectUrl = URL.createObjectURL(file);
+      console.log('[SourcePicker] No disk path, using blob URL:', objectUrl);
       setFileUrl(objectUrl);
     }
 
     setFileName(file.name);
     setFileSize(file.size);
     setError('');
+  }
+
+  // Use Electron's native file dialog for reliable path extraction
+  async function handleElectronFileSelect() {
+    if (!electron) return;
+    try {
+      const result = await electron.ipcRenderer.invoke('select-file');
+      if (!result) return; // User cancelled
+
+      console.log('[SourcePicker] Electron native dialog result:', result);
+      setFileUrl(result.streamUrl);
+      setFileName(result.fileName);
+      setFileSize(null); // Native dialog doesn't return size easily
+      setError('');
+    } catch (err) {
+      console.error('[SourcePicker] Electron file dialog failed:', err);
+      setError('Failed to open file dialog. Try drag & drop instead.');
+    }
   }
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -237,6 +255,21 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
           ) : (
             <div className="source-field">
               <label className="source-label">Select Video or Audio File</label>
+              {/* In Electron, use native dialog for reliable file path */}
+              {isElectron && !fileName && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleElectronFileSelect}
+                  style={{ width: '100%', marginBottom: '0.75rem', padding: '1rem' }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ marginRight: '0.5rem' }}>
+                    <path d="M12 4v12M8 8l4-4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Browse Files...
+                </button>
+              )}
               <label
                 className={`source-file-label ${isDragging ? 'dragging' : ''} ${fileName ? 'has-file' : ''}`}
                 htmlFor="source-file-input"
@@ -261,7 +294,7 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
                       <path d="M12 4v12M8 8l4-4 4 4" stroke="var(--accent-bright)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M4 18h16" stroke="var(--border-strong)" strokeWidth="2" strokeLinecap="round"/>
                     </svg>
-                    <span>Drag & drop local media file here or click to browse</span>
+                    <span>{isElectron ? 'Or drag & drop a file here' : 'Drag & drop local media file here or click to browse'}</span>
                   </div>
                 )}
               </label>

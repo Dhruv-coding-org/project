@@ -960,9 +960,16 @@ export function VideoPlayer({
   async function handleOpenInVLC() {
     if (!videoSource) return;
     try {
-      // Extract the real filesystem path from the stream URL
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const electron = (window as any).require ? (window as any).require('electron') : null;
+      if (!electron || !electron.ipcRenderer) {
+        window.open(videoSource.url, '_blank');
+        return;
+      }
+
+      // Try to extract the real filesystem path from the stream URL
       let realFilePath: string | undefined;
-      if (videoSource.sourceType === 'file' && videoSource.url.includes('/api/stream')) {
+      if (videoSource.url.includes('/api/stream')) {
         try {
           const urlObj = new URL(videoSource.url);
           const rawPath = urlObj.searchParams.get('path');
@@ -972,17 +979,22 @@ export function VideoPlayer({
         }
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const electron = (window as any).require ? (window as any).require('electron') : null;
-      if (electron && electron.ipcRenderer) {
-        await electron.ipcRenderer.invoke('launch-vlc', {
-          streamUrl: videoSource.url,
-          filePath: realFilePath,
-          title: videoSource.title || 'Watch Party',
-        });
-      } else {
-        window.open(videoSource.url, '_blank');
+      // If we couldn't extract a real path (blob URL), use native dialog to re-pick the file
+      if (!realFilePath) {
+        console.log('[VideoPlayer] No real file path available, opening native file dialog for VLC...');
+        const result = await electron.ipcRenderer.invoke('select-file');
+        if (!result) return; // User cancelled
+        realFilePath = result.filePath;
       }
+
+      console.log('[VideoPlayer] Launching VLC with path:', realFilePath);
+      await electron.ipcRenderer.invoke('launch-vlc', {
+        filePath: realFilePath,
+        title: videoSource.title || 'Watch Party',
+      });
+      setIsVlcMode(true);
+      setVideoError(null);
+      setIsLoading(false);
     } catch (err) {
       console.warn('Failed to launch VLC:', err);
     }
