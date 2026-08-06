@@ -53,17 +53,25 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
   const [subtitleText, setSubtitleText] = useState<string | null>(null);
   const [subtitleName, setSubtitleName] = useState('');
 
-  function processFileObj(file: File) {
+  async function processFileObj(file: File) {
     if (!file) return;
     if (fileUrl && fileUrl.startsWith('blob:')) {
       URL.revokeObjectURL(fileUrl);
     }
 
-    // Use zero-RAM HTTP Range Request streaming if absolute disk path is available
     const diskPath = (file as unknown as { path?: string }).path;
     if (diskPath) {
-      const streamUrl = `http://localhost:3001/api/stream?path=${encodeURIComponent(diskPath)}`;
-      setFileUrl(streamUrl);
+      try {
+        const check = await fetch('http://localhost:3001/api/stream/health', { method: 'GET' });
+        if (check.ok) {
+          const streamUrl = `http://localhost:3001/api/stream?path=${encodeURIComponent(diskPath)}`;
+          setFileUrl(streamUrl);
+        } else {
+          setFileUrl(URL.createObjectURL(file));
+        }
+      } catch {
+        setFileUrl(URL.createObjectURL(file));
+      }
     } else {
       const objectUrl = URL.createObjectURL(file);
       setFileUrl(objectUrl);

@@ -57,11 +57,52 @@ function handleStreamRequest(req, res) {
   }
 
   const forceTranscode = req.query.transcode === 'true';
+  const fullTranscode = req.query.transcode === 'full';
   const forceRaw = req.query.raw === 'true';
+  const autoRemuxExts = ['.mkv', '.avi', '.mov', '.wmv', '.flv', '.ts', '.mts', '.m2ts'];
 
-  // If MKV or requested transcode (and not explicitly raw), transcode audio on-the-fly to AAC with zero video quality loss
-  if ((ext === '.mkv' || forceTranscode) && !forceRaw) {
-    console.log(`[StreamHandler] Transcoding MKV/audio on-the-fly (c:v copy, c:a aac) for: ${path.basename(filePath)}`);
+  // Full Transcode Mode (e.g. HEVC / H.265 video stream conversion to H.264 for Chrome/Electron)
+  if (fullTranscode && !forceRaw) {
+    console.log(`[StreamHandler] Full transcoding (c:v libx264 ultrafast, c:a aac) for: ${path.basename(filePath)}`);
+    res.writeHead(200, {
+      'Content-Type': 'video/mp4',
+      'Accept-Ranges': 'none',
+      'Cache-Control': 'no-cache',
+    });
+
+    const command = ffmpeg(filePath)
+      .outputOptions([
+        '-c:v libx264',
+        '-preset ultrafast',
+        '-crf 22',
+        '-c:a aac',
+        '-b:a 256k',
+        '-ac 2',
+        '-movflags frag_keyframe+empty_moov+default_base_moof',
+        '-f mp4'
+      ])
+      .on('error', (err) => {
+        if (!err.message.includes('Output stream closed') && !err.message.includes('pipe:1')) {
+          console.error('[StreamHandler] FFmpeg full transcode error:', err.message);
+        }
+      });
+
+    const ffmpegStream = command.pipe();
+    ffmpegStream.pipe(res);
+
+    res.on('close', () => {
+      try {
+        command.kill('SIGKILL');
+      } catch (e) {
+        // Ignore kill errors on close
+      }
+    });
+    return;
+  }
+
+  // Auto-Remux Mode (Zero video loss, 0% CPU for video, transcode AC3/DTS audio to AAC)
+  if ((autoRemuxExts.includes(ext) || forceTranscode) && !forceRaw) {
+    console.log(`[StreamHandler] Transcoding container/audio on-the-fly (c:v copy, c:a aac) for: ${path.basename(filePath)}`);
     res.writeHead(200, {
       'Content-Type': 'video/mp4',
       'Accept-Ranges': 'none',
@@ -79,7 +120,7 @@ function handleStreamRequest(req, res) {
       ])
       .on('error', (err) => {
         if (!err.message.includes('Output stream closed') && !err.message.includes('pipe:1')) {
-          console.error('[StreamHandler] FFmpeg transcode error:', err.message);
+          console.error('[StreamHandler] FFmpeg remux error:', err.message);
         }
       });
 
@@ -102,7 +143,7 @@ function handleStreamRequest(req, res) {
     const start = parseInt(parts[0], 10);
     const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
 
-    if (start >= fileSize || end >= fileSize) {
+    if (isNaN(start) || start >= fileSize || end >= fileSize || start > end) {
       res.setHeader('Content-Range', `bytes */${fileSize}`);
       return res.status(416).send('Requested Range Not Satisfiable');
     }
@@ -117,6 +158,13 @@ function handleStreamRequest(req, res) {
       'Content-Type': mimeType,
     });
 
+    fileStream.on('error', (err) => {
+      console.error('[StreamHandler] File stream error:', err.message);
+      if (!res.headersSent) {
+        res.status(500).send('File streaming error');
+      }
+    });
+
     fileStream.pipe(res);
   } else {
     res.writeHead(200, {
@@ -125,10 +173,24 @@ function handleStreamRequest(req, res) {
       'Accept-Ranges': 'bytes',
     });
 
-    fs.createReadStream(filePath).pipe(res);
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.on('error', (err) => {
+      console.error('[StreamHandler] File stream error:', err.message);
+      if (!res.headersSent) {
+        res.status(500).send('File streaming error');
+      }
+    });
+
+    fileStream.pipe(res);
   }
+}
+
+function handleStreamHealth(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.json({ status: 'ok', service: 'SyncStream Local Streaming' });
 }
 
 module.exports = {
   handleStreamRequest,
+  handleStreamHealth,
 };

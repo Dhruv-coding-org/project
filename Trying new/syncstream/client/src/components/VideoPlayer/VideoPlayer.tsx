@@ -340,6 +340,13 @@ export function VideoPlayer({
     audioDestRef.current = null;
   }
 
+  const [transcodeMode, setTranscodeMode] = useState<'none' | 'remux' | 'full'>('none');
+
+  // Reset transcode mode when source changes
+  useEffect(() => {
+    setTranscodeMode('none');
+  }, [videoSource]);
+
   useEffect(() => {
     if (isEmbedProvider) return;
 
@@ -392,9 +399,27 @@ export function VideoPlayer({
         usingObjectStream.current = false;
         setUsingObjectStreamState(false);
         setIsLoading(true);
-        setLoadingStatus('Loading local media file…');
+        const statusText = transcodeMode === 'full'
+          ? 'Transcoding video codec (H.265 to H.264)…'
+          : transcodeMode === 'remux'
+            ? 'Optimizing video container for playback…'
+            : 'Loading local media file…';
+        setLoadingStatus(statusText);
         if (video.srcObject) video.srcObject = null;
-        video.src = guestLocalFileUrl || videoSource.url;
+
+        let targetUrl = guestLocalFileUrl || videoSource.url;
+        if (targetUrl.includes('/api/stream')) {
+          const cleanUrl = targetUrl.replace(/([?&])transcode=(true|full)/g, '');
+          if (transcodeMode === 'remux') {
+            targetUrl = cleanUrl.includes('?') ? `${cleanUrl}&transcode=true` : `${cleanUrl}?transcode=true`;
+          } else if (transcodeMode === 'full') {
+            targetUrl = cleanUrl.includes('?') ? `${cleanUrl}&transcode=full` : `${cleanUrl}?transcode=full`;
+          } else {
+            targetUrl = cleanUrl;
+          }
+        }
+
+        video.src = targetUrl;
         video.load();
       } else {
         usingObjectStream.current = false;
@@ -411,7 +436,7 @@ export function VideoPlayer({
       cleanupWebAudio();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoSource, isHost, isEmbedProvider]);
+  }, [videoSource, isHost, isEmbedProvider, transcodeMode]);
 
   // ── (2) VOLUME & MUTED ─────────────────────────────────────────
   useEffect(() => {
@@ -743,10 +768,31 @@ export function VideoPlayer({
     const video = videoRef.current;
     const errCode = video?.error?.code;
     console.error('[VideoPlayer] Native video error code:', errCode, video?.error);
+
+    const isLocalApiStream = videoSource?.sourceType === 'file' && videoSource.url.includes('/api/stream');
+
+    if (isLocalApiStream && transcodeMode === 'none') {
+      console.warn('[VideoPlayer] Playback error encountered — auto-recovering with container/audio remuxing...');
+      setIsLoading(true);
+      setLoadingStatus('Optimizing video container for playback…');
+      setVideoError(null);
+      setTranscodeMode('remux');
+      return;
+    }
+
+    if (isLocalApiStream && transcodeMode === 'remux') {
+      console.warn('[VideoPlayer] Remux playback error encountered — auto-recovering with full video transcoding...');
+      setIsLoading(true);
+      setLoadingStatus('Transcoding video codec (H.265 to H.264)…');
+      setVideoError(null);
+      setTranscodeMode('full');
+      return;
+    }
+
     setIsLoading(false);
 
     if (errCode === 4) {
-      setVideoError('Browser Codec Restriction: This MKV video contains AC-3/EAC-3 audio or HEVC video which Chrome/Edge restrict natively.');
+      setVideoError('Browser Codec Restriction: This video contains incompatible audio (AC3/DTS) or video (HEVC H.265) codecs.');
     } else {
       setVideoError('Failed to decode video file. Format or codec unsupported by browser.');
     }
