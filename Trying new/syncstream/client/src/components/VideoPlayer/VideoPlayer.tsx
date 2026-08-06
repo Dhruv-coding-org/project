@@ -491,9 +491,13 @@ export function VideoPlayer({
             })
             .catch(err => console.error('[VideoPlayer] Failed to fetch media info:', err));
         }
-      } catch (e) {}
+      } catch (err) {
+        console.warn('[VideoPlayer] Invalid URL for subtitle check:', err);
+      }
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAvailableSubtitleTracks([]);
+       
       setActiveSubtitleTrackIndex(null);
     }
   }, [videoSource, isFile, isHost]);
