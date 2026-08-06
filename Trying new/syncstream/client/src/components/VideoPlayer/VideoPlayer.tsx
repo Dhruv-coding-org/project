@@ -4,7 +4,7 @@ import {
 import type { ChangeEvent } from 'react';
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
-import { socket } from '../../socket';
+import { socket, getServerUrl } from '../../socket';
 import type { VideoSource, EmojiReaction } from '../../types';
 import type { SubtitleCue } from '../../utils/subtitleParser';
 import { VideoPlayerSkeleton } from '../Skeleton/Skeleton';
@@ -482,7 +482,7 @@ export function VideoPlayer({
         const urlObj = new URL(videoSource.url);
         const pathParam = urlObj.searchParams.get('path');
         if (pathParam) {
-          fetch(`http://localhost:3001/api/media-info?path=${encodeURIComponent(pathParam)}`)
+          fetch(`${getServerUrl()}/api/media-info?path=${encodeURIComponent(pathParam)}`)
             .then(res => res.json())
             .then(data => {
               if (data.subtitles) {
@@ -516,7 +516,7 @@ export function VideoPlayer({
         setLoadingStatus('Extracting subtitle track...');
         setIsLoading(true);
         try {
-          const res = await fetch(`http://localhost:3001/api/subtitle/extract?path=${encodeURIComponent(pathParam)}&track=${trackIndex}`);
+          const res = await fetch(`${getServerUrl()}/api/subtitle/extract?path=${encodeURIComponent(pathParam)}&track=${trackIndex}`);
           const vttText = await res.text();
           if (onChangeSubtitles) onChangeSubtitles(vttText);
           setSubtitlesVisible(true);

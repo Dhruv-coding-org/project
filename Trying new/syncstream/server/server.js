@@ -52,8 +52,21 @@ server.on('error', (e) => {
   }
 });
 
-server.listen(PORT, () => {
+const localtunnel = require('localtunnel');
+
+server.listen(PORT, async () => {
   console.log(`\n  ✦ SyncStream Server`);
   console.log(`  ✦ Running on http://localhost:${PORT}`);
-  console.log(`  ✦ Max room capacity: ${MAX_ROOM_SIZE} users\n`);
+  console.log(`  ✦ Max room capacity: ${MAX_ROOM_SIZE} users`);
+
+  try {
+    const tunnel = await localtunnel({ port: PORT, subdomain: `syncstream-${Math.random().toString(36).substring(7)}` });
+    console.log(`\n  ======================================================`);
+    console.log(`  🌐 PUBLIC SYNCSTREAM TUNNEL URL`);
+    console.log(`  Use this URL to connect your mobile app/APK on the go:`);
+    console.log(`  >> ${tunnel.url} <<`);
+    console.log(`  ======================================================\n`);
+  } catch (err) {
+    console.warn(`  [Warning] Failed to start localtunnel: ${err.message}`);
+  }
 });

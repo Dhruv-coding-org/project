@@ -135,6 +135,24 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
           >
             ⌨️ Shortcuts
           </button>
+          <button
+            className="btn btn-ghost lobby-nav-btn"
+            onClick={() => {
+              const currentUrl = localStorage.getItem('syncstream_server_url') || '';
+              const url = prompt('Enter public SyncStream tunnel URL (or leave blank to use default):', currentUrl);
+              if (url !== null) {
+                if (url.trim() === '') {
+                  localStorage.removeItem('syncstream_server_url');
+                } else {
+                  localStorage.setItem('syncstream_server_url', url.trim());
+                }
+                window.location.reload();
+              }
+            }}
+            title="Configure Server URL for WAN streaming"
+          >
+            🌐 Server
+          </button>
         </div>
       </header>
 

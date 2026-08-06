@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent, DragEvent } from 'react';
 import type { VideoSource } from '../../hooks/useRoom';
+import { getServerUrl } from '../../socket';
 import './SourcePicker.css';
 
 interface SourcePickerProps {
@@ -62,9 +63,9 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
     const diskPath = (file as unknown as { path?: string }).path;
     if (diskPath) {
       try {
-        const check = await fetch('http://localhost:3001/api/stream/health', { method: 'GET' });
+        const check = await fetch(`${getServerUrl()}/api/stream/health`, { method: 'GET' });
         if (check.ok) {
-          const streamUrl = `http://localhost:3001/api/stream?path=${encodeURIComponent(diskPath)}`;
+          const streamUrl = `${getServerUrl()}/api/stream?path=${encodeURIComponent(diskPath)}`;
           setFileUrl(streamUrl);
         } else {
           setFileUrl(URL.createObjectURL(file));
