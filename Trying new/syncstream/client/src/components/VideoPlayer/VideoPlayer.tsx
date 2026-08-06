@@ -344,6 +344,7 @@ export function VideoPlayer({
 
   // Reset transcode mode when source changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTranscodeMode('none');
   }, [videoSource]);
 
@@ -445,16 +446,16 @@ export function VideoPlayer({
     if (isLoading && videoSource?.sourceType === 'file' && videoSource.url.includes('/api/stream')) {
       if (transcodeMode === 'none') {
         stallTimer = setTimeout(() => {
-          console.warn('[VideoPlayer] Playback stalled (no loadeddata/canplay for 8s) — auto-recovering with container/audio remuxing...');
+          console.warn('[VideoPlayer] Playback stalled (no loadeddata/canplay for 3s) — auto-recovering with container/audio remuxing...');
           setLoadingStatus('Optimizing video container for playback… (Stall detected)');
           setTranscodeMode('remux');
-        }, 8000);
+        }, 3000);
       } else if (transcodeMode === 'remux') {
         stallTimer = setTimeout(() => {
-          console.warn('[VideoPlayer] Remux playback stalled (no loadeddata/canplay for 10s) — auto-recovering with full video transcoding...');
+          console.warn('[VideoPlayer] Remux playback stalled (no loadeddata/canplay for 4s) — auto-recovering with full video transcoding...');
           setLoadingStatus('Transcoding video codec (H.265 to H.264)… (Stall detected)');
           setTranscodeMode('full');
-        }, 10000);
+        }, 4000);
       }
     }
     

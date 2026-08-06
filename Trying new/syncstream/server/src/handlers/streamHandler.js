@@ -74,9 +74,12 @@ function handleStreamRequest(req, res) {
       .outputOptions([
         '-c:v libx264',
         '-preset ultrafast',
-        '-crf 22',
+        '-tune zerolatency',
+        '-threads 0',
+        '-vf scale=-2:1080', // Downscale to 1080p max to ensure real-time CPU encoding
+        '-crf 23',
         '-c:a aac',
-        '-b:a 256k',
+        '-b:a 192k',
         '-ac 2',
         '-movflags frag_keyframe+empty_moov+default_base_moof',
         '-f mp4'
@@ -113,7 +116,7 @@ function handleStreamRequest(req, res) {
       .outputOptions([
         '-c:v copy', // Zero video loss, 0% CPU for video
         '-c:a aac',  // Convert AC3/DTS/EAC3 audio to stereo AAC for Chrome/Electron compatibility
-        '-b:a 320k', // 320kbps high quality audio
+        '-b:a 192k', // fast high quality audio
         '-ac 2',
         '-movflags frag_keyframe+empty_moov+default_base_moof',
         '-f mp4'
