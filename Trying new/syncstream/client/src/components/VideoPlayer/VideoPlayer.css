@@ -772,4 +772,43 @@
   flex-shrink: 0;
 }
 
+/* ── Embedded Subtitle Selector ───────────────────── */
+.vp-subtitle-selector {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 32px;
+}
 
+.vp-subtitle-select {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  padding: 0 12px 0 26px;
+  height: 100%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  max-width: 140px;
+  text-overflow: ellipsis;
+}
+
+.vp-subtitle-select:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.vp-subtitle-select:focus {
+  outline: none;
+  border-color: var(--accent-main);
+  background: rgba(124, 58, 237, 0.15);
+}
+
+.vp-subtitle-select option {
+  background: var(--bg-dark);
+  color: var(--text-primary);
+}

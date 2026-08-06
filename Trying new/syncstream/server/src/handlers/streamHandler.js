@@ -2,8 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+const ffprobePath = require('@ffprobe-installer/ffprobe').path;
 
 ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 function getMimeType(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -193,7 +195,72 @@ function handleStreamHealth(req, res) {
   res.json({ status: 'ok', service: 'SyncStream Local Streaming' });
 }
 
+function handleMediaInfo(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  const rawPath = req.query.path;
+  if (!rawPath) return res.status(400).json({ error: 'Missing path' });
+
+  const filePath = decodeURIComponent(rawPath);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
+
+  ffmpeg.ffprobe(filePath, (err, metadata) => {
+    if (err) {
+      console.error('[StreamHandler] FFprobe error:', err.message);
+      return res.status(500).json({ error: 'Probe failed' });
+    }
+
+    const subtitles = metadata.streams
+      .filter(s => s.codec_type === 'subtitle' && ['subrip', 'ass', 'webvtt', 'mov_text'].includes(s.codec_name))
+      .map(s => ({
+        index: s.index,
+        codec: s.codec_name,
+        language: s.tags && s.tags.language ? s.tags.language : 'Unknown',
+        title: s.tags && s.tags.title ? s.tags.title : `Track ${s.index}`
+      }));
+
+    res.json({ subtitles });
+  });
+}
+
+function handleSubtitleExtract(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  const rawPath = req.query.path;
+  const trackIndex = req.query.track;
+  
+  if (!rawPath || !trackIndex) return res.status(400).send('Missing path or track parameter');
+  
+  const filePath = decodeURIComponent(rawPath);
+  if (!fs.existsSync(filePath)) return res.status(404).send('File not found');
+
+  res.writeHead(200, {
+    'Content-Type': 'text/vtt',
+    'Cache-Control': 'no-cache',
+  });
+
+  const command = ffmpeg(filePath)
+    .outputOptions([
+      `-map 0:${trackIndex}`,
+      '-f webvtt'
+    ])
+    .on('error', (err) => {
+      if (!err.message.includes('Output stream closed')) {
+        console.error('[StreamHandler] Subtitle extract error:', err.message);
+      }
+    });
+
+  const ffmpegStream = command.pipe();
+  ffmpegStream.pipe(res);
+
+  res.on('close', () => {
+    try {
+      command.kill('SIGKILL');
+    } catch (e) {}
+  });
+}
+
 module.exports = {
   handleStreamRequest,
   handleStreamHealth,
+  handleMediaInfo,
+  handleSubtitleExtract,
 };

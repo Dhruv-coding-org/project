@@ -10,7 +10,7 @@ const registerSyncHandlers = require('./src/handlers/syncHandler');
 const registerWebRTCHandlers = require('./src/handlers/webrtcHandler');
 const registerChatHandlers = require('./src/handlers/chatHandler');
 
-const { handleStreamRequest, handleStreamHealth } = require('./src/handlers/streamHandler');
+const { handleStreamRequest, handleStreamHealth, handleMediaInfo, handleSubtitleExtract } = require('./src/handlers/streamHandler');
 
 const app = express();
 app.use(cors());
@@ -18,6 +18,8 @@ app.use(cors());
 // Local HTTP Range Request Streaming Endpoint (0-RAM 4GB+ File Support)
 app.get('/api/stream', handleStreamRequest);
 app.get('/api/stream/health', handleStreamHealth);
+app.get('/api/media-info', handleMediaInfo);
+app.get('/api/subtitle/extract', handleSubtitleExtract);
 
 const server = http.createServer(app);
 const io = new Server(server, {

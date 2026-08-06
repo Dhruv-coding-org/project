@@ -13,12 +13,20 @@ import { EmojiReactions } from './EmojiReactions';
 import { starVideoDB } from '../../db/db';
 import './VideoPlayer.css';
 
+export interface EmbeddedSubtitleTrack {
+  index: number;
+  codec: string;
+  language: string;
+  title: string;
+}
+
 interface VideoPlayerProps {
   isHost: boolean;
   canControl: boolean;
   videoSource: VideoSource | null;
   subtitleCues: SubtitleCue[];
   activeReactions?: EmojiReaction[];
+  onChangeSubtitles?: (text: string | null) => void;
   onPlay: (currentTime: number) => void;
   onPause: (currentTime: number) => void;
   onSeek: (currentTime: number) => void;
@@ -71,6 +79,7 @@ export function VideoPlayer({
   videoSource,
   subtitleCues,
   activeReactions = [],
+  onChangeSubtitles,
   onPlay,
   onPause,
   onSeek,
@@ -109,6 +118,8 @@ export function VideoPlayer({
   const streamCaptured = useRef(false);
   const plyrInitialized = useRef(false);
   const [subtitlesVisible, setSubtitlesVisible] = useState(true);
+  const [availableSubtitleTracks, setAvailableSubtitleTracks] = useState<EmbeddedSubtitleTrack[]>([]);
+  const [activeSubtitleTrackIndex, setActiveSubtitleTrackIndex] = useState<number | null>(null);
   const [guestLocalFileUrl, setGuestLocalFileUrl] = useState<string | null>(null);
   const [isStarred, setIsStarred] = useState(false);
 
@@ -463,6 +474,56 @@ export function VideoPlayer({
       if (stallTimer) clearTimeout(stallTimer);
     }
   }, [isLoading, videoSource, transcodeMode]);
+
+  // Fetch embedded subtitles for local files
+  useEffect(() => {
+    if (isFile && isHost && videoSource?.url.includes('/api/stream')) {
+      try {
+        const urlObj = new URL(videoSource.url);
+        const pathParam = urlObj.searchParams.get('path');
+        if (pathParam) {
+          fetch(`http://localhost:3001/api/media-info?path=${encodeURIComponent(pathParam)}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.subtitles) {
+                setAvailableSubtitleTracks(data.subtitles);
+              }
+            })
+            .catch(err => console.error('[VideoPlayer] Failed to fetch media info:', err));
+        }
+      } catch (e) {}
+    } else {
+      setAvailableSubtitleTracks([]);
+      setActiveSubtitleTrackIndex(null);
+    }
+  }, [videoSource, isFile, isHost]);
+
+  const handleSelectSubtitleTrack = async (trackIndex: number | null) => {
+    setActiveSubtitleTrackIndex(trackIndex);
+    if (trackIndex === null) {
+      if (onChangeSubtitles) onChangeSubtitles(null);
+      return;
+    }
+
+    if (videoSource?.url.includes('/api/stream')) {
+      const urlObj = new URL(videoSource.url);
+      const pathParam = urlObj.searchParams.get('path');
+      if (pathParam) {
+        setLoadingStatus('Extracting subtitle track...');
+        setIsLoading(true);
+        try {
+          const res = await fetch(`http://localhost:3001/api/subtitle/extract?path=${encodeURIComponent(pathParam)}&track=${trackIndex}`);
+          const vttText = await res.text();
+          if (onChangeSubtitles) onChangeSubtitles(vttText);
+          setSubtitlesVisible(true);
+        } catch (err) {
+          console.error('[VideoPlayer] Subtitle extract failed:', err);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+  };
 
   // ── (2) VOLUME & MUTED ─────────────────────────────────────────
   useEffect(() => {
@@ -1453,6 +1514,31 @@ export function VideoPlayer({
             >
               📺
             </button>
+
+            {/* Subtitle Track Selector for Embedded Subtitles */}
+            {availableSubtitleTracks.length > 0 && (
+              <div className="vp-subtitle-selector" title="Select Subtitle Track">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ position: 'absolute', left: '6px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                  <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                <select
+                  className="vp-subtitle-select"
+                  value={activeSubtitleTrackIndex === null ? '' : activeSubtitleTrackIndex}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    handleSelectSubtitleTrack(val ? parseInt(val, 10) : null);
+                  }}
+                  aria-label="Select Subtitle Track"
+                >
+                  <option value="">No Subtitles</option>
+                  {availableSubtitleTracks.map((track) => (
+                    <option key={track.index} value={track.index}>
+                      {track.title !== `Track ${track.index}` ? track.title : `${track.language.toUpperCase()} (${track.codec})`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Subtitle CC toggle */}
             {subtitleCues.length > 0 && (

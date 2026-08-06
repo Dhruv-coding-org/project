@@ -382,6 +382,7 @@ export function Room({
             videoSource={state.videoSource}
             subtitleCues={subtitleCues}
             activeReactions={state.activeReactions}
+            onChangeSubtitles={onChangeSubtitles}
             onPlay={onEmitPlay}
             onPause={onEmitPause}
             onSeek={onEmitSeek}
