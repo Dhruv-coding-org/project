@@ -977,6 +977,19 @@ export function VideoPlayer({
   const togglePlay = useCallback(() => {
     if (!canControl) return;
 
+    if (isHost && isVlcMode) {
+      if (playing) {
+        fetch(`${getServerUrl()}/api/vlc/command?command=pl_pause`, { method: 'POST' });
+        setPlaying(false);
+        onPause(vlcTime);
+      } else {
+        fetch(`${getServerUrl()}/api/vlc/command?command=pl_play`, { method: 'POST' });
+        setPlaying(true);
+        onPlay(vlcTime);
+      }
+      return;
+    }
+
     if (isEmbedProvider && plyrRef.current) {
       const player = plyrRef.current;
       if (player.paused) {
@@ -1001,13 +1014,18 @@ export function VideoPlayer({
         onPause(video.currentTime);
       }
     }
-  }, [canControl, onPlay, onPause, isEmbedProvider]);
+  }, [canControl, onPlay, onPause, isEmbedProvider, isHost, isVlcMode, playing, vlcTime]);
 
   function handleSeek(e: ChangeEvent<HTMLInputElement>) {
     if (!canControl) return;
     const t = Number(e.target.value);
     setCurrentTime(t);
     onSeek(t);
+
+    if (isHost && isVlcMode) {
+      fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${t}`, { method: 'POST' });
+      return;
+    }
 
     if (isEmbedProvider && plyrRef.current) {
       plyrRef.current.currentTime = t;
@@ -1131,36 +1149,6 @@ export function VideoPlayer({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePlay, toggleMute, toggleFullscreen, canControl, currentTime, duration, isEmbedProvider, onSeek]);
 
-  const handleSyncSeek = (t: number) => {
-    if (isHost && isVlcMode) {
-      fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${t}`, { method: 'POST' });
-    } else {
-      socket.emit('sync-seek', { currentTime: t });
-    }
-  };
-
-  const handlePlay = () => {
-    setPlaying(true);
-    if (isHost && isVlcMode) {
-      fetch(`${getServerUrl()}/api/vlc/command?command=pl_play`, { method: 'POST' });
-    }
-    if (isHost && isFile && !usingObjectStreamState && !guestLocalFileUrl && !isVlcMode) {
-      console.log('[VideoPlayer] Host starting local file playback — emitting stream ready for guests');
-      onStreamReady();
-    }
-    const t = getPlayerTime();
-    socket.emit('sync-play', { currentTime: t });
-  };
-
-  const handlePause = () => {
-    setPlaying(false);
-    if (isHost && isVlcMode) {
-      fetch(`${getServerUrl()}/api/vlc/command?command=pl_pause`, { method: 'POST' });
-    }
-    const t = getPlayerTime();
-    socket.emit('sync-pause', { currentTime: t });
-  };
-
   useEffect(() => {
     const onFsChange = () => setFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', onFsChange);
@@ -1195,7 +1183,16 @@ export function VideoPlayer({
     return (
       <div className="videoplayer-empty">
         <div className="videoplayer-empty-content">
-          <Film size={64} opacity={0.5} />
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity={0.5}>
+            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+            <line x1="7" y1="2" x2="7" y2="22"></line>
+            <line x1="17" y1="2" x2="17" y2="22"></line>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <line x1="2" y1="7" x2="7" y2="7"></line>
+            <line x1="2" y1="17" x2="7" y2="17"></line>
+            <line x1="17" y1="17" x2="22" y2="17"></line>
+            <line x1="17" y1="7" x2="22" y2="7"></line>
+          </svg>
           <h2>No Media Selected</h2>
           <p>
             {isHost
@@ -1212,7 +1209,12 @@ export function VideoPlayer({
       <div className="videoplayer-empty" style={{ backgroundColor: '#111' }}>
         <div className="videoplayer-empty-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
           <div style={{ background: '#f05d23', padding: '1.5rem', borderRadius: '50%', marginBottom: '1rem' }}>
-            <MonitorPlay size={64} color="white" />
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" color="white">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+              <polygon points="10 7.5 15 10 10 12.5 10 7.5"></polygon>
+            </svg>
           </div>
           <h2>Playing in Native VLC</h2>
           <p style={{ maxWidth: '400px', textAlign: 'center', lineHeight: 1.5, opacity: 0.8 }}>
