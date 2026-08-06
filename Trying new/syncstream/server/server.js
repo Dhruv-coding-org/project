@@ -42,6 +42,14 @@ app.get('/', (req, res) => {
   });
 });
 
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    console.log(`[Server] Port ${PORT} is already in use. Assuming server is already running.`);
+  } else {
+    console.error('[Server] Error:', e);
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`\n  ✦ SyncStream Server`);
   console.log(`  ✦ Running on http://localhost:${PORT}`);
