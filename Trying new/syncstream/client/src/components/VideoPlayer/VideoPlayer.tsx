@@ -410,7 +410,7 @@ export function VideoPlayer({
       if (!video) return;
 
       if (isHost || guestLocalFileUrl) {
-        let targetUrl = guestLocalFileUrl || videoSource.url;
+        const targetUrl = guestLocalFileUrl || videoSource.url;
         
         // Always use Web Transcoder for host streaming local files (enables inbuilt playback + WebRTC sync)
         startWebTranscoder(targetUrl, video);
@@ -946,7 +946,7 @@ export function VideoPlayer({
         onPause(video.currentTime);
       }
     }
-  }, [canControl, onPlay, onPause, isEmbedProvider, isHost, playing]);
+  }, [canControl, onPlay, onPause, isEmbedProvider]);
 
   function handleSeek(e: ChangeEvent<HTMLInputElement>) {
     if (!canControl) return;
