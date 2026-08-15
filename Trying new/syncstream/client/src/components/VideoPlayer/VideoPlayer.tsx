@@ -218,8 +218,16 @@ export function VideoPlayer({
       plyrRef.current = player;
       plyrInitialized.current = true;
 
+      const plyrTimeout = setTimeout(() => {
+        if (!videoReady) {
+          setVideoError('YouTube is taking too long to load. High ping or network restrictions might be blocking the video.');
+          setIsLoading(false);
+        }
+      }, 12000);
+
       player.on('ready', () => {
         console.log('[VideoPlayer] Plyr embed ready');
+        clearTimeout(plyrTimeout);
         setIsLoading(false);
         setVideoError(null);
         setVideoReady(true);
@@ -253,6 +261,7 @@ export function VideoPlayer({
       });
 
       player.on('error', () => {
+        clearTimeout(plyrTimeout);
         setIsLoading(false);
         setVideoError('Failed to load video. Please check the URL and try again.');
       });
