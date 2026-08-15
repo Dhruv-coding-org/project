@@ -219,10 +219,8 @@ export function VideoPlayer({
       plyrInitialized.current = true;
 
       const plyrTimeout = setTimeout(() => {
-        if (!videoReady) {
-          setVideoError('YouTube is taking too long to load. High ping or network restrictions might be blocking the video.');
-          setIsLoading(false);
-        }
+        setVideoError('YouTube is taking too long to load. High ping or network restrictions might be blocking the video.');
+        setIsLoading(false);
       }, 12000);
 
       player.on('ready', () => {
