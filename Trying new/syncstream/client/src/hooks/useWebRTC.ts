@@ -98,42 +98,7 @@ export function useWebRTC({ isHost, hostId, localStream, onVoiceStatusChange }: 
     }
   }, []);
 
-  const localStreamRef = useRef<MediaStream | null>(localStream);
-  useEffect(() => {
-    localStreamRef.current = localStream;
-
-    if (isHost && localStream && peers.current.size > 0) {
-      const peerIds = Array.from(peers.current.keys());
-      for (const peerId of peerIds) {
-        const pc = peers.current.get(peerId);
-        if (!pc) continue;
-        
-        const senders = pc.getSenders();
-        localStream.getTracks().forEach(track => {
-          const existingSender = senders.find(s => s.track?.kind === track.kind);
-          if (existingSender) {
-            existingSender.replaceTrack(track).catch(err => {
-              console.warn('[WebRTC] Failed to replace track:', err);
-            });
-          } else {
-            pc.addTrack(track, localStream);
-          }
-        });
-
-        applyBitrateLimit(pc, MAX_VIDEO_BITRATE_BPS);
-
-        const newTrackCount = localStream.getTracks().length;
-        const senderCount = senders.filter(s => s.track).length;
-        if (newTrackCount > senderCount) {
-          renegotiate(peerId, pc);
-        }
-      }
-    }
-  }, [localStream, isHost, renegotiate]);
-
-  const setOnRemoteStream = useCallback((cb: (stream: MediaStream) => void) => {
-    onRemoteStreamRef.current = cb;
-  }, []);
+  const pendingPeers = useRef<Set<string>>(new Set());
 
   // Video Peer Creation
   const createHostPeer = useCallback(async (peerId: string, stream: MediaStream) => {
@@ -167,6 +132,56 @@ export function useWebRTC({ isHost, hostId, localStream, onVoiceStatusChange }: 
 
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
   }, []);
+
+  const localStreamRef = useRef<MediaStream | null>(localStream);
+  useEffect(() => {
+    localStreamRef.current = localStream;
+
+    if (isHost && localStream && localStream.getTracks().length > 0) {
+      // 1. Fulfill any pending peer requests
+      if (pendingPeers.current.size > 0) {
+        pendingPeers.current.forEach(peerId => {
+          createHostPeer(peerId, localStream);
+        });
+        pendingPeers.current.clear();
+      }
+
+      // 2. Update tracks for existing peers
+      if (peers.current.size > 0) {
+        const peerIds = Array.from(peers.current.keys());
+        for (const peerId of peerIds) {
+          const pc = peers.current.get(peerId);
+          if (!pc) continue;
+          
+          const senders = pc.getSenders();
+          localStream.getTracks().forEach(track => {
+            const existingSender = senders.find(s => s.track?.kind === track.kind);
+            if (existingSender) {
+              existingSender.replaceTrack(track).catch(err => {
+                console.warn('[WebRTC] Failed to replace track:', err);
+              });
+            } else {
+              pc.addTrack(track, localStream);
+            }
+          });
+
+          applyBitrateLimit(pc, MAX_VIDEO_BITRATE_BPS);
+
+          const newTrackCount = localStream.getTracks().length;
+          const senderCount = senders.filter(s => s.track).length;
+          if (newTrackCount > senderCount) {
+            renegotiate(peerId, pc);
+          }
+        }
+      }
+    }
+  }, [localStream, isHost, renegotiate, createHostPeer]);
+
+  const setOnRemoteStream = useCallback((cb: (stream: MediaStream) => void) => {
+    onRemoteStreamRef.current = cb;
+  }, []);
+
+  // Guest Peer Creation
 
   const createGuestPeer = useCallback((senderId: string) => {
     const existing = peers.current.get(senderId);
@@ -243,7 +258,10 @@ export function useWebRTC({ isHost, hostId, localStream, onVoiceStatusChange }: 
     socket.on('peer-needs-stream', async ({ peerId }: { peerId: string }) => {
       if (!isHost) return;
       const stream = localStreamRef.current;
-      if (!stream || stream.getTracks().length === 0) return;
+      if (!stream || stream.getTracks().length === 0) {
+        pendingPeers.current.add(peerId);
+        return;
+      }
       await createHostPeer(peerId, stream);
     });
 

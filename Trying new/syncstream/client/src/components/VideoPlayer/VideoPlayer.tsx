@@ -724,7 +724,38 @@ export function VideoPlayer({
       }
     }, 300);
 
-    return () => clearInterval(interval);
+    const fallbackTimer = setTimeout(() => {
+      const video = videoRef.current;
+      if (!video) return;
+      
+      if (!usingObjectStream.current && videoSource?.url && !videoSource.url.includes('blob:')) {
+        console.warn('[VideoPlayer] WebRTC stream taking too long... falling back to HTTP stream');
+        clearInterval(interval);
+        
+        let targetUrl = videoSource.url;
+        if (targetUrl.startsWith('http://localhost')) {
+          try {
+            const urlObj = new URL(targetUrl);
+            targetUrl = `${getServerUrl()}${urlObj.pathname}${urlObj.search}`;
+          } catch (err) {
+            console.warn('[VideoPlayer] Invalid URL format for fallback:', err);
+          }
+        }
+        
+        setLoadingStatus('WebRTC unavailable. Using HTTP streaming…');
+        usingObjectStream.current = false;
+        setUsingObjectStreamState(false);
+        setIsLoading(true);
+        if (video.srcObject) video.srcObject = null;
+        video.src = targetUrl;
+        video.load();
+      }
+    }, 8000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(fallbackTimer);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHost, isFile, setOnRemoteStream]);
 
