@@ -176,6 +176,8 @@ export function VideoPlayer({
     setVideoReady(false);
     streamCaptured.current = false;
 
+    let loadTimeoutId: ReturnType<typeof setTimeout> | undefined;
+
     // Wait for DOM to render the embed div
     const timer = setTimeout(() => {
       const embedEl = document.getElementById('plyr-embed-target');
@@ -218,14 +220,14 @@ export function VideoPlayer({
       plyrRef.current = player;
       plyrInitialized.current = true;
 
-      const plyrTimeout = setTimeout(() => {
+      loadTimeoutId = setTimeout(() => {
         setVideoError('YouTube is taking too long to load. High ping or network restrictions might be blocking the video.');
         setIsLoading(false);
       }, 12000);
 
       player.on('ready', () => {
         console.log('[VideoPlayer] Plyr embed ready');
-        clearTimeout(plyrTimeout);
+        if (loadTimeoutId) clearTimeout(loadTimeoutId);
         setIsLoading(false);
         setVideoError(null);
         setVideoReady(true);
@@ -259,7 +261,7 @@ export function VideoPlayer({
       });
 
       player.on('error', () => {
-        clearTimeout(plyrTimeout);
+        if (loadTimeoutId) clearTimeout(loadTimeoutId);
         setIsLoading(false);
         setVideoError('Failed to load video. Please check the URL and try again.');
       });
@@ -267,6 +269,7 @@ export function VideoPlayer({
 
     return () => {
       clearTimeout(timer);
+      if (loadTimeoutId) clearTimeout(loadTimeoutId);
       if (plyrRef.current) {
         plyrRef.current.destroy();
         plyrRef.current = null;
