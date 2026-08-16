@@ -143,6 +143,7 @@ export function VideoPlayer({
 
   const isUrl = videoSource?.sourceType === 'url';
   const isFile = videoSource?.sourceType === 'file';
+  const isVlc = videoSource?.isVlc === true;
   const isYouTube = isUrl && videoSource ? !!extractYouTubeId(videoSource.url) : false;
   const isVimeo = isUrl && videoSource ? !!extractVimeoId(videoSource.url) : false;
   const isEmbedProvider = isYouTube || isVimeo;
@@ -417,9 +418,17 @@ export function VideoPlayer({
       video.load();
     } else if (isFile) {
       const video = videoRef.current;
-      if (!video) return;
+      if (!video && !isVlc) return;
 
-      if (isHost || guestLocalFileUrl) {
+      if (isHost && isVlc) {
+        usingObjectStream.current = false;
+        setUsingObjectStreamState(false);
+        if (video && video.srcObject) video.srcObject = null;
+        if (video) {
+          video.removeAttribute('src');
+          video.load();
+        }
+      } else if (isHost || guestLocalFileUrl) {
         const targetUrl = guestLocalFileUrl || videoSource.url;
         
         // Always use Web Transcoder for host streaming local files (enables inbuilt playback + WebRTC sync)
@@ -466,7 +475,62 @@ export function VideoPlayer({
       cleanupWebAudio();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoSource, isHost, isEmbedProvider, transcodeMode]);
+  }, [videoSource, isHost, isEmbedProvider, transcodeMode, isVlc]);
+
+  // ── (1.5) VLC MASTER CLOCK ENGINE ─────────────────────────────────
+  useEffect(() => {
+    if (!isHost || !isVlc || !videoSource) return;
+
+    let pollInterval: ReturnType<typeof setInterval>;
+
+    async function initVlc() {
+      setIsLoading(true);
+      setLoadingStatus('Launching VLC Media Player...');
+      
+      try {
+        const urlObj = new URL(videoSource.url);
+        const diskPath = urlObj.searchParams.get('path');
+        if (!diskPath) throw new Error('No path found');
+
+        // Start VLC
+        await fetch(`${getServerUrl()}/api/vlc/start?path=${encodeURIComponent(diskPath)}`);
+        
+        setIsLoading(false);
+        setVideoReady(true);
+        setAudioReady(true);
+        setPlaying(true);
+
+        // Start Polling
+        pollInterval = setInterval(async () => {
+          try {
+            const res = await fetch(`${getServerUrl()}/api/vlc/status`);
+            if (!res.ok) return;
+            const status = await res.json();
+            
+            // Sync React state to VLC state
+            if (isFinite(status.time)) setCurrentTime(status.time);
+            if (isFinite(status.length) && status.length > 0) setDuration(status.length);
+            
+            const isVlcPlaying = status.state === 'playing';
+            setPlaying(isVlcPlaying);
+            
+          } catch (e) {
+            // VLC might be closed or unreachable
+          }
+        }, 500);
+
+      } catch (err) {
+        setVideoError('Failed to launch VLC Media Player. Make sure it is installed.');
+        setIsLoading(false);
+      }
+    }
+
+    initVlc();
+
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [isHost, isVlc, videoSource]);
 
   // Stall recovery timer
   useEffect(() => {
@@ -963,6 +1027,12 @@ export function VideoPlayer({
   const togglePlay = useCallback(() => {
     if (!canControl) return;
 
+    if (isVlc && isHost) {
+      const cmd = playing ? 'pl_pause' : 'pl_play';
+      fetch(`${getServerUrl()}/api/vlc/command?command=${cmd}`).catch(() => {});
+      return;
+    }
+
     if (isEmbedProvider && plyrRef.current) {
       const player = plyrRef.current;
       if (player.paused) {
@@ -995,7 +1065,9 @@ export function VideoPlayer({
     setCurrentTime(t);
     onSeek(t);
 
-    if (isEmbedProvider && plyrRef.current) {
+    if (isVlc && isHost) {
+      fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${t}`).catch(() => {});
+    } else if (isEmbedProvider && plyrRef.current) {
       plyrRef.current.currentTime = t;
     } else {
       const video = videoRef.current;
@@ -1075,14 +1147,16 @@ export function VideoPlayer({
           e.preventDefault();
           toggleFullscreen();
           break;
-        case 'ArrowLeft':
+          case 'ArrowLeft':
           if (!canControl) return;
           e.preventDefault();
           {
             const newTime = Math.max(0, currentTime - 10);
             setCurrentTime(newTime);
             onSeek(newTime);
-            if (isEmbedProvider && plyrRef.current) {
+            if (isVlc && isHost) {
+              fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${newTime}`).catch(() => {});
+            } else if (isEmbedProvider && plyrRef.current) {
               plyrRef.current.currentTime = newTime;
             } else {
               const video = videoRef.current;
@@ -1097,7 +1171,9 @@ export function VideoPlayer({
             const newTime = Math.min(duration, currentTime + 10);
             setCurrentTime(newTime);
             onSeek(newTime);
-            if (isEmbedProvider && plyrRef.current) {
+            if (isVlc && isHost) {
+              fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${newTime}`).catch(() => {});
+            } else if (isEmbedProvider && plyrRef.current) {
               plyrRef.current.currentTime = newTime;
             } else {
               const video = videoRef.current;
@@ -1178,8 +1254,25 @@ export function VideoPlayer({
 
       {/* Live Floating Emoji Reactions Overlay */}
       <EmojiReactions reactions={activeReactions} />
+      
+      {/* VLC Splash Screen */}
+      {isVlc && isHost && (
+        <div className="vp-placeholder" style={{ background: '#000', zIndex: 10 }}>
+          <div className="vp-placeholder-icon">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+              <path d="M32 4L12 56h40L32 4z" fill="#ff8800"/>
+              <path d="M32 16L18 52h28L32 16z" fill="#fff"/>
+              <path d="M32 24l-8 22h16l-8-22z" fill="#ff8800"/>
+            </svg>
+          </div>
+          <h2>Playing in VLC Media Player</h2>
+          <p>SyncStream is using your native VLC player as the master clock.</p>
+          <p style={{ opacity: 0.7, fontSize: '0.9em' }}>Pause or seek in VLC and your friends will sync instantly!</p>
+        </div>
+      )}
+
       {/* Native Video element (for Local Files + Direct URLs) */}
-      {(!hasSource || !isEmbedProvider) && (
+      {(!hasSource || !isEmbedProvider) && !isVlc && (
         <video
           ref={videoRef}
           className="vp-video"
@@ -1440,7 +1533,8 @@ export function VideoPlayer({
                 const t = Math.max(0, currentTime - 10);
                 setCurrentTime(t);
                 onSeek(t);
-                if (isEmbedProvider && plyrRef.current) plyrRef.current.currentTime = t;
+                if (isVlc && isHost) fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${t}`).catch(() => {});
+                else if (isEmbedProvider && plyrRef.current) plyrRef.current.currentTime = t;
                 else if (videoRef.current) videoRef.current.currentTime = t;
               }}
               disabled={!canControl || !hasSource}
@@ -1460,7 +1554,8 @@ export function VideoPlayer({
                 const t = Math.min(duration, currentTime + 10);
                 setCurrentTime(t);
                 onSeek(t);
-                if (isEmbedProvider && plyrRef.current) plyrRef.current.currentTime = t;
+                if (isVlc && isHost) fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${t}`).catch(() => {});
+                else if (isEmbedProvider && plyrRef.current) plyrRef.current.currentTime = t;
                 else if (videoRef.current) videoRef.current.currentTime = t;
               }}
               disabled={!canControl || !hasSource}

@@ -19,6 +19,7 @@ export interface VideoSource {
   sourceType: 'url' | 'file';
   url: string;
   title?: string;
+  isVlc?: boolean;
   subtitleText?: string;
   subtitleName?: string;
 }

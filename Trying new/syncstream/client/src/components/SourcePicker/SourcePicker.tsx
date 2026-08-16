@@ -56,6 +56,18 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const electron = typeof window !== 'undefined' && (window as any).require ? (window as any).require('electron') : null;
   const isElectron = !!electron;
+  const [vlcInstalled, setVlcInstalled] = useState(false);
+
+  useEffect(() => {
+    if (isElectron) {
+      fetch(`${getServerUrl()}/api/vlc/check`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.installed) setVlcInstalled(true);
+        })
+        .catch(() => {});
+    }
+  }, [isElectron]);
 
   async function processFileObj(file: File) {
     if (!file) return;
@@ -373,6 +385,22 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
             <button type="button" className="btn btn-ghost" onClick={onClose} id="source-cancel-btn">
               Cancel
             </button>
+            {tab === 'file' && isElectron && vlcInstalled && fileUrl && (
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  onConfirm({ sourceType: 'file', url: fileUrl, title: fileName, isVlc: true });
+                }}
+                style={{ backgroundColor: '#ff8800', color: '#fff', border: 'none' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ marginRight: '6px' }}>
+                  <path d="M7 1L1 12h12L7 1z" fill="currentColor"/>
+                </svg>
+                Host in VLC
+              </button>
+            )}
             <button type="submit" className="btn btn-primary" id="source-confirm-btn">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M4 7l4-3v6L4 7z" fill="currentColor"/>
