@@ -432,15 +432,19 @@ export function VideoPlayer({
         const targetUrl = guestLocalFileUrl || videoSource.url;
         
         // Always use Web Transcoder for host streaming local files (enables inbuilt playback + WebRTC sync)
-        startWebTranscoder(targetUrl, video);
+        if (video) {
+          startWebTranscoder(targetUrl, video);
+        }
       } else {
         usingObjectStream.current = false;
         setUsingObjectStreamState(false);
         setIsLoading(true);
         setLoadingStatus('Connecting to host stream…');
-        if (video.srcObject) video.srcObject = null;
-        video.removeAttribute('src');
-        video.load();
+        if (video) {
+          if (video.srcObject) video.srcObject = null;
+          video.removeAttribute('src');
+          video.load();
+        }
       }
     }
 
@@ -484,6 +488,7 @@ export function VideoPlayer({
     let pollInterval: ReturnType<typeof setInterval>;
 
     async function initVlc() {
+      if (!videoSource) return;
       setIsLoading(true);
       setLoadingStatus('Launching VLC Media Player...');
       
@@ -514,12 +519,13 @@ export function VideoPlayer({
             const isVlcPlaying = status.state === 'playing';
             setPlaying(isVlcPlaying);
             
-          } catch (e) {
+          } catch {
             // VLC might be closed or unreachable
           }
         }, 500);
 
       } catch (err) {
+        console.error('VLC launch error:', err);
         setVideoError('Failed to launch VLC Media Player. Make sure it is installed.');
         setIsLoading(false);
       }
