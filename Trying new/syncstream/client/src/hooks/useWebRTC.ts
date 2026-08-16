@@ -8,16 +8,36 @@ interface UseWebRTCOptions {
   onVoiceStatusChange?: (isMuted: boolean, isDeafened: boolean) => void;
 }
 
-const peerConfig: RTCConfiguration = {
-  iceServers: [
+const getIceServers = (): RTCIceServer[] => {
+  const servers: RTCIceServer[] = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    {
+  ];
+
+  const turnUrl = import.meta.env.VITE_TURN_URL;
+  const turnUsername = import.meta.env.VITE_TURN_USERNAME;
+  const turnCredential = import.meta.env.VITE_TURN_CREDENTIAL;
+
+  if (turnUrl && turnUsername && turnCredential) {
+    servers.push({
+      urls: turnUrl,
+      username: turnUsername,
+      credential: turnCredential,
+    });
+  } else {
+    // Fallback to the free metered TURN server if no env vars are provided
+    servers.push({
       urls: 'turn:openrelay.metered.ca:80',
       username: 'openrelayproject',
       credential: 'openrelayproject'
-    }
-  ],
+    });
+  }
+  
+  return servers;
+};
+
+const peerConfig: RTCConfiguration = {
+  iceServers: getIceServers(),
 };
 
 const MAX_VIDEO_BITRATE_BPS = 1500 * 1000; // 1.5 Mbps

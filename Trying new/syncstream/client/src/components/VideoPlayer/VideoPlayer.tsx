@@ -760,7 +760,7 @@ export function VideoPlayer({
         video.src = targetUrl;
         video.load();
       }
-    }, 8000);
+    }, 3000);
 
     return () => {
       clearInterval(interval);
