@@ -1063,7 +1063,7 @@ export function VideoPlayer({
         onPause(video.currentTime);
       }
     }
-  }, [canControl, onPlay, onPause, isEmbedProvider]);
+  }, [canControl, isVlc, isHost, isEmbedProvider, playing, onPlay, onPause]);
 
   function handleSeek(e: ChangeEvent<HTMLInputElement>) {
     if (!canControl) return;
@@ -1197,7 +1197,7 @@ export function VideoPlayer({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, toggleMute, toggleFullscreen, canControl, currentTime, duration, isEmbedProvider, onSeek]);
+  }, [togglePlay, toggleMute, toggleFullscreen, canControl, currentTime, duration, isEmbedProvider, onSeek, isVlc, isHost]);
 
   useEffect(() => {
     const onFsChange = () => setFullscreen(!!document.fullscreenElement);
