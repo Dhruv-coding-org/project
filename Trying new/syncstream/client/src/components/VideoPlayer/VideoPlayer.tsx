@@ -317,10 +317,10 @@ export function VideoPlayer({
 
       // Ensure AudioContext is running (not suspended by autoplay policy)
       if (ctx.state === 'suspended') {
-        await ctx.resume();
+        console.warn('[Compositor] AudioContext created in suspended state. Waiting for user gesture.');
       }
       if (ctx.state !== 'running') {
-        console.warn('[Compositor] AudioContext state:', ctx.state, '— audio may be silent');
+        console.warn('[Compositor] AudioContext state:', ctx.state, '— audio may be silent until play');
       }
 
       audioCtxRef.current = ctx;
@@ -1032,6 +1032,10 @@ export function VideoPlayer({
   // ── (6) CONTROLS ───────────────────────────────────────────────
   const togglePlay = useCallback(() => {
     if (!canControl) return;
+
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume().catch(e => console.warn('[VideoPlayer] AudioContext resume failed:', e));
+    }
 
     if (isVlc && isHost) {
       const cmd = playing ? 'pl_pause' : 'pl_play';

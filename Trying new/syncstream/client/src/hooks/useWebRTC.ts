@@ -248,30 +248,98 @@ export function useWebRTC({ isHost, hostId, localStream, onVoiceStatusChange }: 
     });
   }, [isDeafened, isMuted, onVoiceStatusChange]);
 
+  const voiceStreamRef = useRef<MediaStream | null>(null);
+
+  const createVoicePeer = useCallback((peerId: string, isInitiator: boolean, stream: MediaStream) => {
+    let pc = voicePeers.current.get(peerId);
+    if (pc) {
+      pc.close();
+      voicePeers.current.delete(peerId);
+    }
+    pc = new RTCPeerConnection(peerConfig);
+    voicePeers.current.set(peerId, pc);
+
+    stream.getTracks().forEach(track => pc!.addTrack(track, stream));
+
+    pc.onicecandidate = ({ candidate }) => {
+      if (candidate) socket.emit('voice-ice-candidate', { targetId: peerId, candidate });
+    };
+
+    pc.ontrack = (e) => {
+      const audioId = `voice-audio-${peerId}`;
+      let audioEl = document.getElementById(audioId) as HTMLAudioElement;
+      if (!audioEl) {
+        audioEl = document.createElement('audio');
+        audioEl.id = audioId;
+        audioEl.className = 'voice-audio-elem';
+        audioEl.autoplay = true;
+        audioEl.muted = isDeafened;
+        document.body.appendChild(audioEl);
+      }
+      if (e.streams && e.streams[0]) {
+        audioEl.srcObject = e.streams[0];
+      } else {
+        const tempStream = new MediaStream();
+        tempStream.addTrack(e.track);
+        audioEl.srcObject = tempStream;
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      if (pc!.connectionState === 'failed' || pc!.connectionState === 'closed') {
+        pc!.close();
+        voicePeers.current.delete(peerId);
+        const el = document.getElementById(`voice-audio-${peerId}`);
+        if (el) el.remove();
+      }
+    };
+
+    if (isInitiator) {
+      pc.onnegotiationneeded = async () => {
+        try {
+          const offer = await pc!.createOffer();
+          await pc!.setLocalDescription(offer);
+          socket.emit('voice-offer', { targetId: peerId, offer });
+        } catch (err) {
+          console.warn('[VoiceChat] Negotiation failed:', err);
+        }
+      };
+    }
+    return pc;
+  }, [isDeafened]);
+
   const joinVoice = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       setVoiceStream(stream);
+      voiceStreamRef.current = stream;
       setVoiceActive(true);
       setIsMuted(false);
       setIsDeafened(false);
       if (onVoiceStatusChange) onVoiceStatusChange(false, false);
+      
+      socket.emit('voice-join');
     } catch (err) {
       console.warn('[VoiceChat] Microphone permission denied or unavailable:', err);
     }
   }, [onVoiceStatusChange]);
 
   const leaveVoice = useCallback(() => {
-    if (voiceStream) {
-      voiceStream.getTracks().forEach(t => t.stop());
+    if (voiceStreamRef.current) {
+      voiceStreamRef.current.getTracks().forEach(t => t.stop());
+      voiceStreamRef.current = null;
       setVoiceStream(null);
     }
-    voicePeers.current.forEach(pc => pc.close());
+    voicePeers.current.forEach((pc, peerId) => {
+      pc.close();
+      const el = document.getElementById(`voice-audio-${peerId}`);
+      if (el) el.remove();
+    });
     voicePeers.current.clear();
     setVoiceActive(false);
     setIsMuted(true);
     if (onVoiceStatusChange) onVoiceStatusChange(true, isDeafened);
-  }, [voiceStream, isDeafened, onVoiceStatusChange]);
+  }, [isDeafened, onVoiceStatusChange]);
 
   // Video Socket signaling listeners
   useEffect(() => {
@@ -319,13 +387,48 @@ export function useWebRTC({ isHost, hostId, localStream, onVoiceStatusChange }: 
       }
     });
 
+    socket.on('voice-joined', async ({ senderId }: { senderId: string }) => {
+      if (voiceStreamRef.current) {
+        createVoicePeer(senderId, true, voiceStreamRef.current);
+      }
+    });
+
+    socket.on('voice-offer', async ({ senderId, offer }: { senderId: string; offer: RTCSessionDescriptionInit }) => {
+      if (!voiceStreamRef.current) return;
+      let pc = voicePeers.current.get(senderId);
+      if (!pc || pc.signalingState === 'closed') {
+        pc = createVoicePeer(senderId, false, voiceStreamRef.current);
+      }
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('voice-answer', { targetId: senderId, answer });
+    });
+
+    socket.on('voice-answer', async ({ senderId, answer }: { senderId: string; answer: RTCSessionDescriptionInit }) => {
+      const pc = voicePeers.current.get(senderId);
+      if (pc) await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    });
+
+    socket.on('voice-ice-candidate', async ({ senderId, candidate }: { senderId: string; candidate: RTCIceCandidateInit }) => {
+      const pc = voicePeers.current.get(senderId);
+      if (pc && candidate) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); }
+        catch { /* ignore */ }
+      }
+    });
+
     return () => {
       socket.off('peer-needs-stream');
       socket.off('webrtc-offer');
       socket.off('webrtc-answer');
       socket.off('webrtc-ice-candidate');
+      socket.off('voice-joined');
+      socket.off('voice-offer');
+      socket.off('voice-answer');
+      socket.off('voice-ice-candidate');
     };
-  }, [isHost, createHostPeer, createGuestPeer]);
+  }, [isHost, createHostPeer, createGuestPeer, createVoicePeer]);
 
   const requestStream = useCallback(() => {
     if (!isHost && hostId) {
