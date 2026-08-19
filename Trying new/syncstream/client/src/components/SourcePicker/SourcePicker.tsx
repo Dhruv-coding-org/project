@@ -55,19 +55,19 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
   const [subtitleName, setSubtitleName] = useState('');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const electron = typeof window !== 'undefined' && (window as any).require ? (window as any).require('electron') : null;
-  const isElectron = !!electron;
+  const isElectronBrowser = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('electron');
+  const isElectron = isElectronBrowser || !!electron;
   const [vlcInstalled, setVlcInstalled] = useState(false);
 
   useEffect(() => {
-    if (isElectron) {
-      fetch(`${getServerUrl()}/api/vlc/check`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.installed) setVlcInstalled(true);
-        })
-        .catch(() => {});
-    }
-  }, [isElectron]);
+    // Always check VLC status; if the backend is running locally, it may be available
+    fetch(`${getServerUrl()}/api/vlc/check`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.installed) setVlcInstalled(true);
+      })
+      .catch(() => {});
+  }, []);
 
   async function processFileObj(file: File) {
     if (!file) return;
@@ -97,7 +97,10 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
 
   // Use Electron's native file dialog for reliable path extraction
   async function handleElectronFileSelect() {
-    if (!electron) return;
+    if (!electron) {
+      setError('Native file dialog is unavailable. Please use the file picker or drag & drop below.');
+      return;
+    }
     try {
       const result = await electron.ipcRenderer.invoke('select-file');
       if (!result) return; // User cancelled
@@ -385,12 +388,16 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
             <button type="button" className="btn btn-ghost" onClick={onClose} id="source-cancel-btn">
               Cancel
             </button>
-            {tab === 'file' && isElectron && vlcInstalled && fileUrl && (
+            {tab === 'file' && vlcInstalled && fileUrl && (
               <button 
                 type="button" 
                 className="btn btn-secondary" 
                 onClick={(e) => {
                   e.preventDefault();
+                  if (fileUrl.startsWith('blob:')) {
+                    setError('VLC requires the SyncStream Desktop App to access the full local file path. Please use the desktop app.');
+                    return;
+                  }
                   onConfirm({ sourceType: 'file', url: fileUrl, title: fileName, isVlc: true });
                 }}
                 style={{ backgroundColor: '#ff8800', color: '#fff', border: 'none' }}
