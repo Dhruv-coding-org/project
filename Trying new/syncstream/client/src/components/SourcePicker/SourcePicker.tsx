@@ -53,6 +53,21 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
   // Subtitle state
   const [subtitleText, setSubtitleText] = useState<string | null>(null);
   const [subtitleName, setSubtitleName] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const electron = typeof window !== 'undefined' && (window as any).require ? (window as any).require('electron') : null;
+  const isElectronBrowser = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('electron');
+  const isElectron = isElectronBrowser || !!electron;
+  const [vlcInstalled, setVlcInstalled] = useState(false);
+
+  useEffect(() => {
+    // Always check VLC status; if the backend is running locally, it may be available
+    fetch(`${getServerUrl()}/api/vlc/check`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.installed) setVlcInstalled(true);
+      })
+      .catch(() => {});
+  }, []);
 
   async function processFileObj(file: File) {
     if (!file) return;
@@ -60,27 +75,45 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
       URL.revokeObjectURL(fileUrl);
     }
 
+    // In Electron, File objects from <input type="file"> have a .path property
     const diskPath = (file as unknown as { path?: string }).path;
+    console.log('[SourcePicker] processFileObj — diskPath:', diskPath, 'fileName:', file.name);
+
     if (diskPath) {
-      try {
-        const check = await fetch(`${getServerUrl()}/api/stream/health`, { method: 'GET' });
-        if (check.ok) {
-          const streamUrl = `${getServerUrl()}/api/stream?path=${encodeURIComponent(diskPath)}`;
-          setFileUrl(streamUrl);
-        } else {
-          setFileUrl(URL.createObjectURL(file));
-        }
-      } catch {
-        setFileUrl(URL.createObjectURL(file));
-      }
+      const streamUrl = `${getServerUrl()}/api/stream?path=${encodeURIComponent(diskPath)}`;
+      console.log('[SourcePicker] Using stream URL:', streamUrl);
+      setFileUrl(streamUrl);
     } else {
+      // No disk path available (web browser or restricted Electron) — use blob URL
       const objectUrl = URL.createObjectURL(file);
+      console.log('[SourcePicker] No disk path, using blob URL:', objectUrl);
       setFileUrl(objectUrl);
     }
 
     setFileName(file.name);
     setFileSize(file.size);
     setError('');
+  }
+
+  // Use Electron's native file dialog for reliable path extraction
+  async function handleElectronFileSelect() {
+    if (!electron) {
+      setError('Native file dialog is unavailable. Please use the file picker or drag & drop below.');
+      return;
+    }
+    try {
+      const result = await electron.ipcRenderer.invoke('select-file');
+      if (!result) return; // User cancelled
+
+      console.log('[SourcePicker] Electron native dialog result:', result);
+      setFileUrl(result.streamUrl);
+      setFileName(result.fileName);
+      setFileSize(null); // Native dialog doesn't return size easily
+      setError('');
+    } catch (err) {
+      console.error('[SourcePicker] Electron file dialog failed:', err);
+      setError('Failed to open file dialog. Try drag & drop instead.');
+    }
   }
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -237,6 +270,21 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
           ) : (
             <div className="source-field">
               <label className="source-label">Select Video or Audio File</label>
+              {/* In Electron, use native dialog for reliable file path */}
+              {isElectron && !fileName && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleElectronFileSelect}
+                  style={{ width: '100%', marginBottom: '0.75rem', padding: '1rem' }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ marginRight: '0.5rem' }}>
+                    <path d="M12 4v12M8 8l4-4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Browse Files...
+                </button>
+              )}
               <label
                 className={`source-file-label ${isDragging ? 'dragging' : ''} ${fileName ? 'has-file' : ''}`}
                 htmlFor="source-file-input"
@@ -261,7 +309,7 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
                       <path d="M12 4v12M8 8l4-4 4 4" stroke="var(--accent-bright)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M4 18h16" stroke="var(--border-strong)" strokeWidth="2" strokeLinecap="round"/>
                     </svg>
-                    <span>Drag & drop local media file here or click to browse</span>
+                    <span>{isElectron ? 'Or drag & drop a file here' : 'Drag & drop local media file here or click to browse'}</span>
                   </div>
                 )}
               </label>
@@ -340,6 +388,26 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
             <button type="button" className="btn btn-ghost" onClick={onClose} id="source-cancel-btn">
               Cancel
             </button>
+            {tab === 'file' && vlcInstalled && fileUrl && (
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (fileUrl.startsWith('blob:')) {
+                    setError('VLC requires the SyncStream Desktop App to access the full local file path. Please use the desktop app.');
+                    return;
+                  }
+                  onConfirm({ sourceType: 'file', url: fileUrl, title: fileName, isVlc: true });
+                }}
+                style={{ backgroundColor: '#ff8800', color: '#fff', border: 'none' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ marginRight: '6px' }}>
+                  <path d="M7 1L1 12h12L7 1z" fill="currentColor"/>
+                </svg>
+                Host in VLC
+              </button>
+            )}
             <button type="submit" className="btn btn-primary" id="source-confirm-btn">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M4 7l4-3v6L4 7z" fill="currentColor"/>

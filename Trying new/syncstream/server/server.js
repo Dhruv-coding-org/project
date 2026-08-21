@@ -11,6 +11,8 @@ const registerWebRTCHandlers = require('./src/handlers/webrtcHandler');
 const registerChatHandlers = require('./src/handlers/chatHandler');
 
 const { handleStreamRequest, handleStreamHealth, handleMediaInfo, handleSubtitleExtract } = require('./src/handlers/streamHandler');
+const { handleVlcStart, handleVlcStatus, handleVlcCommand, handleVlcCheck } = require('./src/handlers/vlcHandler');
+
 
 const app = express();
 app.use(cors());
@@ -20,6 +22,13 @@ app.get('/api/stream', handleStreamRequest);
 app.get('/api/stream/health', handleStreamHealth);
 app.get('/api/media-info', handleMediaInfo);
 app.get('/api/subtitle/extract', handleSubtitleExtract);
+
+// VLC Integration Endpoints
+app.get('/api/vlc/start', handleVlcStart);
+app.get('/api/vlc/status', handleVlcStatus);
+app.get('/api/vlc/command', handleVlcCommand);
+app.get('/api/vlc/check', handleVlcCheck);
+
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -60,7 +69,20 @@ server.listen(PORT, async () => {
   console.log(`  ✦ Max room capacity: ${MAX_ROOM_SIZE} users`);
 
   try {
-    const tunnel = await localtunnel({ port: PORT, subdomain: `syncstream-${Math.random().toString(36).substring(7)}` });
+    const fs = require('fs');
+    const path = require('path');
+    const tunnelConfigFile = path.join(__dirname, 'syncstream_tunnel.json');
+    let subdomain = '';
+    
+    if (fs.existsSync(tunnelConfigFile)) {
+      const config = JSON.parse(fs.readFileSync(tunnelConfigFile, 'utf8'));
+      subdomain = config.subdomain;
+    } else {
+      subdomain = `syncstream-${Math.random().toString(36).substring(2, 10)}`;
+      fs.writeFileSync(tunnelConfigFile, JSON.stringify({ subdomain }));
+    }
+
+    const tunnel = await localtunnel({ port: PORT, subdomain });
     console.log(`\n  ======================================================`);
     console.log(`  🌐 PUBLIC SYNCSTREAM TUNNEL URL`);
     console.log(`  Use this URL to connect your mobile app/APK on the go:`);

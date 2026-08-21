@@ -21,6 +21,10 @@ function registerWebRTCHandlers(io, socket) {
   });
 
   // Voice Chat WebRTC Signaling
+  socket.on('voice-join', () => {
+    socket.to(socket.roomCode).emit('voice-joined', { senderId: socket.id });
+  });
+
   socket.on('voice-offer', ({ targetId, offer }) => {
     io.to(targetId).emit('voice-offer', { senderId: socket.id, offer });
   });

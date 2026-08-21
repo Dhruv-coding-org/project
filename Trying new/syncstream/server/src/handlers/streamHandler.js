@@ -26,7 +26,7 @@ function getMimeType(filePath) {
   }
 }
 
-function handleStreamRequest(req, res) {
+async function handleStreamRequest(req, res) {
   const rawPath = req.query.path;
   if (!rawPath) {
     return res.status(400).json({ error: 'Missing path parameter' });
@@ -58,10 +58,46 @@ function handleStreamRequest(req, res) {
     return res.sendStatus(200);
   }
 
-  const forceTranscode = req.query.transcode === 'true';
-  const fullTranscode = req.query.transcode === 'full';
+  let forceTranscode = req.query.transcode === 'true';
+  let fullTranscode = req.query.transcode === 'full';
   const forceRaw = req.query.raw === 'true';
   const autoRemuxExts = ['.mkv', '.avi', '.mov', '.wmv', '.flv', '.ts', '.mts', '.m2ts'];
+
+  // --- Smart Codec Probing ---
+  if (!forceRaw) {
+    try {
+      const metadata = await new Promise((resolve, reject) => {
+        ffmpeg.ffprobe(filePath, (err, data) => {
+          if (err) reject(err);
+          else resolve(data);
+        });
+      });
+
+      const videoStream = metadata.streams.find(s => s.codec_type === 'video');
+      const audioStreams = metadata.streams.filter(s => s.codec_type === 'audio');
+
+      if (videoStream) {
+        const browserSupportedVideo = ['h264', 'vp8', 'vp9', 'av1'];
+        if (!browserSupportedVideo.includes(videoStream.codec_name)) {
+          console.log(`[StreamHandler] Unsupported video codec detected: ${videoStream.codec_name}. Forcing full transcode.`);
+          fullTranscode = true;
+        }
+      }
+
+      if (!fullTranscode && audioStreams.length > 0) {
+        // If video is fine, check if audio needs transcoding (e.g. AC3/DTS in MP4)
+        const browserSupportedAudio = ['aac', 'mp3', 'vorbis', 'opus', 'flac'];
+        // We just check the first audio stream for simplicity
+        if (!browserSupportedAudio.includes(audioStreams[0].codec_name)) {
+          console.log(`[StreamHandler] Unsupported audio codec detected: ${audioStreams[0].codec_name}. Forcing audio transcode.`);
+          forceTranscode = true;
+        }
+      }
+    } catch (err) {
+      console.error('[StreamHandler] FFprobe smart detection failed:', err.message);
+    }
+  }
+  // ---------------------------
 
   // Full Transcode Mode (e.g. HEVC / H.265 video stream conversion to H.264 for Chrome/Electron)
   if (fullTranscode && !forceRaw) {
@@ -78,14 +114,17 @@ function handleStreamRequest(req, res) {
         '-preset ultrafast',
         '-tune zerolatency',
         '-threads 0',
-        '-vf scale=-2:1080', // Downscale to 1080p max to ensure real-time CPU encoding
-        '-crf 23',
+        '-vf scale=-2:1080',
+        '-pix_fmt yuv420p',
+        '-profile:v main',
+        '-crf 28', // Lower quality to ensure real-time speed on all CPUs
         '-c:a aac',
-        '-b:a 192k',
+        '-b:a 128k',
         '-ac 2',
         '-movflags frag_keyframe+empty_moov+default_base_moof',
         '-f mp4'
       ])
+      .on('start', (cmd) => console.log(`[StreamHandler] FFmpeg started: ${cmd}`))
       .on('error', (err) => {
         if (!err.message.includes('Output stream closed') && !err.message.includes('pipe:1')) {
           console.error('[StreamHandler] FFmpeg full transcode error:', err.message);
