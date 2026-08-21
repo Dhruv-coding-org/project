@@ -17,7 +17,7 @@ export const getServerUrl = () => {
   return 'http://localhost:3001';
 };
 
-export const socket = io(getServerUrl(), {
+export const socket: any = io(getServerUrl(), {
   autoConnect: false,
   transports: ['websocket', 'polling'],
   reconnectionAttempts: 10,
