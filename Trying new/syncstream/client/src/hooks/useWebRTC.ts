@@ -310,7 +310,15 @@ export function useWebRTC({ isHost, hostId, localStream, onVoiceStatusChange }: 
 
   const joinVoice = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      // Ask for both audio and video permissions at once to prevent multiple prompts
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      
+      // Stop the video tracks immediately since we only want to join voice initially
+      stream.getVideoTracks().forEach(track => {
+        track.stop();
+        stream.removeTrack(track);
+      });
+
       setVoiceStream(stream);
       voiceStreamRef.current = stream;
       setVoiceActive(true);
@@ -320,7 +328,7 @@ export function useWebRTC({ isHost, hostId, localStream, onVoiceStatusChange }: 
       
       socket.emit('voice-join');
     } catch (err) {
-      console.warn('[VoiceChat] Microphone permission denied or unavailable:', err);
+      console.warn('[VoiceChat] Microphone/Camera permission denied or unavailable:', err);
     }
   }, [onVoiceStatusChange]);
 
