@@ -1,0 +1,237 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f8f9fa;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Navbar */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Hero Section */
+.hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 80px 0;
+    margin-bottom: 40px;
+}
+
+.hero h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.hero .lead {
+    font-size: 1.2rem;
+    opacity: 0.95;
+}
+
+/* Cards */
+.card {
+    border: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+    margin-bottom: 20px;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.card-header {
+    border-bottom: none;
+    font-weight: 600;
+}
+
+/* Complaint Feed */
+.complaint-feed {
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.complaint-card {
+    transition: transform 0.2s;
+    margin-bottom: 15px;
+    cursor: pointer;
+}
+
+.complaint-card:hover {
+    transform: translateY(-3px);
+}
+
+.complaint-card.resolved {
+    border-left: 4px solid #28a745;
+}
+
+.complaint-card.pending {
+    border-left: 4px solid #ffc107;
+}
+
+.complaint-card.in-progress {
+    border-left: 4px solid #17a2b8;
+}
+
+.complaint-card.escalated {
+    border-left: 4px solid #dc3545;
+}
+
+/* Badges */
+.badge {
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: 500;
+}
+
+.badge-pending { background: #ffc107; color: #000; }
+.badge-in-progress { background: #17a2b8; color: #fff; }
+.badge-resolved { background: #28a745; color: #fff; }
+.badge-escalated { background: #dc3545; color: #fff; }
+
+/* Priority Badges */
+.badge-danger { background: #dc3545; }
+.badge-warning { background: #ffc107; color: #000; }
+.badge-info { background: #17a2b8; }
+.badge-secondary { background: #6c757d; }
+
+/* View Counter */
+.view-counter {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* Buttons */
+.btn-primary {
+    background: #667eea;
+    border: none;
+    padding: 10px 30px;
+    transition: all 0.3s;
+}
+
+.btn-primary:hover {
+    background: #5a67d8;
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    transition: all 0.3s;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+}
+
+/* Contact Button */
+.contact-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1000;
+    border-radius: 50px;
+    padding: 12px 24px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Table */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+}
+
+/* Forms */
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Alerts */
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+
+/* Modal */
+.modal-content {
+    border-radius: 10px;
+    border: none;
+}
+
+.modal-header {
+    border-bottom: none;
+}
+
+/* Loading Spinner */
+.spinner-border {
+    width: 40px;
+    height: 40px;
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+    background: white;
+    border-top: 1px solid #dee2e6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero {
+        padding: 50px 0;
+    }
+    
+    .hero h1 {
+        font-size: 2rem;
+    }
+    
+    .contact-btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+        bottom: 20px;
+        right: 20px;
+    }
+    
+    .table {
+        font-size: 0.85rem;
+    }
+    
+    .card-header h5 {
+        font-size: 1rem;
+    }
+}
+
+/* Dark Mode Support (Optional) */
+[data-theme="dark"] body {
+    background: #1a1a2e;
+    color: #fff;
+}
+
+[data-theme="dark"] .card {
+    background: #16213e;
+    color: #fff;
+}
+
+[data-theme="dark"] .table {
+    color: #fff;
+}
+
+[data-theme="dark"] .table th {
+    background: #0f3460;
+    color: #fff;
+}

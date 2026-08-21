@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Monitor - Principal View</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-danger">
+        <div class="container">
+            <a class="navbar-brand" href="/principal-dashboard.html"><i class="bi bi-shield-lock"></i> Staff Monitor</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/principal-dashboard.html">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Complaints Older Than 1 Week</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> These complaints have been pending for over 7 days. Consider disciplinary action.
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Assigned To</th>
+                                <th>Days Pending</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="oldComplaints"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Status Modal -->
+    <div class="modal fade" id="statusModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Complaint Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="complaintId">
+                    <div class="mb-3">
+                        <label>Status</label>
+                        <select id="newStatus" class="form-control">
+                            <option>Pending</option>
+                            <option>In Progress</option>
+                            <option>Resolved</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Resolution Notes</label>
+                        <textarea id="resolutionNotes" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" id="updateStatusBtn">Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Punish Teacher Modal -->
+    <div class="modal fade" id="punishModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Issue Disciplinary Action</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="teacherId">
+                    <div class="mb-3">
+                        <label>Teacher: <strong id="teacherNameDisplay"></strong></label>
+                    </div>
+                    <div class="mb-3">
+                        <label>Action Type</label>
+                        <select id="actionType" class="form-control">
+                            <option>Warning</option>
+                            <option>Written Notice</option>
+                            <option>Performance Review</option>
+                            <option>Suspension</option>
+                            <option>Salary Hold</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Reason</label>
+                        <textarea id="punishReason" class="form-control" rows="3" required></textarea>
+                        <small class="text-muted">Complaints pending: <span id="complaintCount"></span></small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger" id="confirmPunishBtn">Issue Action</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/script.js"></script>
+</body>
+</html>
