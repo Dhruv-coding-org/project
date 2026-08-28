@@ -153,6 +153,7 @@ export function useRoom() {
     });
 
     socket.on('reaction-received', (reaction: EmojiReaction) => {
+      if (reaction.senderId === socket.id) return;
       setState(s => ({
         ...s,
         activeReactions: [...s.activeReactions, reaction]

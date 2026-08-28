@@ -5,15 +5,25 @@ interface EmojiReactionsProps {
   reactions: EmojiReaction[];
 }
 
+function getHashCode(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash);
+}
+
 export function EmojiReactions({ reactions }: EmojiReactionsProps) {
   if (!reactions || reactions.length === 0) return null;
 
   return (
-    <div className="emoji-reactions-overlay" pointer-events="none">
-      {reactions.map((r, i) => {
-        // Random horizontal drift offset (-30px to +30px) based on index/id hash
-        const drift = ((i * 17) % 60) - 30;
-        const leftPercent = 15 + ((i * 23) % 70);
+    <div className="emoji-reactions-overlay">
+      {reactions.map((r) => {
+        const hash = getHashCode(r.id);
+        // Deterministic horizontal drift offset (-30px to +30px) based on reaction ID
+        const drift = (hash % 60) - 30;
+        // Deterministic left percentage (15% to 85%) based on reaction ID
+        const leftPercent = 15 + (hash % 70);
 
         return (
           <div
