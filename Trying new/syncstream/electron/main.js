@@ -123,6 +123,20 @@ ipcMain.handle('select-file', async () => {
   };
 });
 
+// IPC Handler to trigger VLC directly from Electron
+ipcMain.handle('launch-vlc', async (_event, mediaPath) => {
+  try {
+    const fetch = (...args) => import('node-fetch').then(({default: f}) => f(...args));
+    const url = `http://localhost:3001/api/vlc/start${mediaPath ? `?path=${encodeURIComponent(mediaPath)}` : ''}`;
+    const res = await (global.fetch || fetch)(url);
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+
 
 app.on('ready', async () => {
   await startBackendServer();

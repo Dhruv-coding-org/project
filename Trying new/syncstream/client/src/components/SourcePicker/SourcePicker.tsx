@@ -388,22 +388,36 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
             <button type="button" className="btn btn-ghost" onClick={onClose} id="source-cancel-btn">
               Cancel
             </button>
-            {tab === 'file' && vlcInstalled && fileUrl && (
+            {((tab === 'file' && fileUrl) || (tab === 'url' && url.trim())) && (
               <button 
                 type="button" 
                 className="btn btn-secondary" 
                 onClick={(e) => {
                   e.preventDefault();
-                  if (fileUrl.startsWith('blob:')) {
-                    setError('VLC requires the SyncStream Desktop App to access the full local file path. Please use the desktop app.');
-                    return;
+                  if (tab === 'file') {
+                    if (!fileUrl) {
+                      setError('Please select a local video or audio file first.');
+                      return;
+                    }
+                    onConfirm({ sourceType: 'file', url: fileUrl, title: fileName, isVlc: true });
+                  } else {
+                    const trimmed = url.trim();
+                    if (!trimmed) {
+                      setError('Please enter a video URL first.');
+                      return;
+                    }
+                    onConfirm({ sourceType: 'url', url: trimmed, isVlc: true });
                   }
-                  onConfirm({ sourceType: 'file', url: fileUrl, title: fileName, isVlc: true });
+                  if (onSubtitlesLoaded) {
+                    onSubtitlesLoaded(subtitleText);
+                  }
                 }}
-                style={{ backgroundColor: '#ff8800', color: '#fff', border: 'none' }}
+                style={{ backgroundColor: '#ff8800', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                title={vlcInstalled ? "Launch in VLC Media Player and synchronize room clock" : "Open with VLC Media Player"}
+                id="source-vlc-btn"
               >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ marginRight: '6px' }}>
-                  <path d="M7 1L1 12h12L7 1z" fill="currentColor"/>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L3 19h18L12 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" fill="currentColor"/>
                 </svg>
                 Host in VLC
               </button>

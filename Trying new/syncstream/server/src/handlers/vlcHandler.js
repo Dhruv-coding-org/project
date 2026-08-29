@@ -7,14 +7,23 @@ let vlcProcess = null;
 const VLC_PORT = 8080;
 const VLC_PASS = 'syncstream';
 
-// Locate VLC on Windows
+// Locate VLC on Windows and Linux/macOS
 function findVlc() {
   const possiblePaths = [
     'C:\\Program Files\\VideoLAN\\VLC\\vlc.exe',
-    'C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe'
-  ];
+    'C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe',
+    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'VideoLAN', 'VLC', 'vlc.exe') : null,
+    process.env.PROGRAMFILES ? path.join(process.env.PROGRAMFILES, 'VideoLAN', 'VLC', 'vlc.exe') : null,
+    process.env['PROGRAMFILES(X86)'] ? path.join(process.env['PROGRAMFILES(X86)'], 'VideoLAN', 'VLC', 'vlc.exe') : null,
+    '/usr/bin/vlc',
+    '/usr/local/bin/vlc',
+    '/Applications/VLC.app/Contents/MacOS/VLC'
+  ].filter(Boolean);
+
   for (const p of possiblePaths) {
-    if (fs.existsSync(p)) return p;
+    try {
+      if (fs.existsSync(p)) return p;
+    } catch {}
   }
   return null;
 }
@@ -57,14 +66,25 @@ function vlcRequest(command, extraParams = '') {
 function handleVlcStart(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   const rawPath = req.query.path;
-  if (!rawPath) return res.status(400).json({ error: 'Missing path' });
-
-  const filePath = decodeURIComponent(rawPath);
-  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
-
+  
   const vlcExe = findVlc();
   if (!vlcExe) {
-    return res.status(500).json({ error: 'VLC Media Player not found on system. Please install VLC.' });
+    return res.status(500).json({ error: 'VLC Media Player was not found in standard directories. Please make sure VLC is installed.' });
+  }
+
+  let mediaTarget = '';
+  if (rawPath) {
+    mediaTarget = decodeURIComponent(rawPath);
+    // If it's an internal stream URL, extract the underlying file path if local
+    if (mediaTarget.includes('/api/stream')) {
+      try {
+        const parsed = new URL(mediaTarget);
+        const diskPath = parsed.searchParams.get('path');
+        if (diskPath && fs.existsSync(diskPath)) {
+          mediaTarget = diskPath;
+        }
+      } catch {}
+    }
   }
 
   // Kill existing VLC if any
@@ -74,20 +94,29 @@ function handleVlcStart(req, res) {
     } catch(e) {}
   }
 
-  // Launch VLC with HTTP interface
-  vlcProcess = spawn(vlcExe, [
+  const vlcArgs = [
     '--extraintf', 'http',
     '--http-password', VLC_PASS,
     '--http-port', VLC_PORT.toString(),
-    '--play-and-pause',
-    filePath
-  ], {
-    detached: true,
-    stdio: 'ignore'
-  });
-  vlcProcess.unref();
+    '--play-and-pause'
+  ];
 
-  res.json({ success: true, message: 'VLC launched successfully' });
+  if (mediaTarget) {
+    vlcArgs.push(mediaTarget);
+  }
+
+  // Launch VLC with HTTP interface
+  try {
+    vlcProcess = spawn(vlcExe, vlcArgs, {
+      detached: true,
+      stdio: 'ignore'
+    });
+    vlcProcess.unref();
+
+    res.json({ success: true, message: 'VLC launched successfully', target: mediaTarget });
+  } catch (err) {
+    res.status(500).json({ error: `Failed to spawn VLC process: ${err.message}` });
+  }
 }
 
 async function handleVlcStatus(req, res) {

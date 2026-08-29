@@ -357,6 +357,25 @@ export function Room({
             </button>
           )}
 
+          {state.isHost && state.videoSource && (
+            <button
+              className={`btn btn-ghost room-vlc-btn ${state.videoSource?.isVlc ? 'active' : ''}`}
+              onClick={() => {
+                const isCurrentlyVlc = state.videoSource?.isVlc === true;
+                const newSource = { ...state.videoSource!, isVlc: !isCurrentlyVlc };
+                onChangeSource(newSource);
+              }}
+              title={state.videoSource?.isVlc ? "VLC Mode Active (Click to switch to Web Player)" : "Open current media in VLC Media Player (Host Mode)"}
+              id="room-vlc-btn"
+              style={{ color: '#ff8800' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ marginRight: '4px' }}>
+                <path d="M12 2L3 19h18L12 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" fill="currentColor"/>
+              </svg>
+              {state.videoSource?.isVlc ? 'VLC Active' : 'VLC Player'}
+            </button>
+          )}
+
           <button
             className="btn btn-ghost room-leave-btn"
             onClick={onLeave}

@@ -493,12 +493,23 @@ export function VideoPlayer({
       setLoadingStatus('Launching VLC Media Player...');
       
       try {
-        const urlObj = new URL(videoSource.url);
-        const diskPath = urlObj.searchParams.get('path');
-        if (!diskPath) throw new Error('No path found');
+        let target = videoSource.url;
+        if (target.includes('/api/stream')) {
+          try {
+            const urlObj = new URL(target);
+            const p = urlObj.searchParams.get('path');
+            if (p) target = p;
+          } catch (e) {
+            console.debug('URL parse skipped:', e);
+          }
+        }
 
         // Start VLC
-        await fetch(`${getServerUrl()}/api/vlc/start?path=${encodeURIComponent(diskPath)}`);
+        const res = await fetch(`${getServerUrl()}/api/vlc/start?path=${encodeURIComponent(target)}`);
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Failed to start VLC');
+        }
         
         setIsLoading(false);
         setVideoReady(true);
@@ -508,25 +519,26 @@ export function VideoPlayer({
         // Start Polling
         pollInterval = setInterval(async () => {
           try {
-            const res = await fetch(`${getServerUrl()}/api/vlc/status`);
-            if (!res.ok) return;
-            const status = await res.json();
+            const statusRes = await fetch(`${getServerUrl()}/api/vlc/status`);
+            if (!statusRes.ok) return;
+            const status = await statusRes.json();
             
             // Sync React state to VLC state
-            if (isFinite(status.time)) setCurrentTime(status.time);
-            if (isFinite(status.length) && status.length > 0) setDuration(status.length);
+            if (typeof status.time === 'number' && isFinite(status.time)) setCurrentTime(status.time);
+            if (typeof status.length === 'number' && isFinite(status.length) && status.length > 0) setDuration(status.length);
             
             const isVlcPlaying = status.state === 'playing';
             setPlaying(isVlcPlaying);
             
-          } catch {
-            // VLC might be closed or unreachable
+          } catch (pollErr) {
+            console.debug('VLC poll error:', pollErr);
           }
         }, 500);
 
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('VLC launch error:', err);
-        setVideoError('Failed to launch VLC Media Player. Make sure it is installed.');
+        const errMsg = err instanceof Error ? err.message : 'Failed to launch VLC Media Player. Make sure it is installed.';
+        setVideoError(errMsg);
         setIsLoading(false);
       }
     }
@@ -537,6 +549,46 @@ export function VideoPlayer({
       if (pollInterval) clearInterval(pollInterval);
     };
   }, [isHost, isVlc, videoSource]);
+
+  const handleLaunchVlc = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setLoadingStatus('Launching VLC Media Player...');
+      let target = videoSource?.url || '';
+      if (target.includes('/api/stream')) {
+        try {
+          const urlObj = new URL(target);
+          const p = urlObj.searchParams.get('path');
+          if (p) target = p;
+        } catch (e) {
+          console.debug('URL parse skipped:', e);
+        }
+      }
+
+      const query = target ? `?path=${encodeURIComponent(target)}` : '';
+      const res = await fetch(`${getServerUrl()}/api/vlc/start${query}`);
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Failed to launch VLC');
+      }
+
+      setIsLoading(false);
+      setVideoError(null);
+
+      // If host and not in VLC mode, switch room source to VLC sync mode
+      if (isHost && videoSource && !isVlc) {
+        socket.emit('change-source', {
+          ...videoSource,
+          isVlc: true
+        });
+      }
+    } catch (err: unknown) {
+      console.error('[VideoPlayer] Failed to launch VLC:', err);
+      const errMsg = err instanceof Error ? err.message : 'Failed to launch VLC Media Player. Make sure it is installed.';
+      setVideoError(errMsg);
+      setIsLoading(false);
+    }
+  }, [videoSource, isHost, isVlc]);
 
   // Stall recovery timer
   useEffect(() => {
@@ -1358,6 +1410,17 @@ export function VideoPlayer({
           </div>
           <p className="vp-error-text">{videoError}</p>
           <div className="vp-error-actions">
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={handleLaunchVlc}
+              style={{ backgroundColor: '#ff8800', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              title="Launch VLC Media Player and stream locally"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L3 19h18L12 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" fill="currentColor"/>
+              </svg>
+              Open in System VLC Player
+            </button>
             <button className="btn btn-primary btn-sm" onClick={handleRetryForceMP4}>
               ⚡ Force Muted Play
             </button>
@@ -1663,6 +1726,23 @@ export function VideoPlayer({
             >
               📺
             </button>
+
+            {/* Open in VLC Button */}
+            {hasSource && (
+              <button
+                className={`btn-icon vp-btn ${isVlc ? 'active' : ''}`}
+                onClick={handleLaunchVlc}
+                title={isVlc ? "VLC Sync Active (Click to Re-launch / Resync)" : "Open & Sync in VLC Media Player 🎬"}
+                aria-label="Open in VLC Media Player"
+                id="vp-open-vlc-btn"
+                style={{ color: isVlc ? '#ff8800' : '#ffa500' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L3 19h18L12 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" fill={isVlc ? "rgba(255,136,0,0.3)" : "none"}/>
+                  <path d="M8.5 13h7M7 16h10M10.5 8h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+            )}
 
             {/* Subtitle Track Selector for Embedded Subtitles */}
             {availableSubtitleTracks.length > 0 && (
