@@ -1,4 +1,4 @@
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
 export const getServerUrl = () => {
   if (typeof window !== 'undefined') {
@@ -17,7 +17,7 @@ export const getServerUrl = () => {
   return 'http://localhost:3001';
 };
 
-export const socket: any = io(getServerUrl(), {
+export const socket: Socket = io(getServerUrl(), {
   autoConnect: false,
   transports: ['websocket', 'polling'],
   reconnectionAttempts: 10,
