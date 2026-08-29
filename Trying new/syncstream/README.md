@@ -85,24 +85,17 @@ syncstream/
 
 ### Running the Application
 
-#### 1. Full Desktop Development Mode (Electron + Client + Server)
+#### 1. Full Desktop Development Mode (Single Command)
 ```bash
-# Terminal 1: Start backend server
-npm run dev:server
-
-# Terminal 2: Start Vite & Electron desktop window
 npm run electron:dev
 ```
+*This automatically starts the backend server, Vite client, and Electron desktop window concurrently.*
 
-#### 2. Web Development Mode (Browser Only)
+#### 2. Web Development Mode (Single Command)
 ```bash
-# Terminal 1: Start backend server
-npm run dev:server
-
-# Terminal 2: Start Vite web client
-npm run dev:client
+npm run dev
 ```
-Visit `http://localhost:5173` in your browser.
+*This starts both the backend server and Vite web client concurrently. Visit `http://localhost:5173` in your browser.*
 
 ---
 
@@ -112,7 +105,7 @@ Build the standalone Windows installer / desktop executable:
 ```bash
 npm run dist
 ```
-The compiled installer will be generated in the `dist-desktop/` folder.
+The compiled installer will be generated in the `dist-desktop/` folder. When running the installed desktop application or `npm start`, the app **automatically launches the embedded backend server on startup with zero configuration required**.
 
 ---
 
@@ -120,10 +113,12 @@ The compiled installer will be generated in the `dist-desktop/` folder.
 
 | Command | Description |
 | :--- | :--- |
-| `npm run dev:server` | Starts the Node.js signaling and streaming server on port `3001` |
-| `npm run dev:client` | Starts Vite development server for the web interface |
-| `npm run electron:dev` | Launches Vite client and Electron desktop shell with live reload |
-| `npm run dist` | Builds client assets and packages the Electron executable |
+| `npm run electron:dev` | **All-in-one desktop dev**: Launches backend server, Vite client, and Electron desktop shell with live reload |
+| `npm run dev` | **All-in-one web dev**: Launches backend server and Vite web client concurrently |
+| `npm run start` | Launches the Electron desktop app (automatically spins up the embedded backend server) |
+| `npm run dist` | Builds client assets and packages the standalone Windows installer (`.exe`) |
+| `npm run dev:server` | Starts only the Node.js signaling and streaming server on port `3001` |
+| `npm run dev:client` | Starts only the Vite development server for the web interface |
 | `npm run server:start` | Starts the server in background via PM2 (`ecosystem.config.js`) |
 | `npm run server:stop` | Stops the PM2 background server process |
 | `npm run server:status` | Checks PM2 process status |
