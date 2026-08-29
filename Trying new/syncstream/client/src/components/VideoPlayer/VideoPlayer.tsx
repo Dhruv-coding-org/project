@@ -506,7 +506,12 @@ export function VideoPlayer({
 
         // Start VLC
         const res = await fetch(`${getServerUrl()}/api/vlc/start?path=${encodeURIComponent(target)}`);
-        const data = await res.json();
+        let data: { error?: string; success?: boolean } = {};
+        try {
+          data = await res.json();
+        } catch {
+          throw new Error('VLC server returned an invalid response. Please verify VLC is installed.');
+        }
         if (!res.ok || data.error) {
           throw new Error(data.error || 'Failed to start VLC');
         }
@@ -521,13 +526,18 @@ export function VideoPlayer({
           try {
             const statusRes = await fetch(`${getServerUrl()}/api/vlc/status`);
             if (!statusRes.ok) return;
-            const status = await statusRes.json();
+            let status;
+            try {
+              status = await statusRes.json();
+            } catch {
+              return;
+            }
             
             // Sync React state to VLC state
-            if (typeof status.time === 'number' && isFinite(status.time)) setCurrentTime(status.time);
-            if (typeof status.length === 'number' && isFinite(status.length) && status.length > 0) setDuration(status.length);
+            if (typeof status?.time === 'number' && isFinite(status.time)) setCurrentTime(status.time);
+            if (typeof status?.length === 'number' && isFinite(status.length) && status.length > 0) setDuration(status.length);
             
-            const isVlcPlaying = status.state === 'playing';
+            const isVlcPlaying = status?.state === 'playing';
             setPlaying(isVlcPlaying);
             
           } catch (pollErr) {
@@ -567,7 +577,12 @@ export function VideoPlayer({
 
       const query = target ? `?path=${encodeURIComponent(target)}` : '';
       const res = await fetch(`${getServerUrl()}/api/vlc/start${query}`);
-      const data = await res.json();
+      let data: { error?: string; success?: boolean } = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error('VLC server returned an invalid response. Please verify VLC is installed.');
+      }
       if (!res.ok || data.error) {
         throw new Error(data.error || 'Failed to launch VLC');
       }
@@ -623,23 +638,23 @@ export function VideoPlayer({
         const pathParam = urlObj.searchParams.get('path');
         if (pathParam) {
           fetch(`${getServerUrl()}/api/media-info?path=${encodeURIComponent(pathParam)}`)
-            .then(res => res.json())
+            .then(res => (res.ok ? res.json() : null))
             .then(data => {
-              if (data.subtitles) {
+              if (data?.subtitles) {
                 setAvailableSubtitleTracks(data.subtitles);
               }
             })
-            .catch(err => console.error('[VideoPlayer] Failed to fetch media info:', err));
+            .catch(err => console.debug('[VideoPlayer] Subtitle check skipped:', err));
         }
       } catch (err) {
-        console.warn('[VideoPlayer] Invalid URL for subtitle check:', err);
+        console.debug('[VideoPlayer] Invalid URL for subtitle check:', err);
       }
-    } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setAvailableSubtitleTracks([]);
-       
-      setActiveSubtitleTrackIndex(null);
     }
+
+    return () => {
+      setAvailableSubtitleTracks([]);
+      setActiveSubtitleTrackIndex(null);
+    };
   }, [videoSource, isFile, isHost]);
 
   const handleSelectSubtitleTrack = async (trackIndex: number | null) => {

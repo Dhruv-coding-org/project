@@ -53,6 +53,17 @@ app.get('/', (req, res) => {
   });
 });
 
+// JSON 404 Fallback
+app.use((req, res) => {
+  res.status(404).json({ error: `Not found: ${req.method} ${req.url}` });
+});
+
+// JSON Error Handler
+app.use((err, req, res, next) => {
+  console.error('[Server Error]', err);
+  res.status(500).json({ error: err?.message || 'Internal Server Error' });
+});
+
 server.on('error', (e) => {
   if (e.code === 'EADDRINUSE') {
     console.log(`[Server] Port ${PORT} is already in use. Assuming server is already running.`);

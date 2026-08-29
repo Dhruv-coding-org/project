@@ -62,9 +62,9 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
   useEffect(() => {
     // Always check VLC status; if the backend is running locally, it may be available
     fetch(`${getServerUrl()}/api/vlc/check`)
-      .then(res => res.json())
+      .then(res => (res.ok ? res.json() : null))
       .then(data => {
-        if (data.installed) setVlcInstalled(true);
+        if (data?.installed) setVlcInstalled(true);
       })
       .catch(() => {});
   }, []);
