@@ -59,6 +59,20 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
     const timer = setTimeout(() => setShowSkeleton(false), 350);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecentRooms(getRecentRooms());
+
+    try {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const urlRoom = params.get('room') || params.get('code');
+        if (urlRoom) {
+          setTab('join');
+          setRoomCode(urlRoom.toUpperCase());
+        }
+      }
+    } catch (e) {
+      console.debug('Failed to parse URL room param:', e);
+    }
+
     return () => clearTimeout(timer);
   }, []);
 

@@ -4,7 +4,7 @@ import {
 import type { ChangeEvent } from 'react';
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
-import { socket, getServerUrl } from '../../socket';
+import { socket, getServerUrl, resolveMediaUrl } from '../../socket';
 import type { VideoSource, EmojiReaction } from '../../types';
 import type { SubtitleCue } from '../../utils/subtitleParser';
 import { VideoPlayerSkeleton } from '../Skeleton/Skeleton';
@@ -414,7 +414,7 @@ export function VideoPlayer({
       setIsLoading(true);
       setLoadingStatus('Loading video…');
       if (video.srcObject) video.srcObject = null;
-      video.src = videoSource.url;
+      video.src = resolveMediaUrl(videoSource.url);
       video.load();
     } else if (isFile) {
       const video = videoRef.current;
@@ -429,21 +429,30 @@ export function VideoPlayer({
           video.load();
         }
       } else if (isHost || guestLocalFileUrl) {
-        const targetUrl = guestLocalFileUrl || videoSource.url;
+        const targetUrl = resolveMediaUrl(guestLocalFileUrl || videoSource.url);
         
         // Always use Web Transcoder for host streaming local files (enables inbuilt playback + WebRTC sync)
         if (video) {
           startWebTranscoder(targetUrl, video);
         }
       } else {
-        usingObjectStream.current = false;
-        setUsingObjectStreamState(false);
-        setIsLoading(true);
-        setLoadingStatus('Connecting to host stream…');
-        if (video) {
-          if (video.srcObject) video.srcObject = null;
-          video.removeAttribute('src');
-          video.load();
+        // Guest device (e.g. mobile phone connected over Wi-Fi or LAN)
+        const targetUrl = resolveMediaUrl(videoSource.url);
+        if (targetUrl && !targetUrl.startsWith('blob:')) {
+          // Immediately stream through host's backend endpoint so phone can play right away
+          if (video) {
+            startWebTranscoder(targetUrl, video);
+          }
+        } else {
+          usingObjectStream.current = false;
+          setUsingObjectStreamState(false);
+          setIsLoading(true);
+          setLoadingStatus('Connecting to host stream…');
+          if (video) {
+            if (video.srcObject) video.srcObject = null;
+            video.removeAttribute('src');
+            video.load();
+          }
         }
       }
     }
@@ -695,7 +704,7 @@ export function VideoPlayer({
   useEffect(() => {
     if (isFile && isHost && videoSource?.url.includes('/api/stream')) {
       try {
-        const urlObj = new URL(videoSource.url);
+        const urlObj = new URL(resolveMediaUrl(videoSource.url));
         const pathParam = urlObj.searchParams.get('path');
         if (pathParam) {
           fetch(`${getServerUrl()}/api/media-info?path=${encodeURIComponent(pathParam)}`)
@@ -940,16 +949,7 @@ export function VideoPlayer({
         console.warn('[VideoPlayer] WebRTC stream taking too long... falling back to HTTP stream');
         clearInterval(interval);
         
-        let targetUrl = videoSource.url;
-        if (targetUrl.startsWith('http://localhost')) {
-          try {
-            const urlObj = new URL(targetUrl);
-            targetUrl = `${getServerUrl()}${urlObj.pathname}${urlObj.search}`;
-          } catch (err) {
-            console.warn('[VideoPlayer] Invalid URL format for fallback:', err);
-          }
-        }
-        
+        const targetUrl = resolveMediaUrl(videoSource.url);
         setLoadingStatus('WebRTC unavailable. Using HTTP streaming…');
         usingObjectStream.current = false;
         setUsingObjectStreamState(false);
