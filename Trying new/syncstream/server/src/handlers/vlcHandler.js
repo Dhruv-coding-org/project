@@ -37,10 +37,11 @@ function vlcRequest(command, extraParams = '') {
     }
 
     const options = {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       port: VLC_PORT,
       path: pathStr,
       method: 'GET',
+      timeout: 2000,
       headers: {
         'Authorization': 'Basic ' + Buffer.from(`:${VLC_PASS}`).toString('base64')
       }
@@ -56,6 +57,11 @@ function vlcRequest(command, extraParams = '') {
           resolve(null);
         }
       });
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('VLC request timed out'));
     });
 
     req.on('error', (e) => reject(e));
@@ -87,36 +93,40 @@ function handleVlcStart(req, res) {
     }
   }
 
-  // Kill existing VLC if any
-  if (vlcProcess) {
-    try {
-      vlcProcess.kill();
-    } catch(e) {}
-  }
-
-  const vlcArgs = [
-    '--extraintf', 'http',
-    '--http-password', VLC_PASS,
-    '--http-port', VLC_PORT.toString(),
-    '--play-and-pause'
-  ];
-
-  if (mediaTarget) {
-    vlcArgs.push(mediaTarget);
-  }
-
-  // Launch VLC with HTTP interface
+  // Kill existing VLC if any so HTTP interface starts fresh
   try {
-    vlcProcess = spawn(vlcExe, vlcArgs, {
-      detached: true,
-      stdio: 'ignore'
-    });
-    vlcProcess.unref();
+    if (process.platform === 'win32') {
+      exec('taskkill /F /IM vlc.exe', () => {});
+    } else if (vlcProcess) {
+      vlcProcess.kill();
+    }
+  } catch (e) {}
 
-    res.json({ success: true, message: 'VLC launched successfully', target: mediaTarget });
-  } catch (err) {
-    res.status(500).json({ error: `Failed to spawn VLC process: ${err.message}` });
-  }
+  setTimeout(() => {
+    const vlcArgs = [
+      '--extraintf', 'http',
+      '--http-password', VLC_PASS,
+      '--http-port', VLC_PORT.toString(),
+      '--no-video-title-show'
+    ];
+
+    if (mediaTarget && !mediaTarget.startsWith('blob:')) {
+      vlcArgs.push(mediaTarget);
+    }
+
+    // Launch VLC with HTTP interface
+    try {
+      vlcProcess = spawn(vlcExe, vlcArgs, {
+        detached: true,
+        stdio: 'ignore'
+      });
+      vlcProcess.unref();
+
+      res.json({ success: true, message: 'VLC launched successfully', target: mediaTarget });
+    } catch (err) {
+      res.status(500).json({ error: `Failed to spawn VLC process: ${err.message}` });
+    }
+  }, 250);
 }
 
 async function handleVlcStatus(req, res) {
@@ -156,7 +166,7 @@ async function handleVlcCommand(req, res) {
 function handleVlcCheck(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   const vlcExe = findVlc();
-  res.json({ installed: !!vlcExe });
+  res.json({ installed: !!vlcExe, path: vlcExe });
 }
 
 module.exports = {

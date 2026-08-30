@@ -53,10 +53,13 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
   // Subtitle state
   const [subtitleText, setSubtitleText] = useState<string | null>(null);
   const [subtitleName, setSubtitleName] = useState('');
+  // Electron bridge support
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const electron = typeof window !== 'undefined' && (window as any).require ? (window as any).require('electron') : null;
+  const electronAPI = typeof window !== 'undefined' ? (window as any).electronAPI : null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const electronRequire = typeof window !== 'undefined' && (window as any).require ? (window as any).require('electron') : null;
   const isElectronBrowser = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('electron');
-  const isElectron = isElectronBrowser || !!electron;
+  const isElectron = isElectronBrowser || !!electronAPI || !!electronRequire;
   const [vlcInstalled, setVlcInstalled] = useState(false);
 
   useEffect(() => {
@@ -75,8 +78,21 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
       URL.revokeObjectURL(fileUrl);
     }
 
-    // In Electron, File objects from <input type="file"> have a .path property
-    const diskPath = (file as unknown as { path?: string }).path;
+    let diskPath = (file as unknown as { path?: string }).path;
+    if (!diskPath && electronAPI?.getPathForFile) {
+      try {
+        diskPath = electronAPI.getPathForFile(file);
+      } catch (err) {
+        console.debug('electronAPI getPathForFile error:', err);
+      }
+    } else if (!diskPath && electronRequire?.webUtils) {
+      try {
+        diskPath = electronRequire.webUtils.getPathForFile(file);
+      } catch (err) {
+        console.debug('electronRequire webUtils error:', err);
+      }
+    }
+
     console.log('[SourcePicker] processFileObj — diskPath:', diskPath, 'fileName:', file.name);
 
     if (diskPath) {
@@ -97,12 +113,14 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
 
   // Use Electron's native file dialog for reliable path extraction
   async function handleElectronFileSelect() {
-    if (!electron) {
-      setError('Native file dialog is unavailable. Please use the file picker or drag & drop below.');
-      return;
-    }
     try {
-      const result = await electron.ipcRenderer.invoke('select-file');
+      let result = null;
+      if (electronAPI?.selectFile) {
+        result = await electronAPI.selectFile();
+      } else if (electronRequire?.ipcRenderer) {
+        result = await electronRequire.ipcRenderer.invoke('select-file');
+      }
+
       if (!result) return; // User cancelled
 
       console.log('[SourcePicker] Electron native dialog result:', result);

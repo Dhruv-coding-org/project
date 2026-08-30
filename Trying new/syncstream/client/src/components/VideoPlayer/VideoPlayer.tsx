@@ -482,13 +482,16 @@ export function VideoPlayer({
   }, [videoSource, isHost, isEmbedProvider, transcodeMode, isVlc]);
 
   // ── (1.5) VLC MASTER CLOCK ENGINE ─────────────────────────────────
+  const lastVlcState = useRef<{ playing: boolean; time: number }>({ playing: false, time: 0 });
+
   useEffect(() => {
     if (!isHost || !isVlc || !videoSource) return;
 
     let pollInterval: ReturnType<typeof setInterval>;
+    let isCancelled = false;
 
     async function initVlc() {
-      if (!videoSource) return;
+      if (!videoSource || isCancelled) return;
       setIsLoading(true);
       setLoadingStatus('Launching VLC Media Player...');
       
@@ -504,7 +507,22 @@ export function VideoPlayer({
           }
         }
 
-        // Start VLC
+        if (target.startsWith('blob:')) {
+          throw new Error('VLC cannot open in-memory browser blob URLs. Please open this video in the SyncStream Desktop App or load via Stream URL.');
+        }
+
+        // Try Electron native bridge first if available, otherwise call backend server
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const electronAPI = typeof window !== 'undefined' ? (window as any).electronAPI : null;
+        if (electronAPI?.launchVlc) {
+          try {
+            await electronAPI.launchVlc(target);
+          } catch (e) {
+            console.debug('Electron launchVlc bridge error:', e);
+          }
+        }
+
+        // Start VLC via backend server
         const res = await fetch(`${getServerUrl()}/api/vlc/start?path=${encodeURIComponent(target)}`);
         let data: { error?: string; success?: boolean } = {};
         try {
@@ -516,13 +534,20 @@ export function VideoPlayer({
           throw new Error(data.error || 'Failed to start VLC');
         }
         
+        if (isCancelled) return;
         setIsLoading(false);
         setVideoReady(true);
         setAudioReady(true);
         setPlaying(true);
+        setVideoError(null);
 
-        // Start Polling
+        // Initial delay for VLC HTTP interface to spin up
+        await new Promise(r => setTimeout(r, 1000));
+        if (isCancelled) return;
+
+        // Start Polling VLC status
         pollInterval = setInterval(async () => {
+          if (isCancelled) return;
           try {
             const statusRes = await fetch(`${getServerUrl()}/api/vlc/status`);
             if (!statusRes.ok) return;
@@ -534,11 +559,31 @@ export function VideoPlayer({
             }
             
             // Sync React state to VLC state
-            if (typeof status?.time === 'number' && isFinite(status.time)) setCurrentTime(status.time);
-            if (typeof status?.length === 'number' && isFinite(status.length) && status.length > 0) setDuration(status.length);
+            if (typeof status?.time === 'number' && isFinite(status.time)) {
+              setCurrentTime(status.time);
+              // Broadcast seek if time jumped by more than 2.5s
+              if (Math.abs(status.time - lastVlcState.current.time) > 2.5) {
+                onSeek(status.time);
+                lastVlcState.current.time = status.time;
+              } else {
+                lastVlcState.current.time = status.time;
+              }
+            }
+
+            if (typeof status?.length === 'number' && isFinite(status.length) && status.length > 0) {
+              setDuration(status.length);
+            }
             
             const isVlcPlaying = status?.state === 'playing';
-            setPlaying(isVlcPlaying);
+            if (isVlcPlaying !== lastVlcState.current.playing) {
+              lastVlcState.current.playing = isVlcPlaying;
+              setPlaying(isVlcPlaying);
+              if (isVlcPlaying) {
+                onPlay(typeof status?.time === 'number' ? status.time : currentTime);
+              } else {
+                onPause(typeof status?.time === 'number' ? status.time : currentTime);
+              }
+            }
             
           } catch (pollErr) {
             console.debug('VLC poll error:', pollErr);
@@ -556,9 +601,10 @@ export function VideoPlayer({
     initVlc();
 
     return () => {
+      isCancelled = true;
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, [isHost, isVlc, videoSource]);
+  }, [isHost, isVlc, videoSource, onPlay, onPause, onSeek, currentTime]);
 
   const handleLaunchVlc = useCallback(async () => {
     try {
@@ -572,6 +618,21 @@ export function VideoPlayer({
           if (p) target = p;
         } catch (e) {
           console.debug('URL parse skipped:', e);
+        }
+      }
+
+      if (target.startsWith('blob:')) {
+        throw new Error('VLC cannot open in-memory browser blob URLs. Please open this video in the SyncStream Desktop App or load via Stream URL.');
+      }
+
+      // Try Electron native bridge first if available
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const electronAPI = typeof window !== 'undefined' ? (window as any).electronAPI : null;
+      if (electronAPI?.launchVlc) {
+        try {
+          await electronAPI.launchVlc(target);
+        } catch (e) {
+          console.debug('Electron launchVlc bridge error:', e);
         }
       }
 
