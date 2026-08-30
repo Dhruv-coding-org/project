@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: syncstream-backend
+    env: node
+    rootDir: Trying new/syncstream/server
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
