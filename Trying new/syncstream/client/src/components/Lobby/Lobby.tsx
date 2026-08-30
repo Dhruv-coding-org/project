@@ -4,6 +4,7 @@ import { getSavedProfile } from '../../hooks/useRoom';
 import { AVATAR_PRESETS } from '../../constants/avatars';
 import { LobbyCardSkeleton } from '../Skeleton/Skeleton';
 import { ShortcutsModal } from '../Shortcuts/ShortcutsModal';
+import { ServerConfigModal } from '../ServerConfig/ServerConfigModal';
 import './Lobby.css';
 
 interface LobbyProps {
@@ -54,6 +55,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
   const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
   const [showFeaturesModal, setShowFeaturesModal] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [showServerModal, setShowServerModal] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSkeleton(false), 350);
@@ -151,19 +153,8 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
           </button>
           <button
             className="btn btn-ghost lobby-nav-btn"
-            onClick={() => {
-              const currentUrl = localStorage.getItem('syncstream_server_url') || '';
-              const url = prompt('Enter public SyncStream tunnel URL (or leave blank to use default):', currentUrl);
-              if (url !== null) {
-                if (url.trim() === '') {
-                  localStorage.removeItem('syncstream_server_url');
-                } else {
-                  localStorage.setItem('syncstream_server_url', url.trim());
-                }
-                window.location.reload();
-              }
-            }}
-            title="Configure Server URL for WAN streaming"
+            onClick={() => setShowServerModal(true)}
+            title="Configure Server URL for global/cloud streaming"
           >
             🌐 Server
           </button>
@@ -382,6 +373,9 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
 
       {/* Keyboard Shortcuts Modal */}
       <ShortcutsModal isOpen={showShortcutsModal} onClose={() => setShowShortcutsModal(false)} />
+
+      {/* Backend Server Connection Modal */}
+      <ServerConfigModal isOpen={showServerModal} onClose={() => setShowServerModal(false)} />
     </div>
   );
 }

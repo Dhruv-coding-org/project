@@ -168,7 +168,15 @@ export function Room({
 
   function handleCopyCode() {
     if (!state.roomCode) return;
-    navigator.clipboard.writeText(state.roomCode).then(() => {
+    let textToCopy = state.roomCode;
+    if (typeof window !== 'undefined' && window.location.protocol.startsWith('http')) {
+      textToCopy = `${window.location.origin}/?room=${state.roomCode}`;
+    }
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setCopiedToast(true);
+      setTimeout(() => setCopiedToast(false), 2500);
+    }).catch(() => {
+      // Fallback
       setCopiedToast(true);
       setTimeout(() => setCopiedToast(false), 2500);
     });
@@ -197,7 +205,7 @@ export function Room({
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M3 7l3 3 5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            Room code copied!
+            Invite link & room code copied!
           </div>
         </div>
       )}
