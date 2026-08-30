@@ -149,7 +149,13 @@ export function useRoom() {
     });
 
     socket.on('chat-message', (msg: ChatMessage) => {
-      setState(s => ({ ...s, chatMessages: [...s.chatMessages, msg] }));
+      setState(s => {
+        // Prevent duplicate messages if already optimistically added
+        if (msg.senderId === socket.id && s.chatMessages.some(m => m.id === msg.id || (m.isMine && m.message === msg.message && Math.abs(m.timestamp - msg.timestamp) < 2000))) {
+          return s;
+        }
+        return { ...s, chatMessages: [...s.chatMessages, msg] };
+      });
     });
 
     socket.on('reaction-received', (reaction: EmojiReaction) => {
@@ -200,29 +206,18 @@ export function useRoom() {
   }, []);
 
   const createRoom = useCallback(({ username, avatar = '🍿', statusMessage = '' }: { username: string; avatar?: string; statusMessage?: string }): Promise<string> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       saveProfileToStorage({ username, avatar, statusMessage });
       if (!socket.connected) socket.connect();
 
       let finished = false;
-      const localCode = 'ROOM-' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
       const timeoutTimer = setTimeout(() => {
         if (!finished) {
           finished = true;
-          console.log('[useRoom] Server timeout — initializing offline/local room');
-          setState(s => ({
-            ...s,
-            roomCode: localCode,
-            username,
-            isHost: true,
-            hostId: 'local-host',
-            users: [{ socketId: 'local-host', username, isHost: true, avatar, statusMessage }],
-            error: null,
-          }));
-          resolve(localCode);
+          reject(new Error('Connection timed out. Please check if the host server is running and accessible on this network.'));
         }
-      }, 2500);
+      }, 8000);
 
       socket.emit('create-room', { username, avatar, statusMessage }, (res: { success: boolean; roomCode?: string; error?: string }) => {
         if (finished) return;
@@ -241,24 +236,14 @@ export function useRoom() {
           }));
           resolve(res.roomCode);
         } else {
-          saveActiveSession({ roomCode: localCode, username, avatar, isHost: true });
-          setState(s => ({
-            ...s,
-            roomCode: localCode,
-            username,
-            isHost: true,
-            hostId: 'local-host',
-            users: [{ socketId: 'local-host', username, isHost: true, avatar, statusMessage }],
-            error: null,
-          }));
-          resolve(localCode);
+          reject(new Error(res?.error || 'Failed to create room.'));
         }
       });
     });
   }, []);
 
   const joinRoom = useCallback(({ username, roomCode, avatar = '🍿', statusMessage = '' }: { username: string; roomCode: string; avatar?: string; statusMessage?: string }): Promise<void> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       saveProfileToStorage({ username, avatar, statusMessage });
       if (!socket.connected) socket.connect();
 
@@ -267,22 +252,9 @@ export function useRoom() {
       const timeoutTimer = setTimeout(() => {
         if (!finished) {
           finished = true;
-          // Local fallback join
-          setState(s => ({
-            ...s,
-            roomCode,
-            username,
-            isHost: false,
-            hostId: 'host-id',
-            users: [
-              { socketId: 'host-id', username: 'Room Host', isHost: true, avatar: '👑' },
-              { socketId: 'local-user', username, isHost: false, avatar, statusMessage }
-            ],
-            error: null,
-          }));
-          resolve();
+          reject(new Error('Connection timed out. Please check your network and room code.'));
         }
-      }, 2500);
+      }, 8000);
 
       socket.emit('join-room', { username, roomCode, avatar, statusMessage }, (res: {
         success: boolean;
@@ -316,21 +288,7 @@ export function useRoom() {
           }));
           resolve();
         } else {
-          // Fallback join
-          saveActiveSession({ roomCode, username, avatar, isHost: false });
-          setState(s => ({
-            ...s,
-            roomCode,
-            username,
-            isHost: false,
-            hostId: 'host-id',
-            users: [
-              { socketId: 'host-id', username: 'Room Host', isHost: true, avatar: '👑' },
-              { socketId: 'local-user', username, isHost: false, avatar, statusMessage }
-            ],
-            error: null,
-          }));
-          resolve();
+          reject(new Error(res?.error || 'Room not found or unable to join.'));
         }
       });
     });
