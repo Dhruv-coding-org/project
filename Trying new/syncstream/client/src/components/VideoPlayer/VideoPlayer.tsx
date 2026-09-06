@@ -190,9 +190,15 @@ export function VideoPlayer({
     return () => clearTimeout(timer);
   }, []);
 
-  // ── (1) PLYR INITIALIZATION FOR EMBED PROVIDERS ─────────────────
+  const onEndedRef = useRef(onEnded);
   useEffect(() => {
-    if (!isEmbedProvider || !videoSource) return;
+    onEndedRef.current = onEnded;
+  }, [onEnded]);
+
+  // ── (1) PLYR INITIALIZATION FOR EMBED PROVIDERS ─────────────────
+  const embedVideoUrl = videoSource?.url;
+  useEffect(() => {
+    if (!isEmbedProvider || !embedVideoUrl) return;
 
     // Clean up previous Plyr instance
     if (plyrRef.current) {
@@ -205,22 +211,22 @@ export function VideoPlayer({
       plyrInitialized.current = false;
     }
 
-    setPlaying(false);
-    setCurrentTime(0);
-    setDuration(0);
-    setBuffered(0);
-    setVideoError(null);
-    setIsLoading(true);
-    setLoadingStatus('Loading stream…');
-    setAudioReady(true);
-    setVideoReady(true);
-    streamCaptured.current = false;
-
     let loadTimeoutId: ReturnType<typeof setTimeout> | undefined;
     let safetyTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
     // Wait for DOM to render the embed container
     const timer = setTimeout(() => {
+      setPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+      setBuffered(0);
+      setVideoError(null);
+      setIsLoading(true);
+      setLoadingStatus('Loading stream…');
+      setAudioReady(true);
+      setVideoReady(true);
+      streamCaptured.current = false;
+
       const container = plyrContainerRef.current;
       if (!container) {
         console.warn('[VideoPlayer] Plyr container not found in DOM');
@@ -236,10 +242,10 @@ export function VideoPlayer({
 
       if (isYouTube) {
         provider = 'youtube';
-        embedId = extractYouTubeId(videoSource.url) || '';
+        embedId = extractYouTubeId(embedVideoUrl) || '';
       } else if (isVimeo) {
         provider = 'vimeo';
-        embedId = extractVimeoId(videoSource.url) || '';
+        embedId = extractVimeoId(embedVideoUrl) || '';
       }
 
       if (!embedId) {
@@ -299,10 +305,12 @@ export function VideoPlayer({
         }, 3500);
 
         loadTimeoutId = setTimeout(() => {
-          if (isLoading) {
-            setVideoError('YouTube is taking longer than usual to connect. Tap play or re-sync.');
-            setIsLoading(false);
-          }
+          setIsLoading((currentLoading) => {
+            if (currentLoading) {
+              setVideoError('YouTube is taking longer than usual to connect. Tap play or re-sync.');
+            }
+            return false;
+          });
         }, 12000);
 
         player.on('ready', markReady);
@@ -314,7 +322,7 @@ export function VideoPlayer({
         player.on('pause', () => setPlaying(false));
         player.on('ended', () => {
           setPlaying(false);
-          if (onEnded) onEnded();
+          if (onEndedRef.current) onEndedRef.current();
         });
 
         player.on('timeupdate', () => {
@@ -365,7 +373,7 @@ export function VideoPlayer({
         plyrInitialized.current = false;
       }
     };
-  }, [videoSource?.url, isEmbedProvider, isYouTube, isVimeo]);
+  }, [embedVideoUrl, isEmbedProvider, isYouTube, isVimeo]);
 
   // ── (1b) SOURCE MANAGEMENT FOR FILE / DIRECT URL ────────────────
   // Async MediaStream Compositor — deterministic audio/video extraction without retry loops
