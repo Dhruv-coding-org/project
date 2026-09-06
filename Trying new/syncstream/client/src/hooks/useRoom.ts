@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { socket } from '../socket';
+import { socket, getServerUrl } from '../socket';
 import type {
   RoomUser,
   VideoSource,
@@ -212,10 +212,24 @@ export function useRoom() {
 
       let finished = false;
 
+      const onConnectError = () => {
+        if (!finished) {
+          finished = true;
+          clearTimeout(timeoutTimer);
+          socket.off('connect_error', onConnectError);
+          const serverUrl = getServerUrl();
+          reject(new Error(`Unable to reach backend server at ${serverUrl}. Please ensure the server is running (npm run dev:server) or configure your Server URL in Server Settings.`));
+        }
+      };
+
+      socket.once('connect_error', onConnectError);
+
       const timeoutTimer = setTimeout(() => {
         if (!finished) {
           finished = true;
-          reject(new Error('Connection timed out. Please check if the host server is running and accessible on this network.'));
+          socket.off('connect_error', onConnectError);
+          const serverUrl = getServerUrl();
+          reject(new Error(`Connection timed out reaching ${serverUrl}. Please check if the host server is running and accessible on this network.`));
         }
       }, 8000);
 
@@ -223,6 +237,7 @@ export function useRoom() {
         if (finished) return;
         finished = true;
         clearTimeout(timeoutTimer);
+        socket.off('connect_error', onConnectError);
 
         if (res && res.success && res.roomCode) {
           saveActiveSession({ roomCode: res.roomCode, username, avatar, isHost: true });
@@ -249,10 +264,24 @@ export function useRoom() {
 
       let finished = false;
 
+      const onConnectError = () => {
+        if (!finished) {
+          finished = true;
+          clearTimeout(timeoutTimer);
+          socket.off('connect_error', onConnectError);
+          const serverUrl = getServerUrl();
+          reject(new Error(`Unable to reach backend server at ${serverUrl}. Please ensure the server is running (npm run dev:server) or configure your Server URL in Server Settings.`));
+        }
+      };
+
+      socket.once('connect_error', onConnectError);
+
       const timeoutTimer = setTimeout(() => {
         if (!finished) {
           finished = true;
-          reject(new Error('Connection timed out. Please check your network and room code.'));
+          socket.off('connect_error', onConnectError);
+          const serverUrl = getServerUrl();
+          reject(new Error(`Connection timed out reaching ${serverUrl}. Please check your network and room code.`));
         }
       }, 8000);
 
@@ -270,6 +299,7 @@ export function useRoom() {
         if (finished) return;
         finished = true;
         clearTimeout(timeoutTimer);
+        socket.off('connect_error', onConnectError);
 
         if (res && res.success) {
           saveActiveSession({ roomCode: res.roomCode!, username, avatar, isHost: false });

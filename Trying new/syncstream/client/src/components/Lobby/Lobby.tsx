@@ -296,11 +296,23 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
             )}
 
             {error && (
-              <div className="lobby-error animate-fade-in" role="alert">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M7 1a6 6 0 100 12A6 6 0 007 1zm0 3.5v3M7 9.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                </svg>
-                {error}
+              <div className="lobby-error animate-fade-in" role="alert" style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+                    <path d="M7 1a6 6 0 100 12A6 6 0 007 1zm0 3.5v3M7 9.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                  </svg>
+                  <span>{error}</span>
+                </div>
+                {(error.toLowerCase().includes('server') || error.toLowerCase().includes('connection timed out')) && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => setShowServerModal(true)}
+                    style={{ fontSize: '0.78rem', padding: '3px 8px', alignSelf: 'flex-end', textDecoration: 'underline' }}
+                  >
+                    ⚙️ Configure Server URL
+                  </button>
+                )}
               </div>
             )}
 
