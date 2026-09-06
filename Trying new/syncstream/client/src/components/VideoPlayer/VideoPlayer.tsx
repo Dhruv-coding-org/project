@@ -57,19 +57,54 @@ function captureVideoStream(video: VideoEl, fps = 24): MediaStream | null {
 }
 
 function extractYouTubeId(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
-  ];
-  for (const p of patterns) {
-    const match = url.match(p);
-    if (match) return match[1];
+  if (!url || typeof url !== 'string') return null;
+  const cleanUrl = url.trim();
+
+  // If directly provided an 11-char alphanumeric ID
+  if (/^[a-zA-Z0-9_-]{11}$/.test(cleanUrl)) {
+    return cleanUrl;
   }
-  return null;
+
+  try {
+    const parsed = new URL(cleanUrl.startsWith('http') ? cleanUrl : `https://${cleanUrl}`);
+    const hostname = parsed.hostname.toLowerCase();
+    
+    if (hostname.includes('youtube.com') || hostname.includes('youtube-nocookie.com') || hostname.includes('youtu.be')) {
+      // 1. Search for 'v' query parameter (e.g. ?v=xxxx or ?feature=share&v=xxxx)
+      const v = parsed.searchParams.get('v');
+      if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) {
+        return v;
+      }
+
+      // 2. Path segments: /shorts/xxxx, /embed/xxxx, /live/xxxx, /v/xxxx
+      const segments = parsed.pathname.split('/').filter(Boolean);
+      for (let i = 0; i < segments.length; i++) {
+        if (['shorts', 'embed', 'live', 'v', 'e'].includes(segments[i].toLowerCase()) && segments[i + 1]) {
+          const candidate = segments[i + 1].substring(0, 11);
+          if (/^[a-zA-Z0-9_-]{11}$/.test(candidate)) return candidate;
+        }
+      }
+
+      // 3. youtu.be/xxxx
+      if (hostname.includes('youtu.be') && segments.length > 0) {
+        const candidate = segments[0].substring(0, 11);
+        if (/^[a-zA-Z0-9_-]{11}$/.test(candidate)) return candidate;
+      }
+    }
+  } catch {
+    // If URL constructor fails, fall back to broad regex
+  }
+
+  // Broad fallback regex
+  const regex = /(?:youtube(?:-nocookie)?\.com\/(?:[^/\n\s]+\/\S+\/|(?:v|e(?:mbed)?|shorts|live)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+  const match = cleanUrl.match(regex);
+  return match ? match[1] : null;
 }
 
 function extractVimeoId(url: string): string | null {
-  const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (!url || typeof url !== 'string') return null;
+  const cleanUrl = url.trim();
+  const match = cleanUrl.match(/(?:vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^/]*)\/videos\/|album\/(?:\d+\/)?video\/|video\/|))(\d+)/i);
   return match ? match[1] : null;
 }
 
@@ -91,6 +126,7 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
+  const plyrContainerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -160,12 +196,15 @@ export function VideoPlayer({
 
     // Clean up previous Plyr instance
     if (plyrRef.current) {
-      plyrRef.current.destroy();
+      try {
+        plyrRef.current.destroy();
+      } catch (e) {
+        console.debug('Error destroying previous Plyr:', e);
+      }
       plyrRef.current = null;
       plyrInitialized.current = false;
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlaying(false);
     setCurrentTime(0);
     setDuration(0);
@@ -173,16 +212,24 @@ export function VideoPlayer({
     setVideoError(null);
     setIsLoading(true);
     setLoadingStatus('Loading stream…');
-    setAudioReady(false);
-    setVideoReady(false);
+    setAudioReady(true);
+    setVideoReady(true);
     streamCaptured.current = false;
 
     let loadTimeoutId: ReturnType<typeof setTimeout> | undefined;
+    let safetyTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
-    // Wait for DOM to render the embed div
+    // Wait for DOM to render the embed container
     const timer = setTimeout(() => {
-      const embedEl = document.getElementById('plyr-embed-target');
-      if (!embedEl) return;
+      const container = plyrContainerRef.current;
+      if (!container) {
+        console.warn('[VideoPlayer] Plyr container not found in DOM');
+        setIsLoading(false);
+        return;
+      }
+
+      // Clean out container children to avoid stale iframes
+      container.innerHTML = '';
 
       let provider: 'youtube' | 'vimeo' = 'youtube';
       let embedId = '';
@@ -195,89 +242,130 @@ export function VideoPlayer({
         embedId = extractVimeoId(videoSource.url) || '';
       }
 
-      embedEl.setAttribute('data-plyr-provider', provider);
-      embedEl.setAttribute('data-plyr-embed-id', embedId);
-
-      const player = new Plyr(embedEl, {
-        controls: [], // We use custom controls
-        clickToPlay: false,
-        youtube: {
-          noCookie: false,
-          rel: 0,
-          showinfo: 0,
-          iv_load_policy: 3,
-          modestbranding: 1,
-          origin: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001',
-        },
-        vimeo: {
-          byline: false,
-          portrait: false,
-          title: false,
-          speed: true,
-          transparent: false,
-        },
-      });
-
-      plyrRef.current = player;
-      plyrInitialized.current = true;
-
-      loadTimeoutId = setTimeout(() => {
-        setVideoError('YouTube is taking too long to load. High ping or network restrictions might be blocking the video.');
+      if (!embedId) {
+        setVideoError('Could not extract a valid YouTube video ID from the provided link.');
         setIsLoading(false);
-      }, 12000);
+        return;
+      }
 
-      player.on('ready', () => {
-        console.log('[VideoPlayer] Plyr embed ready');
-        if (loadTimeoutId) clearTimeout(loadTimeoutId);
+      console.log(`[VideoPlayer] Initializing Plyr with provider: ${provider}, embedId: ${embedId}`);
+
+      const embedTarget = document.createElement('div');
+      embedTarget.setAttribute('data-plyr-provider', provider);
+      embedTarget.setAttribute('data-plyr-embed-id', embedId);
+      container.appendChild(embedTarget);
+
+      try {
+        const player = new Plyr(embedTarget, {
+          controls: [],
+          clickToPlay: false,
+          hideControls: true,
+          autoplay: false,
+          muted: false,
+          youtube: {
+            noCookie: false,
+            rel: 0,
+            showinfo: 0,
+            iv_load_policy: 3,
+            modestbranding: 1,
+          },
+          vimeo: {
+            byline: false,
+            portrait: false,
+            title: false,
+            speed: true,
+            transparent: false,
+          },
+        });
+
+        plyrRef.current = player;
+        plyrInitialized.current = true;
+
+        const markReady = () => {
+          console.log('[VideoPlayer] Plyr embed ready/active');
+          if (loadTimeoutId) clearTimeout(loadTimeoutId);
+          if (safetyTimeoutId) clearTimeout(safetyTimeoutId);
+          setIsLoading(false);
+          setVideoError(null);
+          setVideoReady(true);
+          setAudioReady(true);
+        };
+
+        // Safety fallback: if YouTube iframe is ready or starts receiving metadata within 3.5s, clear loading
+        safetyTimeoutId = setTimeout(() => {
+          if (plyrRef.current) {
+            markReady();
+          }
+        }, 3500);
+
+        loadTimeoutId = setTimeout(() => {
+          if (isLoading) {
+            setVideoError('YouTube is taking longer than usual to connect. Tap play or re-sync.');
+            setIsLoading(false);
+          }
+        }, 12000);
+
+        player.on('ready', markReady);
+        player.on('canplay', markReady);
+        player.on('playing', () => {
+          setPlaying(true);
+          markReady();
+        });
+        player.on('pause', () => setPlaying(false));
+        player.on('ended', () => {
+          setPlaying(false);
+          if (onEnded) onEnded();
+        });
+
+        player.on('timeupdate', () => {
+          if (isFinite(player.currentTime)) {
+            setCurrentTime(player.currentTime);
+          }
+        });
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (player as any).on('durationchange', () => {
+          if (isFinite(player.duration)) {
+            setDuration(player.duration);
+          }
+        });
+
+        player.on('waiting', () => {
+          if (!player.playing) {
+            setIsLoading(true);
+            setLoadingStatus('Buffering…');
+          }
+        });
+
+        player.on('error', (err: unknown) => {
+          console.error('[VideoPlayer] Plyr error:', err);
+          if (loadTimeoutId) clearTimeout(loadTimeoutId);
+          if (safetyTimeoutId) clearTimeout(safetyTimeoutId);
+          setIsLoading(false);
+          setVideoError('Failed to load YouTube video. Video may be private, age-restricted, or blocked from embedding.');
+        });
+      } catch (err) {
+        console.error('[VideoPlayer] Exception initializing Plyr:', err);
         setIsLoading(false);
-        setVideoError(null);
-        setVideoReady(true);
-        setAudioReady(true);
-      });
-
-      player.on('timeupdate', () => {
-        setCurrentTime(player.currentTime);
-      });
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (player as any).on('durationchange', () => {
-        if (isFinite(player.duration)) setDuration(player.duration);
-      });
-
-      player.on('playing', () => {
-        setPlaying(true);
-        setIsLoading(false);
-      });
-      player.on('pause', () => setPlaying(false));
-      player.on('ended', () => setPlaying(false));
-
-      player.on('waiting', () => {
-        if (!player.playing) {
-          setIsLoading(true);
-          setLoadingStatus('Buffering…');
-        }
-      });
-      player.on('canplay', () => {
-        setIsLoading(false);
-      });
-
-      player.on('error', () => {
-        if (loadTimeoutId) clearTimeout(loadTimeoutId);
-        setIsLoading(false);
-        setVideoError('Failed to load video. Please check the URL and try again.');
-      });
-    }, 100);
+        setVideoError('Error initializing player for this YouTube link.');
+      }
+    }, 50);
 
     return () => {
       clearTimeout(timer);
       if (loadTimeoutId) clearTimeout(loadTimeoutId);
+      if (safetyTimeoutId) clearTimeout(safetyTimeoutId);
       if (plyrRef.current) {
-        plyrRef.current.destroy();
+        try {
+          plyrRef.current.destroy();
+        } catch (e) {
+          console.debug('Error destroying Plyr on unmount:', e);
+        }
         plyrRef.current = null;
         plyrInitialized.current = false;
       }
     };
-  }, [videoSource, isEmbedProvider, isYouTube, isVimeo]);
+  }, [videoSource?.url, isEmbedProvider, isYouTube, isVimeo]);
 
   // ── (1b) SOURCE MANAGEMENT FOR FILE / DIRECT URL ────────────────
   // Async MediaStream Compositor — deterministic audio/video extraction without retry loops
@@ -1435,7 +1523,7 @@ export function VideoPlayer({
       {/* Plyr embed target for YouTube/Vimeo */}
       {hasSource && isEmbedProvider && (
         <div className="vp-video vp-plyr-wrapper">
-          <div id="plyr-embed-target" data-plyr-provider="" data-plyr-embed-id="" />
+          <div ref={plyrContainerRef} className="vp-plyr-inner" />
           <div
             className="vp-iframe-overlay"
             onClick={canControl ? togglePlay : undefined}
