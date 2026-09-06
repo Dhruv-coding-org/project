@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────
-   ServerConfigModal — Frosted Glass Server Config
+   ServerConfigModal — Ultra-Responsive Frosted Glass Modal
    ───────────────────────────────────────────────────────── */
 
 .server-modal-backdrop {
@@ -12,20 +12,21 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 16px;
+  padding: clamp(10px, 2.5vw, 24px);
   animation: fadeIn 0.2s var(--ease) both;
 }
 
 .server-modal {
   width: 100%;
-  max-width: 520px;
+  max-width: min(500px, calc(100vw - 24px));
+  max-height: calc(100svh - 32px);
   background: var(--bg-glass-modal);
   backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
   -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
   border: 1px solid var(--glass-border-light);
   border-radius: var(--radius-xl);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), var(--shadow-glow), var(--glass-highlight-glow);
-  overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   animation: scaleSpring 0.4s var(--ease-spring) both;
@@ -35,78 +36,80 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
+  padding: 18px 20px;
   border-bottom: 1px solid var(--glass-border-subtle);
+  flex-shrink: 0;
 }
 
 .server-header-title {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .server-header-icon {
-  font-size: 24px;
+  font-size: 20px;
   background: var(--accent-soft);
-  padding: 8px;
+  padding: 6px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--accent-border);
   box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .server-header-title h2 {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   margin: 0;
   color: #fff;
 }
 
 .server-header-title p {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   margin: 2px 0 0 0;
 }
 
 .server-modal-body {
-  padding: 24px;
+  padding: clamp(16px, 3vw, 20px);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  flex: 1 1 auto;
 }
 
 .server-tip-box {
   background: rgba(124, 58, 237, 0.1);
   border: 1px solid var(--accent-border);
   border-radius: var(--radius-md);
-  padding: 14px 16px;
-  font-size: 12px;
+  padding: 12px 14px;
+  font-size: 11px;
   color: var(--text-secondary);
-  line-height: 1.6;
+  line-height: 1.5;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: var(--glass-highlight-subtle);
 }
 
 .server-tip-box p {
-  margin: 0 0 6px 0;
+  margin: 0 0 4px 0;
 }
 
 .server-tip-box ul {
   margin: 0;
-  padding-left: 18px;
+  padding-left: 16px;
 }
 
 .server-tip-box li {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .server-save-toast {
   background: rgba(52, 211, 153, 0.16);
   border: 1px solid rgba(52, 211, 153, 0.35);
   color: var(--success);
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-align: center;
   backdrop-filter: blur(4px);
@@ -117,6 +120,7 @@
 .server-modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 4px;
+  flex-shrink: 0;
 }
