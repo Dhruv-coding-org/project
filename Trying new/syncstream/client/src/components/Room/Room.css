@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────
-   Room v3.0 — MNC Grade Header, Theater Mode & Navigation
+   Room v4.0 — MNC Grade Glassmorphic Header & Layout
    ───────────────────────────────────────────────────────── */
 
 .room {
@@ -7,7 +7,7 @@
   flex-direction: column;
   height: 100svh;
   overflow: hidden;
-  background: var(--bg-base);
+  background: transparent;
 }
 
 /* ── Header ───────────────────────────────────────── */
@@ -16,10 +16,11 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(10, 14, 28, 0.95), rgba(10, 14, 28, 0.85));
-  backdrop-filter: blur(24px) saturate(1.3);
-  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(8, 12, 26, 0.72);
+  backdrop-filter: blur(var(--blur-lg)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(1.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), var(--glass-highlight-subtle);
   z-index: 10;
   gap: 12px;
   height: 56px;
@@ -34,7 +35,7 @@
   bottom: -1px;
   left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent-border), rgba(34, 211, 238, 0.2), var(--accent-border), transparent);
+  background: linear-gradient(90deg, transparent, var(--accent-border), rgba(34, 211, 238, 0.25), var(--accent-border), transparent);
   pointer-events: none;
 }
 
@@ -48,8 +49,8 @@
   cursor: pointer;
 }
 .room-header-logo.clickable:hover .room-logo-icon {
-  box-shadow: 0 0 16px var(--accent-glow);
-  border-color: var(--accent);
+  box-shadow: 0 0 18px var(--accent-glow);
+  border-color: var(--accent-light);
 }
 .room-header-logo.clickable:hover .room-header-name {
   filter: brightness(1.2);
@@ -66,6 +67,8 @@
   border-radius: var(--radius-sm);
   border: 1px solid var(--accent-border);
   background: var(--accent-soft);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   transition: all var(--transition);
   flex-shrink: 0;
 }
@@ -95,9 +98,12 @@
   gap: 6px;
   padding: 5px 12px;
   background: var(--bg-glass-2);
-  border: 1px solid var(--border);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--glass-highlight-subtle);
   transition: all var(--transition-fast);
   font-family: var(--font);
 }
@@ -105,6 +111,7 @@
   border-color: var(--accent-border);
   background: var(--accent-soft);
   transform: translateY(-1px);
+  box-shadow: 0 4px 16px var(--accent-glow), var(--glass-highlight);
 }
 .room-code-chip:active {
   transform: scale(0.97) translateY(0);
@@ -134,7 +141,7 @@
 .room-header-divider {
   width: 1px;
   height: 20px;
-  background: var(--border);
+  background: var(--glass-border);
   flex-shrink: 0;
 }
 
@@ -155,7 +162,7 @@
 }
 .room-status-dot.connected {
   background: var(--success);
-  box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.6);
 }
 .room-status-dot.disconnected {
   background: var(--error);
@@ -175,20 +182,21 @@
 }
 
 .room-header-btn.active {
-  background: rgba(124, 58, 237, 0.2) !important;
+  background: rgba(124, 58, 237, 0.25) !important;
   border-color: var(--accent-light) !important;
   color: var(--accent-bright) !important;
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .room-permissions-btn {
   padding: 7px 12px;
   font-size: 12px;
   gap: 6px;
-  color: var(--text-muted) !important;
+  color: var(--text-secondary) !important;
 }
 .room-permissions-btn.active {
   color: var(--accent-bright) !important;
-  background: rgba(124, 58, 237, 0.15) !important;
+  background: rgba(124, 58, 237, 0.2) !important;
   border-color: var(--accent-border) !important;
 }
 
@@ -202,12 +210,13 @@
   padding: 7px 16px;
   font-size: 12px;
   gap: 6px;
-  color: var(--text-muted) !important;
+  color: var(--text-secondary) !important;
 }
 .room-leave-btn:hover {
   color: var(--error) !important;
-  border-color: rgba(248, 113, 113, 0.25) !important;
-  background: rgba(248, 113, 113, 0.06) !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+  background: rgba(248, 113, 113, 0.1) !important;
+  box-shadow: 0 0 14px rgba(248, 113, 113, 0.2);
 }
 
 /* ── Body layout ──────────────────────────────────── */
@@ -226,8 +235,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  background: var(--bg-base);
+  padding: 18px;
+  background: transparent;
   overflow: hidden;
   position: relative;
   transition: all 0.3s var(--ease);
@@ -237,9 +246,9 @@
 .room-main::before {
   content: '';
   position: absolute;
-  width: 60%;
-  height: 60%;
-  background: radial-gradient(ellipse, rgba(124, 58, 237, 0.04), transparent 70%);
+  width: 65%;
+  height: 65%;
+  background: radial-gradient(ellipse, rgba(124, 58, 237, 0.08), transparent 70%);
   pointer-events: none;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
@@ -251,10 +260,12 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--border);
+  background: var(--bg-glass-card);
+  border-left: 1px solid var(--glass-border);
   border-radius: 0;
-  backdrop-filter: blur(24px) saturate(1.2);
-  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  backdrop-filter: blur(var(--blur-xl)) saturate(1.3);
+  -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(1.3);
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.35), var(--glass-highlight-subtle);
   overflow: hidden;
   min-height: 0;
   transition: all 0.3s var(--ease);
@@ -262,11 +273,13 @@
 
 .room-sidebar-tabs {
   display: flex;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--border);
+  background: var(--bg-glass-subtle);
+  border-bottom: 1px solid var(--glass-border);
   padding: 6px;
   gap: 4px;
   flex-shrink: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .room-sidebar-tab {
@@ -276,21 +289,22 @@
   font-weight: 700;
   color: var(--text-muted);
   background: none;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .room-sidebar-tab:hover {
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  background: var(--bg-glass-hover);
 }
 
 .room-sidebar-tab.active {
   color: #fff;
   background: var(--accent-grad);
-  box-shadow: 0 2px 10px var(--accent-glow);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 14px var(--accent-glow), var(--glass-highlight);
 }
 
 .room-sidebar-content {
@@ -345,7 +359,7 @@
   .room-sidebar {
     width: 100%;
     border-left: none;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--glass-border);
     flex: 1;
     min-height: 380px;
     overflow: hidden;

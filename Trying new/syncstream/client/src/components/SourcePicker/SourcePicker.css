@@ -1,13 +1,13 @@
 /* ─────────────────────────────────────────────────────────
-   SourcePicker v3.0 — MNC Grade File & Stream Picker
+   SourcePicker v4.0 — MNC Grade Frosted Glass Stream Picker
    ───────────────────────────────────────────────────────── */
 
 .source-overlay {
   position: fixed;
   inset: 0;
   background: rgba(3, 5, 14, 0.85);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -19,10 +19,12 @@
 .source-modal {
   width: 100%;
   max-width: 540px;
-  background: rgba(13, 18, 34, 0.95);
-  box-shadow: var(--shadow-xl), 0 0 50px rgba(124, 58, 237, 0.2);
+  background: var(--bg-glass-modal);
+  backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), var(--shadow-glow), var(--glass-highlight-glow);
   overflow: hidden;
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  border: 1px solid var(--glass-border-light);
   border-radius: var(--radius-xl);
   animation: scaleSpring 0.4s var(--ease-spring) both;
 }
@@ -43,7 +45,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--glass-border-subtle);
 }
 
 .source-modal-title {
@@ -59,9 +61,9 @@
 .source-tabs {
   display: flex;
   gap: 4px;
-  padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 10px 20px;
+  background: var(--bg-glass-subtle);
+  border-bottom: 1px solid var(--glass-border-subtle);
 }
 
 .source-tab {
@@ -81,11 +83,15 @@
   cursor: pointer;
   transition: all var(--transition-fast);
 }
-.source-tab:hover { color: var(--text-secondary); background: rgba(255, 255, 255, 0.04); }
+.source-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-glass-hover);
+}
 .source-tab.active {
   color: var(--accent-bright);
-  background: rgba(124, 58, 237, 0.15);
+  background: var(--accent-soft);
   border-color: var(--accent-border);
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 /* ── Form ─────────────────────────────────────────── */
@@ -122,10 +128,12 @@
   flex-direction: column;
   gap: 6px;
   margin-top: 6px;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 12px;
+  background: var(--bg-glass-subtle);
+  border: 1px solid var(--glass-border-subtle);
   border-radius: var(--radius-md);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .source-preset-title {
@@ -146,19 +154,22 @@
   font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
-  background: rgba(124, 58, 237, 0.1);
-  border: 1px solid var(--accent-border);
-  padding: 4px 8px;
+  background: var(--bg-glass-2);
+  border: 1px solid var(--glass-border);
+  padding: 4px 10px;
   border-radius: var(--radius-xs);
   cursor: pointer;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   transition: all var(--transition-fast);
 }
 
 .source-preset-chip:hover {
   color: #fff;
-  background: rgba(124, 58, 237, 0.3);
+  background: rgba(124, 58, 237, 0.35);
   border-color: var(--accent-light);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-glow);
 }
 
 /* ── File Drag & Drop Picker ──────────────────────── */
@@ -166,31 +177,33 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 24px;
-  border: 2px dashed rgba(168, 85, 247, 0.3);
+  padding: 26px;
+  border: 2px dashed rgba(168, 85, 247, 0.35);
   border-radius: var(--radius-md);
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
   transition: all var(--transition-fast);
   text-align: center;
   justify-content: center;
   position: relative;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-glass-subtle);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .source-file-label:hover,
 .source-file-label.dragging {
   border-color: var(--accent-bright);
   color: var(--text-primary);
-  background: rgba(124, 58, 237, 0.12);
-  box-shadow: 0 0 24px rgba(124, 58, 237, 0.15);
+  background: rgba(124, 58, 237, 0.15);
+  box-shadow: 0 0 30px rgba(124, 58, 237, 0.2), var(--glass-highlight);
 }
 
 .source-file-label.has-file {
   border-style: solid;
   border-color: var(--accent-border);
-  background: rgba(124, 58, 237, 0.08);
+  background: rgba(124, 58, 237, 0.1);
   padding: 16px 20px;
 }
 
@@ -212,10 +225,11 @@
 .source-file-icon {
   font-size: 24px;
   padding: 10px;
-  background: rgba(124, 58, 237, 0.2);
+  background: var(--accent-soft);
   border: 1px solid var(--accent-border);
   border-radius: var(--radius-sm);
   flex-shrink: 0;
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .source-file-meta {
@@ -269,7 +283,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--border-subtle);
+  background: var(--glass-border-subtle);
 }
 
 .source-subtitle-divider span {
@@ -301,7 +315,7 @@
 }
 .source-subtitle-clear:hover {
   color: var(--error);
-  background: rgba(248, 113, 113, 0.1);
+  background: rgba(248, 113, 113, 0.12);
 }
 
 /* ── Error ────────────────────────────────────────── */
@@ -311,10 +325,12 @@
   gap: 8px;
   font-size: 13px;
   color: var(--error);
-  background: rgba(248, 113, 113, 0.06);
-  border: 1px solid rgba(248, 113, 113, 0.18);
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 /* ── Actions ──────────────────────────────────────── */

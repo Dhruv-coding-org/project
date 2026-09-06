@@ -1,3 +1,7 @@
+/* ─────────────────────────────────────────────────────────
+   EmojiReactions — Frosted Glass Floating Reactions
+   ───────────────────────────────────────────────────────── */
+
 .emoji-reactions-overlay {
   position: absolute;
   inset: 0;
@@ -8,46 +12,51 @@
 
 .emoji-particle {
   position: absolute;
-  bottom: 60px;
+  bottom: 65px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: floatUp 2.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: floatUpGlass 3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
 }
 
 .emoji-char {
-  font-size: 2.5rem;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  font-size: 2.75rem;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 16px rgba(124, 58, 237, 0.35));
   transform: scale(1);
+  transition: transform 0.2s var(--ease-spring);
 }
 
 .emoji-sender {
   font-size: 0.72rem;
-  font-weight: 600;
-  color: #fff;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(4px);
-  padding: 2px 8px;
-  border-radius: 10px;
-  margin-top: 2px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 700;
+  color: #f3f0ff;
+  background: rgba(13, 18, 38, 0.72);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  padding: 3px 10px;
+  border-radius: 99px;
+  margin-top: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   white-space: nowrap;
+  letter-spacing: 0.02em;
 }
 
-@keyframes floatUp {
+@keyframes floatUpGlass {
   0% {
     opacity: 0;
-    transform: translateY(20px) scale(0.6) translateX(0);
+    transform: translateY(24px) scale(0.5) translateX(0) rotate(0deg);
   }
-  15% {
+  12% {
     opacity: 1;
-    transform: translateY(-30px) scale(1.1) translateX(var(--drift));
+    transform: translateY(-25px) scale(1.15) translateX(var(--drift, 0px)) rotate(3deg);
   }
-  80% {
-    opacity: 0.9;
+  75% {
+    opacity: 0.95;
   }
   100% {
     opacity: 0;
-    transform: translateY(-280px) scale(0.85) translateX(calc(var(--drift) * 1.5));
+    transform: translateY(-300px) scale(0.85) translateX(calc(var(--drift, 0px) * 1.6)) rotate(-4deg);
   }
 }

@@ -1,27 +1,36 @@
+/* ─────────────────────────────────────────────────────────
+   PlaylistModal — Frosted Glass Queue & Playlist Manager
+   ───────────────────────────────────────────────────────── */
+
 .playlist-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
+  background: rgba(3, 5, 14, 0.82);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
+  animation: fadeIn 0.2s var(--ease) both;
 }
 
 .playlist-modal {
   width: 100%;
   max-width: 580px;
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  background: var(--bg-glass-modal);
+  backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
+  border: 1px solid var(--glass-border-light);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), var(--shadow-glow), var(--glass-highlight-glow);
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
   max-height: 85vh;
+  animation: scaleSpring 0.4s var(--ease-spring) both;
 }
 
 .playlist-header {
@@ -56,7 +65,11 @@
 
 .playlist-error {
   font-size: 0.8rem;
-  color: #ef4444;
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(248, 113, 113, 0.25);
 }
 
 .playlist-items {
@@ -70,33 +83,41 @@
 
 .playlist-empty {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   text-align: center;
-  padding: 2rem;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
+  padding: 2.2rem;
+  background: var(--bg-glass-subtle);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--glass-border-accent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .playlist-item {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  transition: background 0.2s ease;
+  background: var(--bg-glass-2);
+  border: 1px solid var(--glass-border);
+  padding: 0.85rem 1.1rem;
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--glass-highlight-subtle);
+  transition: all 0.2s ease;
 }
 
 .playlist-item:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--bg-glass-hover);
+  border-color: var(--accent-border);
+  transform: translateX(2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), var(--glass-highlight);
 }
 
 .playlist-idx {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 0.85rem;
-  color: #8b5cf6;
+  color: var(--accent-bright);
 }
 
 .playlist-info {
@@ -115,7 +136,7 @@
 
 .playlist-item-url {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -132,6 +153,6 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0.8rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--glass-border-subtle);
 }

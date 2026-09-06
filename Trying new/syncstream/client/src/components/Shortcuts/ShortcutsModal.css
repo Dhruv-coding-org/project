@@ -1,34 +1,42 @@
+/* ─────────────────────────────────────────────────────────
+   ShortcutsModal — Frosted Glass Keyboard Cheat Sheet
+   ───────────────────────────────────────────────────────── */
+
 .shortcuts-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(3, 5, 14, 0.82);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
   z-index: 999;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  animation: fadeIn 0.2s var(--ease) both;
 }
 
 .shortcuts-modal {
   width: 100%;
   max-width: 520px;
-  background: rgba(13, 18, 34, 0.94);
-  border: 1px solid rgba(168, 85, 247, 0.25);
+  background: var(--bg-glass-modal);
+  backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
+  border: 1px solid var(--glass-border-light);
   border-radius: var(--radius-xl);
   padding: 24px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(124, 58, 237, 0.15);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), var(--shadow-glow), var(--glass-highlight-glow);
   display: flex;
   flex-direction: column;
   gap: 20px;
+  animation: scaleSpring 0.4s var(--ease-spring) both;
 }
 
 .shortcuts-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--glass-border-subtle);
   padding-bottom: 16px;
 }
 
@@ -44,6 +52,7 @@
   padding: 8px;
   border-radius: var(--radius-md);
   border: 1px solid var(--accent-border);
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .shortcuts-header h2 {
@@ -76,15 +85,20 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-glass-2);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--glass-highlight-subtle);
   transition: all var(--transition-fast);
 }
 
 .shortcut-row:hover {
-  background: rgba(124, 58, 237, 0.08);
+  background: var(--bg-glass-hover);
   border-color: var(--accent-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), var(--glass-highlight);
+  transform: translateX(2px);
 }
 
 .shortcut-desc {
@@ -101,8 +115,8 @@
   color: var(--accent-bright);
   padding: 4px 10px;
   border-radius: var(--radius-xs);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--accent-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .shortcut-key.inline {
@@ -114,7 +128,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--glass-border-subtle);
   padding-top: 16px;
 }
 

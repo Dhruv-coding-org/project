@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────
-   Skeleton & Splash Styles
+   Skeleton & Splash Styles — Glassmorphism 2.0
    ───────────────────────────────────────────────────────── */
 
 /* ── Skeleton Text Group ──────────────────────────── */
@@ -12,13 +12,17 @@
 /* ── Lobby Card Skeleton ──────────────────────────── */
 .skeleton-lobby-card {
   width: 100%;
-  max-width: 440px;
+  max-width: 490px;
   padding: 40px;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  box-shadow: var(--shadow-xl), var(--shadow-glow);
-  border: 1px solid rgba(168, 85, 247, 0.12);
+  background: var(--bg-glass-card);
+  backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
+  box-shadow: var(--shadow-xl), var(--shadow-glow), var(--glass-highlight);
+  border: 1px solid var(--glass-border-light);
+  border-radius: var(--radius-xl);
 }
 
 .skeleton-lobby-logo {
@@ -44,22 +48,22 @@
 .skeleton-video-player {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #000;
+  background: #040612;
   border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
-  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.04);
+  box-shadow: var(--shadow-lg), 0 0 0 1px var(--glass-border);
 }
 
 .skeleton-video-screen {
   flex: 1;
   border-radius: 0;
   background: linear-gradient(135deg, 
-    rgba(124, 58, 237, 0.03) 0%, 
-    rgba(255,255,255,0.02) 50%, 
-    rgba(124, 58, 237, 0.03) 100%
+    rgba(124, 58, 237, 0.04) 0%, 
+    rgba(255, 255, 255, 0.03) 50%, 
+    rgba(124, 58, 237, 0.04) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 2s ease-in-out infinite;
@@ -70,7 +74,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  background: linear-gradient(to top, rgba(4, 6, 16, 0.85), transparent);
   position: absolute;
   bottom: 0;
   left: 0;
@@ -102,7 +106,7 @@
   align-items: center;
   gap: 7px;
   padding: 10px 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .skeleton-chat-messages {
@@ -131,14 +135,14 @@
   display: flex;
   gap: 8px;
   padding: 10px 12px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--glass-border);
 }
 
 /* ── UserList Skeleton ────────────────────────────── */
 .skeleton-userlist {
   display: flex;
   flex-direction: column;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .skeleton-userlist-header {
@@ -146,7 +150,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .skeleton-userlist-header > div {
@@ -183,7 +187,7 @@
   flex-direction: column;
   height: 100svh;
   overflow: hidden;
-  background: var(--bg-base);
+  background: transparent;
 }
 
 .skeleton-room-header {
@@ -192,8 +196,10 @@
   justify-content: space-between;
   padding: 0 16px;
   height: 54px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-glass);
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(8, 12, 26, 0.72);
+  backdrop-filter: blur(var(--blur-lg));
+  -webkit-backdrop-filter: blur(var(--blur-lg));
 }
 
 .skeleton-room-header-left,
@@ -220,13 +226,16 @@
 }
 
 .skeleton-room-sidebar {
-  width: 330px;
+  width: 360px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--glass-border);
   border-radius: 0;
   overflow: hidden;
+  background: var(--bg-glass-card);
+  backdrop-filter: blur(var(--blur-xl));
+  -webkit-backdrop-filter: blur(var(--blur-xl));
 }
 
 /* ── Splash Screen ────────────────────────────────── */
@@ -238,6 +247,9 @@
   align-items: center;
   justify-content: center;
   background: var(--bg-base);
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.18) 0%, transparent 60%),
+    radial-gradient(circle at 80% 20%, rgba(34, 211, 238, 0.12) 0%, transparent 45%);
   overflow: hidden;
 }
 
@@ -250,17 +262,17 @@
 }
 
 .splash-orb-1 {
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.2), transparent 70%);
+  width: 440px;
+  height: 440px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.25), transparent 70%);
   top: -100px;
   left: -100px;
 }
 
 .splash-orb-2 {
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.12), transparent 70%);
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.15), transparent 70%);
   bottom: -80px;
   right: -80px;
   animation-delay: -3s;
@@ -275,15 +287,17 @@
 }
 
 .splash-logo-icon {
-  width: 80px;
-  height: 80px;
+  width: 84px;
+  height: 84px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--accent-soft);
   border: 1px solid var(--accent-border);
-  border-radius: 20px;
-  box-shadow: 0 0 40px var(--accent-glow);
+  border-radius: 22px;
+  box-shadow: 0 0 45px var(--accent-glow), var(--glass-highlight);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   animation: breathe 3s ease-in-out infinite;
 }
 
@@ -302,7 +316,7 @@
 .splash-loader {
   width: 200px;
   height: 3px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 99px;
   overflow: hidden;
   margin-top: 4px;
@@ -318,7 +332,7 @@
 
 .splash-subtitle {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   letter-spacing: 0.03em;
 }
 

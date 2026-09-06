@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────
-   Chat v3.0 — Modern bubbles + spring animations
+   Chat v4.0 — Frosted Glass Bubbles & Interactive Bar
    ───────────────────────────────────────────────────────── */
 
 .chat {
@@ -8,6 +8,7 @@
   flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
+  background: transparent;
 }
 
 /* ── Header ───────────────────────────────────────── */
@@ -21,7 +22,7 @@
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--text-muted);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
 }
 
@@ -32,7 +33,7 @@
   padding: 14px 14px 6px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .chat-empty {
@@ -75,25 +76,29 @@
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  padding: 9px 14px;
-  border-radius: 16px;
+  padding: 10px 15px;
+  border-radius: 18px;
   max-width: 100%;
   word-break: break-word;
-  transition: transform var(--transition-fast);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 .chat-bubble:hover {
-  transform: scale(1.01);
+  transform: scale(1.015);
 }
 
 .chat-msg.mine .chat-bubble {
   background: var(--accent-grad);
   border-bottom-right-radius: 5px;
-  box-shadow: 0 2px 12px rgba(124, 58, 237, 0.25);
+  box-shadow: 0 4px 16px var(--accent-glow), var(--glass-highlight);
+  border: 1px solid rgba(255, 255, 255, 0.22);
 }
 .chat-msg.theirs .chat-bubble {
   background: var(--bg-glass-3);
-  border: 1px solid var(--border);
+  backdrop-filter: blur(10px) saturate(1.3);
+  -webkit-backdrop-filter: blur(10px) saturate(1.3);
+  border: 1px solid var(--glass-border-light);
   border-bottom-left-radius: 5px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), var(--glass-highlight-subtle);
 }
 
 .chat-text {
@@ -106,7 +111,7 @@
 
 .chat-time {
   font-size: 9px;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255, 255, 255, 0.5);
   white-space: nowrap;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -121,13 +126,16 @@
 }
 .chat-system-text {
   font-size: 10px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   padding: 4px 12px;
   border-radius: 99px;
   background: var(--bg-glass-2);
-  border: 1px solid var(--border);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   font-weight: 500;
   letter-spacing: 0.01em;
+  box-shadow: var(--glass-highlight-subtle);
 }
 
 /* ── Input ────────────────────────────────────────── */
@@ -135,7 +143,10 @@
   display: flex;
   gap: 8px;
   padding: 12px 14px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--glass-border);
+  background: var(--bg-glass-subtle);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   flex-shrink: 0;
 }
 
@@ -162,21 +173,25 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: rgba(124, 58, 237, 0.25);
-  border: 1px solid rgba(168, 85, 247, 0.4);
+  background: rgba(124, 58, 237, 0.22);
+  border: 1px solid var(--accent-border);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   color: #c084fc;
   font-size: 0.8rem;
   font-weight: 600;
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: 6px;
   cursor: pointer;
   margin: 0 3px;
   transition: all 0.2s ease;
+  box-shadow: var(--glass-highlight-subtle);
 }
 .chat-timestamp-btn:hover {
   background: rgba(124, 58, 237, 0.45);
   border-color: #a855f7;
   color: #fff;
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .chat-emoji-bar {
@@ -184,8 +199,8 @@
   align-items: center;
   justify-content: space-around;
   padding: 6px 12px 2px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-glass-subtle);
+  border-top: 1px solid var(--glass-border-subtle);
 }
 
 .chat-emoji-btn {
@@ -199,7 +214,7 @@
 }
 .chat-emoji-btn:hover {
   transform: scale(1.3);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-glass-hover);
 }
 
 .chat-send-btn:not(:disabled):hover {
@@ -225,4 +240,3 @@
   padding: 6px;
   flex-shrink: 0;
 }
-
