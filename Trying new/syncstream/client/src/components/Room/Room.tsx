@@ -223,7 +223,7 @@ export function Room({
               <path d="M7.5 6.5L14 10L7.5 13.5V6.5Z" fill="url(#gh)"/>
               <defs>
                 <linearGradient id="gh" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#7c3aed"/><stop offset="1" stopColor="#c084fc"/>
+                  <stop stopColor="#059669"/><stop offset="1" stopColor="#34d399"/>
                 </linearGradient>
               </defs>
             </svg>

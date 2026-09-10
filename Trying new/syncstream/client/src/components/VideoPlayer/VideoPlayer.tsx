@@ -1686,7 +1686,7 @@ export function VideoPlayer({
               <path d="M21 18l18 10-18 10V18z" fill="url(#gvp)"/>
               <defs>
                 <linearGradient id="gvp" x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#7c3aed"/><stop offset="1" stopColor="#a855f7"/>
+                  <stop stopColor="#059669"/><stop offset="1" stopColor="#34d399"/>
                 </linearGradient>
               </defs>
             </svg>
@@ -1706,7 +1706,7 @@ export function VideoPlayer({
               <path d="M24 14v10l6 6" stroke="url(#gvp2)" strokeWidth="2" strokeLinecap="round"/>
               <defs>
                 <linearGradient id="gvp2" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#7c3aed"/><stop offset="1" stopColor="#a855f7"/>
+                  <stop stopColor="#059669"/><stop offset="1" stopColor="#34d399"/>
                 </linearGradient>
               </defs>
             </svg>

@@ -211,7 +211,7 @@
 
 .profile-avatar-item:hover,
 .profile-avatar-item.selected {
-  background: rgba(124, 58, 237, 0.38);
+  background: rgba(16, 185, 129, 0.38);
   border-color: var(--accent-light);
   transform: scale(1.15);
   box-shadow: 0 0 16px var(--accent-glow);
@@ -242,9 +242,9 @@
 .theme-card:hover,
 .theme-card.selected {
   border-color: var(--accent-light);
-  background: rgba(124, 58, 237, 0.16);
+  background: rgba(16, 185, 129, 0.16);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.2), var(--glass-highlight);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2), var(--glass-highlight);
 }
 
 .theme-preview {
@@ -255,7 +255,7 @@
 }
 
 .dark-void-preview {
-  background: linear-gradient(135deg, #05070e, #7c3aed);
+  background: linear-gradient(135deg, #030c0c, #10b981);
 }
 
 .cyber-neon-preview {
@@ -335,7 +335,7 @@
 
 .starred-video-card:hover {
   border-color: var(--accent-border);
-  background: rgba(124, 58, 237, 0.1);
+  background: rgba(16, 185, 129, 0.1);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), var(--glass-highlight);
 }

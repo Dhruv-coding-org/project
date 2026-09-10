@@ -222,7 +222,7 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
               <path d="M7 6.5l4 2.5-4 2.5V6.5z" fill="url(#gs)"/>
               <defs>
                 <linearGradient id="gs" x1="0" y1="0" x2="18" y2="18" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#7c3aed"/><stop offset="1" stopColor="#a855f7"/>
+                  <stop stopColor="#059669"/><stop offset="1" stopColor="#34d399"/>
                 </linearGradient>
               </defs>
             </svg>

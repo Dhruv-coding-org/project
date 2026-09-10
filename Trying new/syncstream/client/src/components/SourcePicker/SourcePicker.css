@@ -38,7 +38,7 @@
   content: '';
   display: block;
   height: 2px;
-  background: linear-gradient(90deg, #7c3aed, #a855f7, #22d3ee, #a855f7, #7c3aed);
+  background: linear-gradient(90deg, #059669, #10b981, #06b6d4, #10b981, #059669);
   background-size: 200% auto;
   animation: border-flow 3s linear infinite;
   flex-shrink: 0;
@@ -174,7 +174,7 @@
 
 .source-preset-chip:hover {
   color: #fff;
-  background: rgba(124, 58, 237, 0.35);
+  background: rgba(16, 185, 129, 0.35);
   border-color: var(--accent-light);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px var(--accent-glow);
@@ -186,7 +186,7 @@
   align-items: center;
   gap: 10px;
   padding: 20px;
-  border: 2px dashed rgba(168, 85, 247, 0.35);
+  border: 2px dashed rgba(52, 211, 153, 0.35);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
   font-size: 12px;
@@ -204,14 +204,14 @@
 .source-file-label.dragging {
   border-color: var(--accent-bright);
   color: var(--text-primary);
-  background: rgba(124, 58, 237, 0.15);
-  box-shadow: 0 0 30px rgba(124, 58, 237, 0.2), var(--glass-highlight);
+  background: rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.2), var(--glass-highlight);
 }
 
 .source-file-label.has-file {
   border-style: solid;
   border-color: var(--accent-border);
-  background: rgba(124, 58, 237, 0.1);
+  background: rgba(16, 185, 129, 0.1);
   padding: 14px 16px;
 }
 

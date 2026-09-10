@@ -121,7 +121,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
               <path d="M11 9.5L19 14L11 18.5V9.5Z" fill="url(#gl-nav)"/>
               <defs>
                 <linearGradient id="gl-nav" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#7c3aed"/><stop offset="1" stopColor="#22d3ee"/>
+                  <stop stopColor="#059669"/><stop offset="1" stopColor="#06b6d4"/>
                 </linearGradient>
               </defs>
             </svg>
@@ -173,7 +173,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                 <path d="M11 9.5L19 14L11 18.5V9.5Z" fill="url(#gl)"/>
                 <defs>
                   <linearGradient id="gl" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#7c3aed"/><stop offset="1" stopColor="#a855f7"/>
+                    <stop stopColor="#059669"/><stop offset="1" stopColor="#34d399"/>
                   </linearGradient>
                 </defs>
               </svg>

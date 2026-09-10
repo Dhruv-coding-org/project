@@ -100,15 +100,15 @@
 }
 
 .avatar-option:hover {
-  background: rgba(124, 58, 237, 0.3);
+  background: rgba(16, 185, 129, 0.3);
   border-color: var(--accent-light);
   transform: scale(1.15);
   box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .avatar-option.selected {
-  background: rgba(124, 58, 237, 0.48);
-  border-color: #c084fc;
+  background: rgba(16, 185, 129, 0.48);
+  border-color: #6ee7b7;
   box-shadow: 0 0 16px var(--accent-glow), var(--glass-highlight);
   transform: scale(1.15);
 }

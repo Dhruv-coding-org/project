@@ -78,7 +78,7 @@
 }
 
 .server-tip-box {
-  background: rgba(124, 58, 237, 0.1);
+  background: rgba(16, 185, 129, 0.1);
   border: 1px solid var(--accent-border);
   border-radius: var(--radius-md);
   padding: 12px 14px;

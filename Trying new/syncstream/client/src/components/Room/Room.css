@@ -212,7 +212,7 @@
 }
 
 .room-header-btn.active {
-  background: rgba(124, 58, 237, 0.25) !important;
+  background: rgba(16, 185, 129, 0.25) !important;
   border-color: var(--accent-light) !important;
   color: var(--accent-bright) !important;
   box-shadow: 0 0 12px var(--accent-glow);
@@ -226,7 +226,7 @@
 }
 .room-permissions-btn.active {
   color: var(--accent-bright) !important;
-  background: rgba(124, 58, 237, 0.2) !important;
+  background: rgba(16, 185, 129, 0.2) !important;
   border-color: var(--accent-border) !important;
 }
 
@@ -281,7 +281,7 @@
   position: absolute;
   width: 70%;
   height: 70%;
-  background: radial-gradient(ellipse, rgba(124, 58, 237, 0.08), transparent 70%);
+  background: radial-gradient(ellipse, rgba(16, 185, 129, 0.09), transparent 70%);
   pointer-events: none;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
