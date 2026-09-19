@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getProfileDB, saveProfileDB, getStarredVideosDB, unstarVideoDB } from '../../db/db';
 import type { UserProfileDB, StarredVideoDB } from '../../db/db';
 import { AVATAR_PRESETS } from '../../constants/avatars';
+import { applyTheme, getSavedTheme } from '../../utils/theme';
 import './ProfilePage.css';
 
 interface ProfilePageProps {
@@ -16,7 +17,7 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
     avatar: '🍿',
     bio: '',
     statusMessage: '',
-    theme: 'dark-void',
+    theme: getSavedTheme(),
     // eslint-disable-next-line react-hooks/purity
     updatedAt: Date.now(),
   });
@@ -36,7 +37,8 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
     e.preventDefault();
     await saveProfileDB(profile);
     // Apply theme
-    document.documentElement.setAttribute('data-theme', profile.theme || 'dark-void');
+    const resolvedTheme = profile.theme === 'light' ? 'light' : 'dark';
+    applyTheme(resolvedTheme);
     setSavedToast(true);
     setTimeout(() => setSavedToast(false), 2500);
   }
@@ -172,27 +174,25 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
                 <div className="profile-theme-grid">
                   <button
                     type="button"
-                    className={`theme-card ${profile.theme === 'dark-void' ? 'selected' : ''}`}
-                    onClick={() => setProfile({ ...profile, theme: 'dark-void' })}
+                    className={`theme-card ${profile.theme === 'light' ? '' : 'selected'}`}
+                    onClick={() => {
+                      setProfile({ ...profile, theme: 'dark' });
+                      applyTheme('dark');
+                    }}
                   >
-                    <span className="theme-preview dark-void-preview" />
-                    <span className="theme-name">🌌 Dark Void Space</span>
+                    <span className="theme-preview modern-dark-preview" />
+                    <span className="theme-name">🌙 Modern Dark (Linear / Obsidian)</span>
                   </button>
                   <button
                     type="button"
-                    className={`theme-card ${profile.theme === 'cyber-neon' ? 'selected' : ''}`}
-                    onClick={() => setProfile({ ...profile, theme: 'cyber-neon' })}
+                    className={`theme-card ${profile.theme === 'light' ? 'selected' : ''}`}
+                    onClick={() => {
+                      setProfile({ ...profile, theme: 'light' });
+                      applyTheme('light');
+                    }}
                   >
-                    <span className="theme-preview cyber-neon-preview" />
-                    <span className="theme-name">🌆 Cyber Neon</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`theme-card ${profile.theme === 'midnight-minimal' ? 'selected' : ''}`}
-                    onClick={() => setProfile({ ...profile, theme: 'midnight-minimal' })}
-                  >
-                    <span className="theme-preview midnight-preview" />
-                    <span className="theme-name">🌙 Midnight Minimal</span>
+                    <span className="theme-preview modern-light-preview" />
+                    <span className="theme-name">☀️ Modern Light (Clean Slate)</span>
                   </button>
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { AVATAR_PRESETS } from '../../constants/avatars';
 import { LobbyCardSkeleton } from '../Skeleton/Skeleton';
 import { ShortcutsModal } from '../Shortcuts/ShortcutsModal';
 import { ServerConfigModal } from '../ServerConfig/ServerConfigModal';
+import { ThemeToggle } from '../ThemeToggle/ThemeToggle';
 import './Lobby.css';
 
 interface LobbyProps {
@@ -121,13 +122,13 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
               <path d="M11 9.5L19 14L11 18.5V9.5Z" fill="url(#gl-nav)"/>
               <defs>
                 <linearGradient id="gl-nav" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#059669"/><stop offset="1" stopColor="#06b6d4"/>
+                  <stop stopColor="#4f46e5"/><stop offset="1" stopColor="#818cf8"/>
                 </linearGradient>
               </defs>
             </svg>
           </div>
           <span className="lobby-navbar-title">SyncStream</span>
-          <span className="badge badge-accent navbar-badge">v3.0 PRO</span>
+          <span className="badge badge-accent navbar-badge">PRO</span>
         </div>
 
         <div className="lobby-navbar-actions">
@@ -158,6 +159,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
           >
             🌐 Server
           </button>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -173,7 +175,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                 <path d="M11 9.5L19 14L11 18.5V9.5Z" fill="url(#gl)"/>
                 <defs>
                   <linearGradient id="gl" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#059669"/><stop offset="1" stopColor="#34d399"/>
+                    <stop stopColor="#4f46e5"/><stop offset="1" stopColor="#818cf8"/>
                   </linearGradient>
                 </defs>
               </svg>

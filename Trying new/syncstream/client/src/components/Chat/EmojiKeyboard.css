@@ -87,8 +87,8 @@
 }
 
 .emoji-item:hover {
-  background: rgba(16, 185, 129, 0.3);
+  background: var(--accent-soft);
   border-color: var(--accent-border);
   transform: scale(1.25);
-  box-shadow: 0 0 12px var(--accent-glow);
+  box-shadow: 0 2px 8px var(--accent-border);
 }

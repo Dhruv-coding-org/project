@@ -9,6 +9,7 @@ import { PlaylistModal } from '../Playlist/PlaylistModal';
 import { ProfileModal } from '../Profile/ProfileModal';
 import { ShortcutsModal } from '../Shortcuts/ShortcutsModal';
 import { RoomSkeleton } from '../Skeleton/Skeleton';
+import { ThemeToggle } from '../ThemeToggle/ThemeToggle';
 import { parseSubtitles } from '../../utils/subtitleParser';
 import type { SubtitleCue } from '../../utils/subtitleParser';
 import type { UserProfile } from '../../types';
@@ -223,7 +224,7 @@ export function Room({
               <path d="M7.5 6.5L14 10L7.5 13.5V6.5Z" fill="url(#gh)"/>
               <defs>
                 <linearGradient id="gh" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#059669"/><stop offset="1" stopColor="#34d399"/>
+                  <stop stopColor="#4f46e5"/><stop offset="1" stopColor="#818cf8"/>
                 </linearGradient>
               </defs>
             </svg>
@@ -309,6 +310,9 @@ export function Room({
           >
             ⌨️ Shortcuts
           </button>
+
+          {/* Theme Toggle Button */}
+          <ThemeToggle compact />
 
           {/* Profile Settings Button */}
           <button

@@ -38,7 +38,7 @@
   content: '';
   display: block;
   height: 2px;
-  background: linear-gradient(90deg, #059669, #10b981, #06b6d4, #10b981, #059669);
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent-bright), var(--accent), transparent);
   background-size: 200% auto;
   animation: border-flow 3s linear infinite;
   flex-shrink: 0;
@@ -173,11 +173,11 @@
 }
 
 .source-preset-chip:hover {
-  color: #fff;
-  background: rgba(16, 185, 129, 0.35);
-  border-color: var(--accent-light);
+  color: var(--text-primary);
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px var(--accent-glow);
+  box-shadow: 0 4px 12px var(--accent-border);
 }
 
 /* ── File Drag & Drop Picker ──────────────────────── */
@@ -186,7 +186,7 @@
   align-items: center;
   gap: 10px;
   padding: 20px;
-  border: 2px dashed rgba(52, 211, 153, 0.35);
+  border: 2px dashed var(--accent-border);
   border-radius: var(--radius-md);
   color: var(--text-secondary);
   font-size: 12px;
@@ -204,14 +204,14 @@
 .source-file-label.dragging {
   border-color: var(--accent-bright);
   color: var(--text-primary);
-  background: rgba(16, 185, 129, 0.15);
-  box-shadow: 0 0 30px rgba(16, 185, 129, 0.2), var(--glass-highlight);
+  background: var(--accent-soft);
+  box-shadow: 0 0 20px var(--accent-border), var(--glass-highlight);
 }
 
 .source-file-label.has-file {
   border-style: solid;
   border-color: var(--accent-border);
-  background: rgba(16, 185, 129, 0.1);
+  background: var(--accent-soft);
   padding: 14px 16px;
 }
 

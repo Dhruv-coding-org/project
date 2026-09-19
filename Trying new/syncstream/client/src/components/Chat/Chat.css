@@ -173,11 +173,11 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: rgba(16, 185, 129, 0.22);
+  background: var(--accent-soft);
   border: 1px solid var(--accent-border);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  color: #6ee7b7;
+  color: var(--accent-bright);
   font-size: 0.8rem;
   font-weight: 600;
   padding: 2px 8px;
@@ -188,10 +188,10 @@
   box-shadow: var(--glass-highlight-subtle);
 }
 .chat-timestamp-btn:hover {
-  background: rgba(16, 185, 129, 0.45);
-  border-color: #34d399;
-  color: #fff;
-  box-shadow: 0 0 10px var(--accent-glow);
+  background: var(--accent);
+  border-color: var(--accent-bright);
+  color: #ffffff;
+  box-shadow: 0 2px 8px var(--accent-border);
 }
 
 .chat-emoji-bar {

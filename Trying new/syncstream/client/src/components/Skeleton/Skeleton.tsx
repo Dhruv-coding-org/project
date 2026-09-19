@@ -195,7 +195,7 @@ export function SplashScreen() {
             <path d="M10 9.5L20 14L10 18.5V9.5Z" fill="url(#splash-g)"/>
             <defs>
               <linearGradient id="splash-g" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#059669"/><stop offset="1" stopColor="#34d399"/>
+                <stop stopColor="#4f46e5"/><stop offset="1" stopColor="#818cf8"/>
               </linearGradient>
             </defs>
           </svg>

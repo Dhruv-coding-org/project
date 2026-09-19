@@ -11,7 +11,7 @@ export interface UserProfileDB {
   avatar: string;
   bio?: string;
   statusMessage?: string;
-  theme?: 'dark-void' | 'cyber-neon' | 'midnight-minimal';
+  theme?: 'dark' | 'light' | 'dark-void' | 'cyber-neon' | 'midnight-minimal' | string;
   updatedAt: number;
 }
 

@@ -20,10 +20,10 @@
   justify-content: space-between;
   padding: 0 clamp(8px, 1.5vw, 20px);
   border-bottom: 1px solid var(--glass-border);
-  background: rgba(8, 12, 26, 0.75);
+  background: var(--bg-surface);
   backdrop-filter: blur(var(--blur-lg)) saturate(1.4);
   -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(1.4);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), var(--glass-highlight-subtle);
+  box-shadow: var(--shadow-sm), var(--glass-highlight-subtle);
   z-index: 10;
   gap: clamp(6px, 1vw, 12px);
   height: 54px;
@@ -39,7 +39,7 @@
   bottom: -1px;
   left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--accent-border), rgba(34, 211, 238, 0.25), var(--accent-border), transparent);
+  background: linear-gradient(90deg, transparent, var(--accent-border), transparent);
   pointer-events: none;
 }
 
@@ -212,10 +212,10 @@
 }
 
 .room-header-btn.active {
-  background: rgba(16, 185, 129, 0.25) !important;
+  background: var(--accent-soft) !important;
   border-color: var(--accent-light) !important;
   color: var(--accent-bright) !important;
-  box-shadow: 0 0 12px var(--accent-glow);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .room-permissions-btn {
@@ -226,7 +226,7 @@
 }
 .room-permissions-btn.active {
   color: var(--accent-bright) !important;
-  background: rgba(16, 185, 129, 0.2) !important;
+  background: var(--accent-soft) !important;
   border-color: var(--accent-border) !important;
 }
 
@@ -281,7 +281,7 @@
   position: absolute;
   width: 70%;
   height: 70%;
-  background: radial-gradient(ellipse, rgba(16, 185, 129, 0.09), transparent 70%);
+  background: radial-gradient(ellipse, rgba(99, 102, 241, 0.04), transparent 70%);
   pointer-events: none;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
