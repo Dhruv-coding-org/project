@@ -319,7 +319,7 @@ export function VideoPlayer({
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const yt = (player as any)?.embed;
           if (yt && typeof yt.addEventListener === 'function') {
-            yt.addEventListener('onStateChange', (event: any) => {
+            yt.addEventListener('onStateChange', (event: { data?: number }) => {
               if (event?.data === 0) { // 0 = YT.PlayerState.ENDED
                 setPlaying(false);
                 autoPlayOnReadyRef.current = true;
