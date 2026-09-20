@@ -197,7 +197,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
               aria-selected={tab === 'create'}
               id="tab-create-room"
             >
-              ✦ Create Room
+              Create Room
             </button>
             <button
               className={`lobby-tab ${tab === 'join' ? 'active' : ''}`}
@@ -206,7 +206,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
               aria-selected={tab === 'join'}
               id="tab-join-room"
             >
-              🚀 Join Room
+              Join Room
             </button>
           </div>
 
@@ -330,7 +330,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                   {tab === 'create' ? 'Initializing Room…' : 'Connecting to Room…'}
                 </span>
               ) : (
-                tab === 'create' ? '✦ Launch Watch Party' : '🚀 Enter Watch Party'
+                tab === 'create' ? 'Launch Watch Party' : 'Enter Watch Party'
               )}
             </button>
           </form>
