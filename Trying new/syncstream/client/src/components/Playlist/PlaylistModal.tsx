@@ -11,12 +11,13 @@ interface PlaylistModalProps {
 }
 
 export function PlaylistModal({
-  playlist,
+  playlist = [],
   canControl,
   onUpdatePlaylist,
   onPlayNext,
   onClose,
 }: PlaylistModalProps) {
+  const safePlaylist = Array.isArray(playlist) ? playlist : [];
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [error, setError] = useState('');
@@ -42,19 +43,19 @@ export function PlaylistModal({
       title: title.trim() || trimmed,
     };
 
-    onUpdatePlaylist([...playlist, newItem]);
+    onUpdatePlaylist([...safePlaylist, newItem]);
     setUrl('');
     setTitle('');
   }
 
   function handleRemove(index: number) {
-    const updated = playlist.filter((_, i) => i !== index);
+    const updated = safePlaylist.filter((_, i) => i !== index);
     onUpdatePlaylist(updated);
   }
 
   function handleMoveUp(index: number) {
     if (index === 0) return;
-    const updated = [...playlist];
+    const updated = [...safePlaylist];
     const temp = updated[index - 1];
     updated[index - 1] = updated[index];
     updated[index] = temp;
@@ -70,7 +71,7 @@ export function PlaylistModal({
               <path d="M3 4h12M3 9h12M3 14h7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
               <path d="M13 12l3 2-3 2v-4z" fill="currentColor"/>
             </svg>
-            Video Queue & Playlist ({playlist.length})
+            Video Queue & Playlist ({safePlaylist.length})
           </h2>
           <button className="btn-icon" onClick={onClose} aria-label="Close playlist">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -107,10 +108,10 @@ export function PlaylistModal({
 
         {/* Queue list */}
         <div className="playlist-items">
-          {playlist.length === 0 ? (
+          {safePlaylist.length === 0 ? (
             <p className="playlist-empty">Queue is empty. Add URLs above to auto-play next!</p>
           ) : (
-            playlist.map((item, idx) => (
+            safePlaylist.map((item, idx) => (
               <div key={`${item.url}-${idx}`} className="playlist-item">
                 <span className="playlist-idx">#{idx + 1}</span>
                 <div className="playlist-info">

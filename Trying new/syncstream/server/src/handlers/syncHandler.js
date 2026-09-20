@@ -91,24 +91,41 @@ function registerSyncHandlers(io, socket) {
   });
 
   // Playlist management
-  socket.on('playlist-update', ({ playlist }) => {
+  const handlePlaylistUpdate = (playlistData) => {
     const room = roomManager.getRoom(socket.roomCode);
     if (room) {
       if (room.hostId !== socket.id && !room.controlsOpen) return;
-      room.playlist = playlist || [];
+      const playlist = Array.isArray(playlistData)
+        ? playlistData
+        : (playlistData?.playlist && Array.isArray(playlistData.playlist) ? playlistData.playlist : []);
+      room.playlist = playlist;
       io.to(socket.roomCode).emit('playlist-changed', { playlist: room.playlist });
     }
-  });
+  };
+
+  socket.on('playlist-update', (data) => handlePlaylistUpdate(data?.playlist || data));
+  socket.on('update-playlist', (data) => handlePlaylistUpdate(data?.playlist || data));
 
   socket.on('playlist-next', () => {
     const room = roomManager.getRoom(socket.roomCode);
-    if (room && room.playlist.length > 0) {
+    if (room && room.playlist && room.playlist.length > 0) {
       if (room.hostId !== socket.id && !room.controlsOpen) return;
+
+      const now = Date.now();
+      if (room._lastPlaylistNextTime && now - room._lastPlaylistNextTime < 2500) return;
+      room._lastPlaylistNextTime = now;
+
       const nextSource = room.playlist.shift();
       room.videoSource = nextSource;
-      room.playbackState = { playing: false, currentTime: 0 };
+      room.playbackState = { playing: true, currentTime: 0 };
+      room.subtitleText = null;
+
       io.to(socket.roomCode).emit('playlist-changed', { playlist: room.playlist });
-      io.to(socket.roomCode).emit('source-changed', { sourceType: nextSource.sourceType, url: nextSource.url });
+      io.to(socket.roomCode).emit('source-changed', nextSource);
+      io.to(socket.roomCode).emit('subtitles-changed', null);
+      io.to(socket.roomCode).emit('playback-sync', room.playbackState);
+      io.to(socket.roomCode).emit('sync-play', { currentTime: 0 });
+      console.log(`✦ Room ${socket.roomCode} auto-advanced to next playlist video:`, nextSource?.title || nextSource?.url);
     }
   });
   socket.on('change-source', (source) => {

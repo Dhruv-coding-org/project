@@ -35,6 +35,8 @@ interface VideoPlayerProps {
   remoteStreamRef: React.MutableRefObject<MediaStream | null>;
   onRequestStream: () => void;
   setOnRemoteStream?: (cb: (stream: MediaStream) => void) => void;
+  playlist?: VideoSource[];
+  onPlayNext?: () => void;
 }
 
 const ALLOWED_MEDIA_TYPES = "video/*,audio/*,.mp4,.webm,.mkv,.mov,.avi,.flv,.wmv,.m4v,.3gp,.ogv,.ts,.mts,.m2ts,.divx,.mp3,.wav,.flac,.aac,.m4a,.ogg,.opus,.wma";
@@ -123,12 +125,15 @@ export function VideoPlayer({
   remoteStreamRef,
   onRequestStream,
   setOnRemoteStream,
+  playlist,
+  onPlayNext,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
   const plyrContainerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
+  const autoPlayOnReadyRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -274,7 +279,7 @@ export function VideoPlayer({
             showinfo: 0,
             iv_load_policy: 3,
             modestbranding: 1,
-            cc_load_policy: 1,
+            cc_load_policy: 0,
           },
           vimeo: {
             byline: false,
@@ -296,7 +301,35 @@ export function VideoPlayer({
           setVideoError(null);
           setVideoReady(true);
           setAudioReady(true);
+
+          if (autoPlayOnReadyRef.current) {
+            autoPlayOnReadyRef.current = false;
+            try {
+              player.play();
+              setPlaying(true);
+              if (isHost) onPlay(0);
+            } catch (e) {
+              console.debug('Plyr autoPlay on ready error:', e);
+            }
+          }
         };
+
+        // Catch YouTube embed state changes directly
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const yt = (player as any)?.embed;
+          if (yt && typeof yt.addEventListener === 'function') {
+            yt.addEventListener('onStateChange', (event: any) => {
+              if (event?.data === 0) { // 0 = YT.PlayerState.ENDED
+                setPlaying(false);
+                autoPlayOnReadyRef.current = true;
+                if (onEndedRef.current) onEndedRef.current();
+              }
+            });
+          }
+        } catch (e) {
+          console.debug('YT addEventListener error:', e);
+        }
 
         // Safety fallback: if YouTube iframe is ready or starts receiving metadata within 3.5s, clear loading
         safetyTimeoutId = setTimeout(() => {
@@ -323,6 +356,7 @@ export function VideoPlayer({
         player.on('pause', () => setPlaying(false));
         player.on('ended', () => {
           setPlaying(false);
+          autoPlayOnReadyRef.current = true;
           if (onEndedRef.current) onEndedRef.current();
         });
 
@@ -980,7 +1014,9 @@ export function VideoPlayer({
     }
 
     if (trackIndex === null) {
-      if (onChangeSubtitles) onChangeSubtitles(null);
+      setSubtitlesVisible(false);
+      setActiveSubtitleTrackIndex(null);
+      if (onChangeSubtitles && canControl) onChangeSubtitles(null);
       return;
     }
 
@@ -1285,6 +1321,14 @@ export function VideoPlayer({
     if (!isHost) {
       socket.emit('request-sync');
     }
+
+    if (autoPlayOnReadyRef.current) {
+      autoPlayOnReadyRef.current = false;
+      video.play().then(() => {
+        setPlaying(true);
+        if (isHost) onPlay(0);
+      }).catch(err => console.debug('Native autoPlay on loadeddata error:', err));
+    }
   }
 
   // Capture stream on canplaythrough
@@ -1303,6 +1347,7 @@ export function VideoPlayer({
   function handleNativePause() { setPlaying(false); }
   function handleNativeEnded() {
     setPlaying(false);
+    autoPlayOnReadyRef.current = true;
     if (onEnded) onEnded();
   }
 
@@ -2005,6 +2050,25 @@ export function VideoPlayer({
                 <text x="9" y="12" textAnchor="middle" fill="currentColor" fontSize="5" fontWeight="700" fontFamily="var(--font)">10</text>
               </svg>
             </button>
+
+            {/* Play Next Video in Queue */}
+            {onPlayNext && (
+              <button
+                className="btn-icon vp-btn vp-next-btn"
+                onClick={() => {
+                  if (!canControl) return;
+                  onPlayNext();
+                }}
+                disabled={!canControl || !playlist || playlist.length === 0}
+                aria-label="Play next video in queue"
+                title={playlist && playlist.length > 0 ? `Play next video in queue (${playlist.length} in queue)` : 'Queue is empty'}
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M4 3.5l8 5.5-8 5.5V3.5z" fill="currentColor"/>
+                  <rect x="13" y="3.5" width="2" height="11" rx="0.5" fill="currentColor"/>
+                </svg>
+              </button>
+            )}
 
             <div className="vp-volume-group">
               <button

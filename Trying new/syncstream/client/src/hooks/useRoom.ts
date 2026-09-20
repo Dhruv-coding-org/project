@@ -132,7 +132,12 @@ export function useRoom() {
     });
 
     socket.on('source-changed', (source: VideoSource) => {
-      setState(s => ({ ...s, videoSource: source }));
+      setState(s => ({
+        ...s,
+        videoSource: source,
+        subtitleText: null,
+        playbackState: { playing: true, currentTime: 0 }
+      }));
       if (source) {
         addSystemMessage(`Video changed to: ${source.title || source.url}`);
       }
@@ -172,7 +177,11 @@ export function useRoom() {
       }, 4000);
     });
 
-    socket.on('playlist-changed', (playlist: VideoSource[]) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    socket.on('playlist-changed', (data: any) => {
+      const playlist = Array.isArray(data)
+        ? data
+        : (data?.playlist && Array.isArray(data.playlist) ? data.playlist : []);
       setState(s => ({ ...s, playlist }));
     });
 
@@ -366,13 +375,7 @@ export function useRoom() {
   }, []);
 
   const playNextInPlaylist = useCallback(() => {
-    setState(s => {
-      if (!s.playlist || s.playlist.length === 0) return s;
-      const [nextSource, ...remaining] = s.playlist;
-      socket.emit('change-source', nextSource);
-      socket.emit('update-playlist', remaining);
-      return { ...s, videoSource: nextSource, playlist: remaining };
-    });
+    socket.emit('playlist-next');
   }, []);
 
   const updateVoiceStatus = useCallback((isMuted: boolean, isDeafened: boolean) => {

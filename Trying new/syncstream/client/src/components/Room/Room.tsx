@@ -422,6 +422,8 @@ export function Room({
             remoteStreamRef={remoteStream}
             onRequestStream={requestStream}
             setOnRemoteStream={setOnRemoteStream}
+            playlist={state.playlist}
+            onPlayNext={onPlayNextInPlaylist}
           />
         </main>
 

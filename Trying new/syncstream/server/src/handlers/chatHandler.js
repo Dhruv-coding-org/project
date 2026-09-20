@@ -2,25 +2,14 @@ const roomManager = require('../services/roomManager');
 const rateLimiter = require('../services/rateLimiter');
 
 function registerChatHandlers(io, socket) {
-  socket.on('change-source', ({ sourceType, url }) => {
-    const room = roomManager.getRoom(socket.roomCode);
-    if (room) {
-      if (room.hostId !== socket.id) return; // Security: host only
-      if (rateLimiter.isRateLimited(socket.id, 'change-source', 1)) return;
-
-      room.videoSource = { sourceType, url };
-      room.playbackState = { playing: false, currentTime: 0 };
-      socket.to(socket.roomCode).emit('source-changed', { sourceType, url });
-    }
-  });
-
   socket.on('change-subtitles', (data) => {
     const room = roomManager.getRoom(socket.roomCode);
     if (room) {
-      if (room.hostId !== socket.id) return;
+      if (room.hostId !== socket.id && !room.controlsOpen) return;
       const subtitleText = typeof data === 'object' && data !== null ? data.subtitleText : data;
       room.subtitleText = subtitleText || null;
-      socket.to(socket.roomCode).emit('subtitles-changed', subtitleText || null);
+      io.to(socket.roomCode).emit('subtitles-changed', subtitleText || null);
+      console.log(`✦ Subtitles updated in room ${socket.roomCode} by ${socket.id}:`, subtitleText ? 'Loaded' : 'Cleared');
     }
   });
 
