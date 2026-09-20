@@ -73,12 +73,55 @@ function createWindow() {
     },
   });
 
-  // Bypass YouTube embed Referer/Origin security policy in Electron file:// protocol
+  // 1. Rewrite origin and widget_referrer on YouTube embed URLs
+  session.defaultSession.webRequest.onBeforeRequest(
+    { urls: ['*://www.youtube.com/embed/*', '*://*.youtube-nocookie.com/embed/*'] },
+    (details, callback) => {
+      try {
+        const parsed = new URL(details.url);
+        let modified = false;
+        if (parsed.searchParams.has('origin') && parsed.searchParams.get('origin') !== 'https://www.youtube.com') {
+          parsed.searchParams.set('origin', 'https://www.youtube.com');
+          modified = true;
+        }
+        if (parsed.searchParams.has('widget_referrer')) {
+          parsed.searchParams.set('widget_referrer', 'https://www.youtube.com');
+          modified = true;
+        }
+        if (modified) {
+          callback({ redirectURL: parsed.toString() });
+          return;
+        }
+      } catch (e) {}
+      callback({});
+    }
+  );
+
+  // 2. Strip x-frame-options and content-security-policy on YouTube responses
+  session.defaultSession.webRequest.onHeadersReceived(
+    { urls: ['*://www.youtube.com/*', '*://*.youtube-nocookie.com/*'] },
+    (details, callback) => {
+      const responseHeaders = { ...details.responseHeaders };
+      delete responseHeaders['x-frame-options'];
+      delete responseHeaders['X-Frame-Options'];
+      delete responseHeaders['content-security-policy'];
+      delete responseHeaders['Content-Security-Policy'];
+      callback({ responseHeaders });
+    }
+  );
+
+  // 3. Bypass YouTube embed Referer/Origin/Sec-Fetch security policy in Electron
   session.defaultSession.webRequest.onBeforeSendHeaders(
-    { urls: ['https://www.youtube.com/*', 'https://*.youtube-nocookie.com/*', 'https://*.googlevideo.com/*'] },
+    { urls: ['*://www.youtube.com/*', '*://*.youtube-nocookie.com/*', '*://*.googlevideo.com/*'] },
     (details, callback) => {
       details.requestHeaders['Referer'] = 'https://www.youtube.com/';
       details.requestHeaders['Origin'] = 'https://www.youtube.com';
+      if (details.requestHeaders['Sec-Fetch-Site']) {
+        details.requestHeaders['Sec-Fetch-Site'] = 'same-origin';
+      }
+      if (details.requestHeaders['User-Agent']) {
+        details.requestHeaders['User-Agent'] = details.requestHeaders['User-Agent'].replace(/Electron\/[0-9\.]+\s?/i, '');
+      }
       callback({ requestHeaders: details.requestHeaders });
     }
   );

@@ -1581,29 +1581,69 @@ export function VideoPlayer({
             </svg>
           </div>
           <p className="vp-error-text">{videoError}</p>
-          <div className="vp-error-actions">
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={handleLaunchVlc}
-              style={{ backgroundColor: '#ff8800', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-              title="Launch VLC Media Player and stream locally"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2L3 19h18L12 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" fill="currentColor"/>
-              </svg>
-              Open in System VLC Player
-            </button>
-            <button className="btn btn-primary btn-sm" onClick={handleRetryForceMP4}>
-              ⚡ Force Muted Play
-            </button>
-            <button className="btn btn-ghost btn-sm" onClick={() => setVideoError(null)}>
-              Dismiss
-            </button>
-          </div>
-          <div className="vp-error-tip">
-            💡 <strong>Inbuilt Transcoder:</strong><br />
-            SyncStream uses a powerful built-in web transcoder to play HEVC and MKV files seamlessly across browsers!
-          </div>
+          {isYouTube ? (
+            <>
+              <div className="vp-error-actions">
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleLaunchVlc}
+                  style={{ backgroundColor: '#ff8800', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  title="Launch VLC Media Player and stream this YouTube link"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L3 19h18L12 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" fill="currentColor"/>
+                  </svg>
+                  Open in VLC Player
+                </button>
+                <a
+                  href={`${videoSource?.url}${videoSource?.url.includes('?') ? '&' : '?'}t=${Math.floor(currentTime || 0)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary btn-sm"
+                  style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  ↗ Watch on YouTube
+                </a>
+                <button className="btn btn-ghost btn-sm" onClick={() => setVideoError(null)}>
+                  Dismiss
+                </button>
+              </div>
+              <div className="vp-error-tip">
+                💡 <strong>Why does this happen?</strong><br />
+                Major music labels (such as T-Series, VEVO, and Sony) restrict their videos from playing in third-party embedded web players (YouTube Error 150/101).<br />
+                <strong>How to bypass:</strong><br />
+                1. <strong>SyncStream Desktop App</strong>: Use the Desktop App which has a native embed header bypass.<br />
+                2. <strong>VLC Player Mode</strong>: Click <em>Open in VLC Player</em> above to stream without iframe restrictions.<br />
+                3. <strong>Screen / Tab Share</strong>: If you're host, broadcast the YouTube tab directly via WebRTC!
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="vp-error-actions">
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleLaunchVlc}
+                  style={{ backgroundColor: '#ff8800', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  title="Launch VLC Media Player and stream locally"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L3 19h18L12 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" fill="currentColor"/>
+                  </svg>
+                  Open in System VLC Player
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={handleRetryForceMP4}>
+                  ⚡ Force Muted Play
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setVideoError(null)}>
+                  Dismiss
+                </button>
+              </div>
+              <div className="vp-error-tip">
+                💡 <strong>Inbuilt Transcoder:</strong><br />
+                SyncStream uses a powerful built-in web transcoder to play HEVC and MKV files seamlessly across browsers!
+              </div>
+            </>
+          )}
         </div>
       )}
 
