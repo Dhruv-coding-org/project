@@ -1,4 +1,3 @@
-import './App.css';
 import { useState, useEffect } from 'react';
 import { useRoom, getActiveSession } from './hooks/useRoom';
 import { Lobby } from './components/Lobby/Lobby';
