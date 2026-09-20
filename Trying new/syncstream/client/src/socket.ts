@@ -1,5 +1,8 @@
 import { io, Socket } from 'socket.io-client';
 
+export const CLOUD_SERVER_URL = 'https://sync-stream-ag16.onrender.com';
+export const LOCAL_SERVER_URL = 'http://localhost:3001';
+
 export const getServerUrl = (): string => {
   if (typeof window !== 'undefined') {
     // 1. URL Query Parameter override (?server=https://...)
@@ -25,34 +28,8 @@ export const getServerUrl = (): string => {
   // 3. Vite environment variable (e.g. deployed with VITE_SERVER_URL on Vercel)
   if (import.meta.env.VITE_SERVER_URL) return import.meta.env.VITE_SERVER_URL;
 
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    const protocol = window.location.protocol;
-
-    // Local / Desktop App / Electron
-    if (protocol === 'file:' || host === 'localhost' || host === '127.0.0.1' || host === '') {
-      return 'http://localhost:3001';
-    }
-
-    // Connected from mobile / another device on LAN (e.g. 192.168.x.x:5173)
-    if (window.location.port === '5173' || window.location.port === '3000') {
-      return `${protocol}//${host}:3001`;
-    }
-
-    // Vercel / Netlify / Cloudflare Pages frontend hosting (static CDN)
-    if (host.includes('vercel.app') || host.includes('netlify.app') || host.includes('pages.dev')) {
-      return localStorage.getItem('syncstream_server_url') || 'http://localhost:3001';
-    }
-
-    // Public reverse proxy or tunnel (localtunnel, ngrok, custom domain)
-    if (!window.location.port || window.location.port === '80' || window.location.port === '443') {
-      return `${protocol}//${host}`;
-    }
-
-    return `${protocol}//${host}:3001`;
-  }
-
-  return 'http://localhost:3001';
+  // 4. Default to shared Cloud Server so Desktop App and Website sync seamlessly
+  return CLOUD_SERVER_URL;
 };
 
 export function setCustomServerUrl(url: string) {

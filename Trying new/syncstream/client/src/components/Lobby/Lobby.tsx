@@ -6,6 +6,7 @@ import { LobbyCardSkeleton } from '../Skeleton/Skeleton';
 import { ShortcutsModal } from '../Shortcuts/ShortcutsModal';
 import { ServerConfigModal } from '../ServerConfig/ServerConfigModal';
 import { ThemeToggle } from '../ThemeToggle/ThemeToggle';
+import { getServerUrl } from '../../socket';
 import './Lobby.css';
 
 interface LobbyProps {
@@ -305,14 +306,14 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                   </svg>
                   <span>{error}</span>
                 </div>
-                {(error.toLowerCase().includes('server') || error.toLowerCase().includes('connection timed out')) && (
+                {(error.toLowerCase().includes('server') || error.toLowerCase().includes('connection timed out') || error.toLowerCase().includes('room not found')) && (
                   <button
                     type="button"
                     className="btn btn-ghost"
                     onClick={() => setShowServerModal(true)}
                     style={{ fontSize: '0.78rem', padding: '3px 8px', alignSelf: 'flex-end', textDecoration: 'underline' }}
                   >
-                    ⚙️ Configure Server URL
+                    ⚙️ Check Server Connection ({getServerUrl().replace(/^https?:\/\//, '').split('/')[0]})
                   </button>
                 )}
               </div>

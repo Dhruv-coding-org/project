@@ -18,7 +18,7 @@
 
 .server-modal {
   width: 100%;
-  max-width: min(500px, calc(100vw - 24px));
+  max-width: min(540px, calc(100vw - 24px));
   max-height: calc(100svh - 32px);
   background: var(--bg-glass-modal);
   backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
@@ -60,7 +60,7 @@
   font-size: 15px;
   font-weight: 700;
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .server-header-title p {
@@ -75,6 +75,117 @@
   flex-direction: column;
   gap: 14px;
   flex: 1 1 auto;
+}
+
+/* ── Presets Grid ───────────────────────────────────── */
+.server-presets-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.server-preset-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.server-preset-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-glass-2);
+  border: 1px solid var(--glass-border);
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.server-preset-card:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--accent-border);
+  transform: translateY(-1px);
+}
+
+.server-preset-card.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  box-shadow: 0 0 16px var(--accent-glow), var(--glass-highlight);
+}
+
+.preset-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preset-icon {
+  font-size: 16px;
+}
+
+.preset-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.preset-desc {
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ── URL Header & Test Button ───────────────────────── */
+.server-url-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.server-test-btn {
+  background: var(--bg-glass-subtle);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.server-test-btn:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+
+/* ── Status Banner ──────────────────────────────────── */
+.server-status-banner {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  border: 1px solid var(--glass-border-subtle);
+  background: var(--bg-glass-2);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+}
+
+.server-status-banner.online {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: var(--success);
+}
+
+.server-status-banner.offline {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: var(--error);
 }
 
 .server-tip-box {
@@ -92,6 +203,7 @@
 
 .server-tip-box p {
   margin: 0 0 4px 0;
+  color: var(--text-primary);
 }
 
 .server-tip-box ul {
