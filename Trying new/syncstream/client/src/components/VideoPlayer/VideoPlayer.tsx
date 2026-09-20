@@ -408,7 +408,7 @@ export function VideoPlayer({
         plyrInitialized.current = false;
       }
     };
-  }, [embedVideoUrl, isEmbedProvider, isYouTube, isVimeo]);
+  }, [embedVideoUrl, isEmbedProvider, isYouTube, isVimeo, isHost, onPlay]);
 
   // ── (1b) SOURCE MANAGEMENT FOR FILE / DIRECT URL ────────────────
   // Async MediaStream Compositor — deterministic audio/video extraction without retry loops
