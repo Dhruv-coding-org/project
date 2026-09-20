@@ -274,6 +274,7 @@ export function VideoPlayer({
             showinfo: 0,
             iv_load_policy: 3,
             modestbranding: 1,
+            cc_load_policy: 1,
           },
           vimeo: {
             byline: false,
@@ -823,8 +824,161 @@ export function VideoPlayer({
     };
   }, [videoSource, isFile, isHost]);
 
+  // Query YouTube captions tracklist when YouTube embed is ready
+  useEffect(() => {
+    if (!isYouTube || !videoReady) return;
+
+    let retries = 0;
+    const fetchYtTracks = () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const yt = (plyrRef.current as any)?.embed;
+        if (yt && typeof yt.loadModule === 'function') {
+          yt.loadModule('captions');
+        }
+        if (yt && typeof yt.getOption === 'function') {
+          const tracklist = yt.getOption('captions', 'tracklist');
+          if (Array.isArray(tracklist) && tracklist.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const formattedTracks: EmbeddedSubtitleTrack[] = tracklist.map((t: any, idx: number) => ({
+              index: idx,
+              language: t.languageCode || 'en',
+              title: t.displayName || t.languageName || t.languageCode || `Captions ${idx + 1}`,
+              codec: 'vtt'
+            }));
+            setAvailableSubtitleTracks(formattedTracks);
+            const currentTrack = yt.getOption('captions', 'track');
+            if (currentTrack && currentTrack.languageCode) {
+              const matchedIdx = formattedTracks.findIndex(tr => tr.language === currentTrack.languageCode);
+              if (matchedIdx !== -1) {
+                setActiveSubtitleTrackIndex(matchedIdx);
+              }
+            }
+            return;
+          }
+        }
+      } catch (e) {
+        console.debug('[VideoPlayer] YouTube caption track check:', e);
+      }
+
+      if (retries < 5) {
+        retries++;
+        setTimeout(fetchYtTracks, 1200);
+      }
+    };
+
+    const timer = setTimeout(fetchYtTracks, 1500);
+    return () => clearTimeout(timer);
+  }, [isYouTube, videoReady]);
+
+  const toggleSubtitles = useCallback(() => {
+    setSubtitlesVisible(prev => {
+      const next = !prev;
+
+      if (isYouTube) {
+        if (!next) {
+          setActiveSubtitleTrackIndex(null);
+        } else if (availableSubtitleTracks.length > 0 && activeSubtitleTrackIndex === null) {
+          setActiveSubtitleTrackIndex(0);
+        }
+
+        // 1. Plyr API
+        try {
+          if (plyrRef.current) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (plyrRef.current as any).toggleCaptions?.(next);
+          }
+        } catch (e) {
+          console.debug('Plyr toggleCaptions error:', e);
+        }
+
+        // 2. Direct YT.Player API
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const yt = (plyrRef.current as any)?.embed;
+          if (yt) {
+            if (next) {
+              if (typeof yt.loadModule === 'function') yt.loadModule('captions');
+              if (typeof yt.setOption === 'function') {
+                const tracklist = typeof yt.getOption === 'function' ? yt.getOption('captions', 'tracklist') : null;
+                const defaultTrack = Array.isArray(tracklist) && tracklist.length > 0 ? tracklist[0] : null;
+                yt.setOption('captions', 'track', defaultTrack?.languageCode ? { languageCode: defaultTrack.languageCode } : { languageCode: 'en' });
+              }
+            } else {
+              if (typeof yt.unloadModule === 'function') yt.unloadModule('captions');
+              if (typeof yt.setOption === 'function') yt.setOption('captions', 'track', {});
+            }
+          }
+        } catch (e) {
+          console.debug('YT embed captions error:', e);
+        }
+
+        // 3. PostMessage to iframe
+        try {
+          const iframe = containerRef.current?.querySelector('iframe');
+          if (iframe?.contentWindow) {
+            if (next) {
+              iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'loadModule', args: ['captions'] }), '*');
+              iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setOption', args: ['captions', 'track', { languageCode: 'en' }] }), '*');
+            } else {
+              iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unloadModule', args: ['captions'] }), '*');
+              iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setOption', args: ['captions', 'track', {}] }), '*');
+            }
+          }
+        } catch (e) {
+          console.debug('YT postMessage error:', e);
+        }
+      }
+
+      return next;
+    });
+  }, [isYouTube, availableSubtitleTracks, activeSubtitleTrackIndex]);
+
   const handleSelectSubtitleTrack = async (trackIndex: number | null) => {
     setActiveSubtitleTrackIndex(trackIndex);
+
+    if (isYouTube) {
+      if (trackIndex === null) {
+        setSubtitlesVisible(false);
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const yt = (plyrRef.current as any)?.embed;
+          if (yt) {
+            if (typeof yt.unloadModule === 'function') yt.unloadModule('captions');
+            if (typeof yt.setOption === 'function') yt.setOption('captions', 'track', {});
+          }
+          const iframe = containerRef.current?.querySelector('iframe');
+          if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unloadModule', args: ['captions'] }), '*');
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setOption', args: ['captions', 'track', {}] }), '*');
+          }
+        } catch (e) {
+          console.debug('YouTube subtitle off error:', e);
+        }
+      } else {
+        setSubtitlesVisible(true);
+        const selectedTrack = availableSubtitleTracks.find(t => t.index === trackIndex);
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const yt = (plyrRef.current as any)?.embed;
+          if (yt) {
+            if (typeof yt.loadModule === 'function') yt.loadModule('captions');
+            if (typeof yt.setOption === 'function') {
+              yt.setOption('captions', 'track', selectedTrack?.language ? { languageCode: selectedTrack.language } : { languageCode: 'en' });
+            }
+          }
+          const iframe = containerRef.current?.querySelector('iframe');
+          if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'loadModule', args: ['captions'] }), '*');
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setOption', args: ['captions', 'track', selectedTrack?.language ? { languageCode: selectedTrack.language } : { languageCode: 'en' }] }), '*');
+          }
+        } catch (e) {
+          console.debug('YouTube subtitle track select error:', e);
+        }
+      }
+      return;
+    }
+
     if (trackIndex === null) {
       if (onChangeSubtitles) onChangeSubtitles(null);
       return;
@@ -1418,14 +1572,14 @@ export function VideoPlayer({
         case 'c':
         case 'C':
           e.preventDefault();
-          setSubtitlesVisible(v => !v);
+          toggleSubtitles();
           break;
       }
     }
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, toggleMute, toggleFullscreen, canControl, currentTime, duration, isEmbedProvider, onSeek, isVlc, isHost]);
+  }, [togglePlay, toggleMute, toggleFullscreen, toggleSubtitles, canControl, currentTime, duration, isEmbedProvider, onSeek, isVlc, isHost]);
 
   useEffect(() => {
     const onFsChange = () => setFullscreen(!!document.fullscreenElement);
@@ -1982,10 +2136,10 @@ export function VideoPlayer({
             )}
 
             {/* Subtitle CC toggle */}
-            {subtitleCues.length > 0 && (
+            {(subtitleCues.length > 0 || isYouTube) && (
               <button
                 className={`btn-icon vp-btn vp-cc-btn ${subtitlesVisible ? 'active' : ''}`}
-                onClick={() => setSubtitlesVisible(v => !v)}
+                onClick={toggleSubtitles}
                 aria-label={subtitlesVisible ? 'Hide subtitles' : 'Show subtitles'}
                 id="vp-cc-btn"
                 title={subtitlesVisible ? 'Hide subtitles (C)' : 'Show subtitles (C)'}
