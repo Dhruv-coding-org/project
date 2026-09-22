@@ -8,18 +8,51 @@ interface ServerConfigModalProps {
 }
 
 export function ServerConfigModal({ isOpen, onClose }: ServerConfigModalProps) {
-  const [serverUrl, setServerUrl] = useState(getServerUrl());
+  if (!isOpen) return null;
+
+  return <ServerConfigModalContent onClose={onClose} />;
+}
+
+function ServerConfigModalContent({ onClose }: { onClose: () => void }) {
+  const [serverUrl, setServerUrl] = useState(() => getServerUrl());
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [testingStatus, setTestingStatus] = useState<'idle' | 'checking' | 'online' | 'offline'>('idle');
+  const [testingStatus, setTestingStatus] = useState<'idle' | 'checking' | 'online' | 'offline'>('checking');
   const [serverDetails, setServerDetails] = useState<{ status?: string; activeRooms?: number } | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      const current = getServerUrl();
-      setServerUrl(current);
-      checkServerHealth(current);
-    }
-  }, [isOpen]);
+    let ignore = false;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+
+    const target = getServerUrl().replace(/\/+$/, '');
+    fetch(`${target}/`, { signal: controller.signal })
+      .then(async (res) => {
+        if (ignore) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (!ignore) {
+            setServerDetails(data);
+            setTestingStatus('online');
+          }
+        } else {
+          setTestingStatus('offline');
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setTestingStatus('offline');
+        }
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+      });
+
+    return () => {
+      ignore = true;
+      controller.abort();
+      clearTimeout(timeout);
+    };
+  }, []);
 
   async function checkServerHealth(url: string) {
     setTestingStatus('checking');
@@ -68,8 +101,6 @@ export function ServerConfigModal({ isOpen, onClose }: ServerConfigModalProps) {
       onClose();
     }, 1200);
   }
-
-  if (!isOpen) return null;
 
   const isCloud = serverUrl.includes('onrender.com') || serverUrl === CLOUD_SERVER_URL;
   const isLocal = serverUrl.includes('localhost:3001') || serverUrl.includes('127.0.0.1:3001');
