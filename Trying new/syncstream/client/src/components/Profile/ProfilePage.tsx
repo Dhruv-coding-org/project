@@ -37,7 +37,7 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
     e.preventDefault();
     await saveProfileDB(profile);
     // Apply theme
-    const resolvedTheme = profile.theme === 'light' ? 'light' : 'dark';
+    const resolvedTheme = (profile.theme === 'fire' || profile.theme === 'dark' || profile.theme === 'light') ? profile.theme : 'fire';
     applyTheme(resolvedTheme);
     setSavedToast(true);
     setTimeout(() => setSavedToast(false), 2500);
@@ -174,14 +174,25 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
                 <div className="profile-theme-grid">
                   <button
                     type="button"
-                    className={`theme-card ${profile.theme === 'light' ? '' : 'selected'}`}
+                    className={`theme-card ${profile.theme === 'fire' || (!profile.theme && getSavedTheme() === 'fire') ? 'selected' : ''}`}
+                    onClick={() => {
+                      setProfile({ ...profile, theme: 'fire' });
+                      applyTheme('fire');
+                    }}
+                  >
+                    <span className="theme-preview fiery-ember-preview" />
+                    <span className="theme-name">🔥 Inferno (Fiery Blaze)</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`theme-card ${profile.theme === 'dark' ? 'selected' : ''}`}
                     onClick={() => {
                       setProfile({ ...profile, theme: 'dark' });
                       applyTheme('dark');
                     }}
                   >
                     <span className="theme-preview modern-dark-preview" />
-                    <span className="theme-name">🌙 Modern Dark (Linear / Obsidian)</span>
+                    <span className="theme-name">🌙 Modern Dark (Obsidian)</span>
                   </button>
                   <button
                     type="button"

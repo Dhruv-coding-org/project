@@ -123,7 +123,8 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
               <path d="M11 9.5L19 14L11 18.5V9.5Z" fill="url(#gl-nav)"/>
               <defs>
                 <linearGradient id="gl-nav" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#4f46e5"/><stop offset="1" stopColor="#818cf8"/>
+                  <stop stopColor="var(--accent, #ff5722)"/>
+                  <stop offset="1" stopColor="var(--accent-cyan, #fbbf24)"/>
                 </linearGradient>
               </defs>
             </svg>

@@ -6,6 +6,79 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root,
+[data-theme="fire"] {
+  /* ── Fiery Inferno / Ember Blaze Palette ─────────────── */
+  --bg-base:        #0c0605;
+  --bg-surface:     rgba(22, 11, 8, 0.78);
+  --bg-elevated:    rgba(34, 17, 12, 0.86);
+  
+  /* ── Glass Surfaces (Warm Frosted Translucency) ─────── */
+  --bg-glass:        rgba(25, 12, 9, 0.72);
+  --bg-glass-subtle: rgba(255, 90, 30, 0.045);
+  --bg-glass-2:      rgba(255, 110, 40, 0.07);
+  --bg-glass-3:      rgba(255, 130, 50, 0.11);
+  --bg-glass-card:   rgba(25, 12, 9, 0.78);
+  --bg-glass-modal:  rgba(18, 8, 6, 0.94);
+  --bg-glass-input:  rgba(255, 90, 30, 0.055);
+  --bg-glass-hover:  rgba(255, 110, 40, 0.095);
+  --bg-card:         rgba(25, 12, 9, 0.82);
+
+  /* ── Specular Borders & Fiery Amber Highlights ──────── */
+  --glass-border:          rgba(255, 100, 45, 0.16);
+  --glass-border-subtle:   rgba(255, 90, 40, 0.09);
+  --glass-border-light:    rgba(255, 140, 60, 0.28);
+  --glass-border-accent:   rgba(255, 87, 34, 0.48);
+  --glass-highlight:       inset 0 1px 0 0 rgba(255, 185, 110, 0.24);
+  --glass-highlight-subtle:inset 0 1px 0 0 rgba(255, 150, 80, 0.14);
+  --glass-highlight-glow:  inset 0 1px 1px 0 rgba(255, 195, 125, 0.32), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.45);
+
+  /* ── Accent — Blazing Flame & Ember Orange ──────────── */
+  --accent:        #ff5722;
+  --accent-light:  #ff7043;
+  --accent-bright: #ff8a65;
+  --accent-rose:   #f43f5e;
+  --accent-teal:   #f59e0b;
+  --accent-cyan:   #fbbf24;
+  --accent-cyan-2: #fde047;
+  --accent-glow:   rgba(255, 87, 34, 0.28);
+  --accent-glow-2: rgba(255, 87, 34, 0.15);
+  --accent-soft:   rgba(255, 87, 34, 0.15);
+  --accent-border: rgba(255, 87, 34, 0.34);
+  --accent-grad:   linear-gradient(135deg, #d84315 0%, #ff5722 50%, #ff9800 100%);
+  --accent-grad-2: linear-gradient(135deg, #bf360c, #e64a19, #ff7043);
+  --accent-grad-h: linear-gradient(90deg, #d84315, #ff5722, #ffb300);
+  --accent-grad-3: linear-gradient(135deg, #c62828 0%, #ff5722 50%, #ffa000 100%);
+  --accent-grad-glass: linear-gradient(135deg, rgba(255, 87, 34, 0.24) 0%, rgba(255, 152, 0, 0.09) 100%);
+
+  /* ── Text ──────────────────────────────────────────── */
+  --text-primary:   #fff5f0;
+  --text-secondary: #d19e8f;
+  --text-muted:     #8e6357;
+  --text-inverted:  #0c0605;
+
+  /* ── Shadows & Radiant Fiery Glows ─────────────────── */
+  --shadow-sm:          0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-md:          0 8px 30px rgba(0, 0, 0, 0.60);
+  --shadow-lg:          0 20px 50px rgba(0, 0, 0, 0.75);
+  --shadow-xl:          0 30px 80px rgba(0, 0, 0, 0.85);
+  --shadow-glass:       0 16px 40px rgba(0, 0, 0, 0.55), var(--glass-highlight);
+  --shadow-glow:        0 0 35px rgba(255, 87, 34, 0.25);
+  --shadow-glow-strong: 0 0 55px rgba(255, 87, 34, 0.40);
+  --shadow-glow-cyan:   0 0 35px rgba(251, 191, 36, 0.24);
+  --shadow-inset:       var(--glass-highlight);
+
+  /* ── Scrollbar ─────────────────────────────────────── */
+  --scrollbar-track: rgba(255, 90, 30, 0.02);
+  --scrollbar-thumb: rgba(255, 110, 40, 0.22);
+  --scrollbar-thumb-hover: rgba(255, 130, 50, 0.38);
+  --selection-bg:    rgba(255, 87, 34, 0.40);
+
+  /* ── Ambient Orbs ──────────────────────────────────── */
+  --orb-1-color: rgba(255, 69, 0, 0.16);
+  --orb-2-color: rgba(245, 158, 11, 0.14);
+  --orb-3-color: rgba(220, 38, 38, 0.12);
+}
+
 [data-theme="dark"] {
   /* ── Modern Dark Palette — Obsidian Base ─────────────── */
   --bg-base:        #090a0f;
@@ -72,6 +145,11 @@
   --scrollbar-thumb: rgba(255, 255, 255, 0.16);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.30);
   --selection-bg:    rgba(99, 102, 241, 0.35);
+
+  /* ── Ambient Orbs ──────────────────────────────────── */
+  --orb-1-color: rgba(99, 102, 241, 0.08);
+  --orb-2-color: rgba(56, 189, 248, 0.06);
+  --orb-3-color: rgba(129, 140, 248, 0.05);
 }
 
 [data-theme="light"] {
@@ -140,6 +218,11 @@
   --scrollbar-thumb: rgba(15, 23, 42, 0.18);
   --scrollbar-thumb-hover: rgba(15, 23, 42, 0.32);
   --selection-bg:    rgba(99, 102, 241, 0.22);
+
+  /* ── Ambient Orbs ──────────────────────────────────── */
+  --orb-1-color: rgba(99, 102, 241, 0.05);
+  --orb-2-color: rgba(56, 189, 248, 0.04);
+  --orb-3-color: rgba(148, 163, 184, 0.06);
 }
 
 :root {
@@ -198,20 +281,14 @@ body {
   color: var(--text-primary);
   background-color: var(--bg-base);
   background-image: 
-    radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.06) 0%, transparent 45%),
-    radial-gradient(circle at 85% 85%, rgba(129, 140, 248, 0.04) 0%, transparent 40%);
+    radial-gradient(circle at 15% 15%, var(--orb-1-color) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, var(--orb-2-color) 0%, transparent 40%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   text-rendering: optimizeLegibility;
   transition: background-color 0.25s ease, color 0.25s ease;
-}
-
-[data-theme="light"] body {
-  background-image: 
-    radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.05) 0%, transparent 45%),
-    radial-gradient(circle at 85% 85%, rgba(148, 163, 184, 0.08) 0%, transparent 40%);
 }
 
 #root {

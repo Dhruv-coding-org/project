@@ -98,19 +98,19 @@
 }
 .lobby-orb-1 {
   width: 480px; height: 480px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.08), transparent 70%);
+  background: radial-gradient(circle, var(--orb-1-color, rgba(255, 69, 0, 0.16)), transparent 70%);
   top: -100px; left: -100px;
   animation-delay: 0s;
 }
 .lobby-orb-2 {
   width: 400px; height: 400px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.06), transparent 70%);
+  background: radial-gradient(circle, var(--orb-2-color, rgba(245, 158, 11, 0.14)), transparent 70%);
   bottom: -80px; right: -80px;
   animation-delay: -4s;
 }
 .lobby-orb-3 {
   width: 280px; height: 280px;
-  background: radial-gradient(circle, rgba(129, 140, 248, 0.05), transparent 70%);
+  background: radial-gradient(circle, var(--orb-3-color, rgba(220, 38, 38, 0.12)), transparent 70%);
   top: 40%; left: 55%;
   animation-delay: -7s;
 }

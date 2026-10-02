@@ -8,22 +8,36 @@ interface ThemeToggleProps {
 
 export function ThemeToggle({ compact = false, className = '' }: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme();
-  const isDark = theme === 'dark';
+
+  const getThemeInfo = () => {
+    switch (theme) {
+      case 'fire':
+        return { icon: '🔥', label: 'Inferno', nextLabel: 'Modern Dark (🌙)' };
+      case 'dark':
+        return { icon: '🌙', label: 'Dark', nextLabel: 'Modern Light (☀️)' };
+      case 'light':
+        return { icon: '☀️', label: 'Light', nextLabel: 'Inferno Fire (🔥)' };
+      default:
+        return { icon: '🔥', label: 'Inferno', nextLabel: 'Modern Dark (🌙)' };
+    }
+  };
+
+  const { icon, label, nextLabel } = getThemeInfo();
 
   return (
     <button
       type="button"
-      className={`theme-toggle-btn ${compact ? 'compact' : ''} ${className}`}
+      className={`theme-toggle-btn theme-${theme} ${compact ? 'compact' : ''} ${className}`}
       onClick={toggleTheme}
-      title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-      aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+      title={`Theme: ${label} • Click to switch to ${nextLabel}`}
+      aria-label={`Theme: ${label} • Click to switch to ${nextLabel}`}
       id="theme-toggle-btn"
     >
       <span className="theme-toggle-icon" aria-hidden="true">
-        {isDark ? '☀️' : '🌙'}
+        {icon}
       </span>
       <span className="theme-toggle-text">
-        {isDark ? 'Light' : 'Dark'}
+        {label}
       </span>
     </button>
   );

@@ -1,20 +1,29 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export type Theme = 'dark' | 'light';
+export type Theme = 'fire' | 'dark' | 'light';
 
 const THEME_STORAGE_KEY = 'syncstream_theme';
+const THEME_MIGRATION_KEY = 'syncstream_theme_fire_v1';
 const THEME_EVENT_NAME = 'syncstream-theme-change';
 
 export function getSavedTheme(): Theme {
   try {
+    // One-time activation: set 'fire' as default active theme for users
+    const migrated = localStorage.getItem(THEME_MIGRATION_KEY);
+    if (!migrated) {
+      localStorage.setItem(THEME_MIGRATION_KEY, 'true');
+      localStorage.setItem(THEME_STORAGE_KEY, 'fire');
+      return 'fire';
+    }
+
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    if (saved === 'light' || saved === 'dark') {
+    if (saved === 'fire' || saved === 'dark' || saved === 'light') {
       return saved;
     }
   } catch {
     // Ignore storage error
   }
-  return 'dark';
+  return 'fire';
 }
 
 export function applyTheme(theme: Theme): void {
@@ -58,7 +67,12 @@ export function useTheme() {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    const nextTheme: Theme = theme === 'dark' ? 'light' : 'dark';
+    const cycle: Record<Theme, Theme> = {
+      fire: 'dark',
+      dark: 'light',
+      light: 'fire',
+    };
+    const nextTheme: Theme = cycle[theme] || 'fire';
     setTheme(nextTheme);
   }, [theme, setTheme]);
 
