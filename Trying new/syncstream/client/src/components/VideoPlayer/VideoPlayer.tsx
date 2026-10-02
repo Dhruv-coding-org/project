@@ -1337,6 +1337,27 @@ export function VideoPlayer({
 
 
 
+  function handleRetryForceTranscode() {
+    setVideoError(null);
+    setTranscodeMode('full');
+    setIsLoading(true);
+    setLoadingStatus('Transcoding video codec (H.265 to H.264)…');
+
+    const video = videoRef.current;
+    if (video && videoSource) {
+      const base = resolveMediaUrl(guestLocalFileUrl || videoSource.url);
+      if (base.includes('/api/stream')) {
+        const cleanUrl = base.replace(/([?&])transcode=(true|full)/g, '');
+        const transcodeUrl = cleanUrl.includes('?') ? `${cleanUrl}&transcode=full` : `${cleanUrl}?transcode=full`;
+        video.src = transcodeUrl;
+        video.load();
+        video.play().catch(e => console.debug('[VideoPlayer] Transcode autoplay wait:', e));
+      } else {
+        video.load();
+      }
+    }
+  }
+
   function handleRetryForceMP4() {
     setVideoError(null);
     setIsLoading(true);
@@ -1352,7 +1373,7 @@ export function VideoPlayer({
       }).catch(err => {
         console.warn('[VideoPlayer] Force play failed:', err);
         setIsLoading(false);
-        setVideoError('Muted playback failed. Click "Open in System VLC Player" below.');
+        setVideoError('Muted playback failed.');
       });
     }
   }
@@ -1688,10 +1709,7 @@ export function VideoPlayer({
               <div className="vp-error-actions">
                 <button
                   className="btn btn-primary btn-sm"
-                  onClick={() => {
-                    setVideoError(null);
-                    setTranscodeMode('full');
-                  }}
+                  onClick={handleRetryForceTranscode}
                   title="Transcode video and audio to universal browser codecs in real-time"
                 >
                   ⚡ Convert & Play In-App
