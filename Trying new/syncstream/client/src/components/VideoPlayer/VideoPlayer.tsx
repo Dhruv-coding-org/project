@@ -1686,8 +1686,18 @@ export function VideoPlayer({
           ) : (
             <>
               <div className="vp-error-actions">
-                <button className="btn btn-primary btn-sm" onClick={handleRetryForceMP4}>
-                  ⚡ Force Muted Play
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => {
+                    setVideoError(null);
+                    setTranscodeMode('full');
+                  }}
+                  title="Transcode video and audio to universal browser codecs in real-time"
+                >
+                  ⚡ Convert & Play In-App
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={handleRetryForceMP4}>
+                  Force Muted Play
                 </button>
                 <button className="btn btn-ghost btn-sm" onClick={() => setVideoError(null)}>
                   Dismiss
