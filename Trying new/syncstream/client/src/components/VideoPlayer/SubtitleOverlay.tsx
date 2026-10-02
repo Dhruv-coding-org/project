@@ -5,6 +5,8 @@ interface SubtitleOverlayProps {
   cues: SubtitleCue[];
   currentTime: number;
   visible: boolean;
+  liveAutoCaptionText?: string;
+  fontSize?: 'sm' | 'md' | 'lg';
 }
 
 /**
@@ -17,7 +19,6 @@ function sanitizeSubtitleDom(rawText: string): string {
 
   try {
     const parser = new DOMParser();
-    // Normalize newlines to <br/>
     const normalized = rawText.replace(/\r\n|\r|\n/g, '<br/>');
     const doc = parser.parseFromString(`<body>${normalized}</body>`, 'text/html');
 
@@ -34,7 +35,6 @@ function sanitizeSubtitleDom(rawText: string): string {
 
         if (allowedTags.has(tagName)) {
           const cleanEl = document.createElement(tagName);
-          // Strip ALL attributes (onclick, style, class, id, src, href, etc.)
           for (const child of Array.from(el.childNodes)) {
             const cleanChild = sanitizeNode(child);
             if (cleanChild) cleanEl.appendChild(cleanChild);
@@ -42,7 +42,6 @@ function sanitizeSubtitleDom(rawText: string): string {
           return cleanEl;
         }
 
-        // If not an allowed element tag, extract text / clean children
         const fragment = document.createDocumentFragment();
         for (const child of Array.from(el.childNodes)) {
           const cleanChild = sanitizeNode(child);
@@ -62,23 +61,38 @@ function sanitizeSubtitleDom(rawText: string): string {
 
     return cleanBody.innerHTML;
   } catch {
-    // Fallback: safe plain text escaping
     const div = document.createElement('div');
     div.textContent = rawText;
     return div.innerHTML;
   }
 }
 
-export function SubtitleOverlay({ cues, currentTime, visible }: SubtitleOverlayProps) {
-  const activeText = visible && cues.length > 0 ? getActiveCueText(cues, currentTime) : '';
+export function SubtitleOverlay({
+  cues,
+  currentTime,
+  visible,
+  liveAutoCaptionText = '',
+  fontSize = 'md'
+}: SubtitleOverlayProps) {
+  if (!visible) return null;
 
-  if (!visible || !activeText) return null;
+  const cueText = cues.length > 0 ? getActiveCueText(cues, currentTime) : '';
+  const displayText = liveAutoCaptionText || cueText;
+
+  if (!displayText) return null;
+
+  const isLive = !!liveAutoCaptionText;
 
   return (
-    <div className="vp-subtitle-container">
+    <div className={`vp-subtitle-container font-${fontSize} ${isLive ? 'live-captions' : ''}`}>
+      {isLive && (
+        <span className="vp-live-caption-badge">
+          <span className="live-caption-dot" /> ⚡ Auto-Caption
+        </span>
+      )}
       <p
         className="vp-subtitle-text"
-        dangerouslySetInnerHTML={{ __html: sanitizeSubtitleDom(activeText) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeSubtitleDom(displayText) }}
       />
     </div>
   );

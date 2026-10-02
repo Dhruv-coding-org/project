@@ -1,11 +1,15 @@
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffprobePath = require('@ffprobe-installer/ffprobe').path;
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
+
+// Fast in-memory cache for file codec inspection
+const probeCache = new Map();
 
 function getMimeType(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -17,6 +21,7 @@ function getMimeType(filePath) {
     case '.avi': return 'video/x-msvideo';
     case '.flv': return 'video/x-flv';
     case '.wmv': return 'video/x-ms-wmv';
+    case '.ts': case '.m2ts': case '.mts': return 'video/mp2t';
     case '.mp3': return 'audio/mpeg';
     case '.wav': return 'audio/wav';
     case '.aac': return 'audio/aac';
@@ -26,6 +31,32 @@ function getMimeType(filePath) {
   }
 }
 
+async function probeMedia(filePath, mtimeMs) {
+  const cacheKey = `${filePath}_${mtimeMs}`;
+  if (probeCache.has(cacheKey)) {
+    return probeCache.get(cacheKey);
+  }
+
+  return new Promise((resolve) => {
+    ffmpeg.ffprobe(filePath, (err, data) => {
+      if (err || !data) {
+        console.warn('[StreamHandler] FFprobe probe warning:', err?.message);
+        resolve(null);
+        return;
+      }
+      probeCache.set(cacheKey, data);
+      resolve(data);
+    });
+  });
+}
+
+/**
+ * Universal Stream Handler:
+ * - Detects container & codecs automatically
+ * - Zero-loss instant remux for supported codecs
+ * - Real-time zero-latency transcoding for HEVC/AC3/DTS/AVI/MKV
+ * - Native fast seeking with startTime / t parameter
+ */
 async function handleStreamRequest(req, res) {
   const rawPath = req.query.path;
   if (!rawPath) {
@@ -35,7 +66,7 @@ async function handleStreamRequest(req, res) {
   const filePath = decodeURIComponent(rawPath);
 
   if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ error: 'File not found on local disk' });
+    return res.status(404).json({ error: 'File not found on disk' });
   }
 
   let stat;
@@ -49,7 +80,6 @@ async function handleStreamRequest(req, res) {
   const mimeType = getMimeType(filePath);
   const ext = path.extname(filePath).toLowerCase();
 
-  // Enable CORS for stream requests
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Range');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -58,159 +88,77 @@ async function handleStreamRequest(req, res) {
     return res.sendStatus(200);
   }
 
-  let forceTranscode = req.query.transcode === 'true';
-  let fullTranscode = req.query.transcode === 'full';
+  const startTime = Math.max(0, parseFloat(req.query.startTime || req.query.start || req.query.t || 0));
+  const forceTranscode = req.query.transcode === 'true' || req.query.transcode === 'full';
   const forceRaw = req.query.raw === 'true';
-  const autoRemuxExts = ['.mkv', '.avi', '.mov', '.wmv', '.flv', '.ts', '.mts', '.m2ts'];
 
-  // --- Smart Codec Probing ---
-  if (!forceRaw) {
-    try {
-      const metadata = await new Promise((resolve, reject) => {
-        ffmpeg.ffprobe(filePath, (err, data) => {
-          if (err) reject(err);
-          else resolve(data);
-        });
-      });
+  const nonNativeContainers = ['.mkv', '.avi', '.mov', '.wmv', '.flv', '.ts', '.mts', '.m2ts', '.vob', '.3gp'];
+  const isNonNativeContainer = nonNativeContainers.includes(ext);
 
-      const videoStream = metadata.streams.find(s => s.codec_type === 'video');
-      const audioStreams = metadata.streams.filter(s => s.codec_type === 'audio');
+  let videoSupported = true;
+  let audioSupported = true;
+  let hasVideo = false;
 
-      if (videoStream) {
-        const browserSupportedVideo = ['h264', 'vp8', 'vp9', 'av1'];
-        if (!browserSupportedVideo.includes(videoStream.codec_name)) {
-          console.log(`[StreamHandler] Unsupported video codec detected: ${videoStream.codec_name}. Forcing full transcode.`);
-          fullTranscode = true;
-        }
+  const metadata = await probeMedia(filePath, stat.mtimeMs);
+
+  if (metadata && metadata.streams) {
+    const videoStream = metadata.streams.find(s => s.codec_type === 'video');
+    const audioStream = metadata.streams.find(s => s.codec_type === 'audio');
+
+    if (videoStream) {
+      hasVideo = true;
+      const codec = (videoStream.codec_name || '').toLowerCase();
+      // Browser-native video decoders: h264, vp8, vp9, av1
+      videoSupported = ['h264', 'avc1', 'vp8', 'vp9', 'av1'].includes(codec);
+      if (!videoSupported) {
+        console.log(`[StreamHandler] Unsupported video codec detected: ${codec} (Requires libx264 transcode)`);
       }
-
-      if (!fullTranscode && audioStreams.length > 0) {
-        // If video is fine, check if audio needs transcoding (e.g. AC3/DTS in MP4)
-        const browserSupportedAudio = ['aac', 'mp3', 'vorbis', 'opus', 'flac'];
-        // We just check the first audio stream for simplicity
-        if (!browserSupportedAudio.includes(audioStreams[0].codec_name)) {
-          console.log(`[StreamHandler] Unsupported audio codec detected: ${audioStreams[0].codec_name}. Forcing audio transcode.`);
-          forceTranscode = true;
-        }
-      }
-    } catch (err) {
-      console.error('[StreamHandler] FFprobe smart detection failed:', err.message);
-    }
-  }
-  // ---------------------------
-
-  // Full Transcode Mode (e.g. HEVC / H.265 video stream conversion to H.264 for Chrome/Electron)
-  if (fullTranscode && !forceRaw) {
-    console.log(`[StreamHandler] Full transcoding (c:v libx264 ultrafast, c:a aac) for: ${path.basename(filePath)}`);
-    res.writeHead(200, {
-      'Content-Type': 'video/mp4',
-      'Accept-Ranges': 'none',
-      'Cache-Control': 'no-cache',
-    });
-
-    const command = ffmpeg(filePath)
-      .outputOptions([
-        '-c:v libx264',
-        '-preset ultrafast',
-        '-tune zerolatency',
-        '-threads 0',
-        '-vf scale=-2:1080',
-        '-pix_fmt yuv420p',
-        '-profile:v main',
-        '-crf 28', // Lower quality to ensure real-time speed on all CPUs
-        '-c:a aac',
-        '-b:a 128k',
-        '-ac 2',
-        '-movflags frag_keyframe+empty_moov+default_base_moof',
-        '-f mp4'
-      ])
-      .on('start', (cmd) => console.log(`[StreamHandler] FFmpeg started: ${cmd}`))
-      .on('error', (err) => {
-        if (!err.message.includes('Output stream closed') && !err.message.includes('pipe:1')) {
-          console.error('[StreamHandler] FFmpeg full transcode error:', err.message);
-        }
-      });
-
-    const ffmpegStream = command.pipe();
-    ffmpegStream.pipe(res);
-
-    res.on('close', () => {
-      try {
-        command.kill('SIGKILL');
-      } catch (e) {
-        // Ignore kill errors on close
-      }
-    });
-    return;
-  }
-
-  // Auto-Remux Mode (Zero video loss, 0% CPU for video, transcode AC3/DTS audio to AAC)
-  if ((autoRemuxExts.includes(ext) || forceTranscode) && !forceRaw) {
-    console.log(`[StreamHandler] Transcoding container/audio on-the-fly (c:v copy, c:a aac) for: ${path.basename(filePath)}`);
-    res.writeHead(200, {
-      'Content-Type': 'video/mp4',
-      'Accept-Ranges': 'none',
-      'Cache-Control': 'no-cache',
-    });
-
-    const command = ffmpeg(filePath)
-      .outputOptions([
-        '-c:v copy', // Zero video loss, 0% CPU for video
-        '-c:a aac',  // Convert AC3/DTS/EAC3 audio to stereo AAC for Chrome/Electron compatibility
-        '-b:a 192k', // fast high quality audio
-        '-ac 2',
-        '-movflags frag_keyframe+empty_moov+default_base_moof',
-        '-f mp4'
-      ])
-      .on('error', (err) => {
-        if (!err.message.includes('Output stream closed') && !err.message.includes('pipe:1')) {
-          console.error('[StreamHandler] FFmpeg remux error:', err.message);
-        }
-      });
-
-    const ffmpegStream = command.pipe();
-    ffmpegStream.pipe(res);
-
-    res.on('close', () => {
-      try {
-        command.kill('SIGKILL');
-      } catch (e) {
-        // Ignore kill errors on close
-      }
-    });
-    return;
-  }
-
-  const range = req.headers.range;
-  if (range) {
-    const parts = range.replace(/bytes=/, '').split('-');
-    const start = parseInt(parts[0], 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-
-    if (isNaN(start) || start >= fileSize || end >= fileSize || start > end) {
-      res.setHeader('Content-Range', `bytes */${fileSize}`);
-      return res.status(416).send('Requested Range Not Satisfiable');
     }
 
-    const chunksize = (end - start) + 1;
-    const fileStream = fs.createReadStream(filePath, { start, end });
-
-    res.writeHead(206, {
-      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-      'Accept-Ranges': 'bytes',
-      'Content-Length': chunksize,
-      'Content-Type': mimeType,
-    });
-
-    fileStream.on('error', (err) => {
-      console.error('[StreamHandler] File stream error:', err.message);
-      if (!res.headersSent) {
-        res.status(500).send('File streaming error');
+    if (audioStream) {
+      const codec = (audioStream.codec_name || '').toLowerCase();
+      // Browser-native audio decoders: aac, mp3, opus, vorbis, flac
+      audioSupported = ['aac', 'mp3', 'opus', 'vorbis', 'flac'].includes(codec);
+      if (!audioSupported) {
+        console.log(`[StreamHandler] Unsupported audio codec detected: ${codec} (Requires aac transcode)`);
       }
-    });
+    }
+  }
 
-    fileStream.pipe(res);
-  } else {
+  const needsConversion = forceTranscode || isNonNativeContainer || !videoSupported || !audioSupported || startTime > 0;
+
+  // ── 1. NATIVE MP4 / WEBM DIRECT RANGE STREAMING ──────────────
+  if (!needsConversion && !forceRaw) {
+    const range = req.headers.range;
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+      if (isNaN(start) || start >= fileSize || end >= fileSize || start > end) {
+        res.setHeader('Content-Range', `bytes */${fileSize}`);
+        return res.status(416).send('Requested Range Not Satisfiable');
+      }
+
+      const chunksize = (end - start) + 1;
+      const fileStream = fs.createReadStream(filePath, { start, end });
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunksize,
+        'Content-Type': mimeType,
+      });
+
+      fileStream.on('error', (err) => {
+        console.error('[StreamHandler] Range stream error:', err.message);
+        if (!res.headersSent) res.status(500).send('File streaming error');
+      });
+
+      fileStream.pipe(res);
+      return;
+    }
+
     res.writeHead(200, {
       'Content-Length': fileSize,
       'Content-Type': mimeType,
@@ -220,21 +168,133 @@ async function handleStreamRequest(req, res) {
     const fileStream = fs.createReadStream(filePath);
     fileStream.on('error', (err) => {
       console.error('[StreamHandler] File stream error:', err.message);
-      if (!res.headersSent) {
-        res.status(500).send('File streaming error');
-      }
+      if (!res.headersSent) res.status(500).send('File streaming error');
     });
 
     fileStream.pipe(res);
+    return;
   }
+
+  // ── 2. UNIVERSAL ON-THE-FLY REMUX & TRANSCODE PIPELINE ────────
+  console.log(`[StreamHandler] Streaming via FFmpeg: ${path.basename(filePath)} (start: ${startTime}s, v:${videoSupported ? 'copy' : 'h264'}, a:${audioSupported ? 'copy' : 'aac'})`);
+
+  res.writeHead(200, {
+    'Content-Type': 'video/mp4',
+    'Accept-Ranges': 'none',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Connection': 'keep-alive',
+    'X-Stream-Start-Time': String(startTime),
+  });
+
+  const command = ffmpeg(filePath);
+
+  // Fast keyframe seek before input for zero buffering
+  if (startTime > 0) {
+    command.seekInput(startTime);
+  }
+
+  const outputOptions = [
+    '-movflags frag_keyframe+empty_moov+default_base_moof',
+    '-f mp4'
+  ];
+
+  if (hasVideo) {
+    if (videoSupported && req.query.transcode !== 'full') {
+      outputOptions.push('-c:v copy');
+    } else {
+      // Real-time ultra-low latency x264 transcode (for HEVC / WMV / MPEG4)
+      outputOptions.push(
+        '-c:v libx264',
+        '-preset ultrafast',
+        '-tune zerolatency',
+        '-threads 0',
+        '-pix_fmt yuv420p',
+        '-crf 25'
+      );
+    }
+  }
+
+  if (audioSupported && req.query.transcode !== 'full') {
+    outputOptions.push('-c:a copy');
+  } else {
+    // Universal stereo AAC audio for AC3/DTS/EAC3
+    outputOptions.push('-c:a aac', '-b:a 192k', '-ac 2');
+  }
+
+  command.outputOptions(outputOptions);
+
+  command.on('error', (err) => {
+    if (!err.message.includes('Output stream closed') && !err.message.includes('pipe:1')) {
+      console.error('[StreamHandler] FFmpeg stream error:', err.message);
+    }
+  });
+
+  const ffmpegStream = command.pipe();
+  ffmpegStream.pipe(res);
+
+  res.on('close', () => {
+    try {
+      command.kill('SIGKILL');
+    } catch {
+      // Ignore kill error on socket close
+    }
+  });
 }
 
 function handleStreamHealth(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.json({ status: 'ok', service: 'SyncStream Local Streaming' });
+  res.json({
+    status: 'ok',
+    service: 'SyncStream Universal Media Streaming Engine',
+    ffmpegReady: !!ffmpegPath,
+    ffprobeReady: !!ffprobePath
+  });
 }
 
-function handleMediaInfo(req, res) {
+/**
+ * Handle direct file upload / streaming for Web App users
+ */
+function handleStreamUpload(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+
+  const origName = req.query.name || `upload_${Date.now()}.mp4`;
+  const uploadDir = path.join(__dirname, '../../uploads');
+
+  try {
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+  } catch (err) {
+    console.error('[StreamHandler] Failed to create upload directory:', err);
+  }
+
+  const safeName = `${Date.now()}_${path.basename(origName).replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+  const targetPath = path.join(uploadDir, safeName);
+  const writeStream = fs.createWriteStream(targetPath);
+
+  req.pipe(writeStream);
+
+  writeStream.on('finish', () => {
+    console.log(`[StreamHandler] Upload complete: ${origName} -> ${targetPath}`);
+    res.json({
+      success: true,
+      path: targetPath,
+      fileName: origName,
+      streamUrl: `/api/stream?path=${encodeURIComponent(targetPath)}`
+    });
+  });
+
+  writeStream.on('error', (err) => {
+    console.error('[StreamHandler] Upload write stream error:', err);
+    res.status(500).json({ error: 'Failed to write upload' });
+  });
+}
+
+/**
+ * Inspects media metadata and extracts all embedded subtitle tracks
+ */
+async function handleMediaInfo(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   const rawPath = req.query.path;
   if (!rawPath) return res.status(400).json({ error: 'Missing path' });
@@ -242,38 +302,66 @@ function handleMediaInfo(req, res) {
   const filePath = decodeURIComponent(rawPath);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
 
-  ffmpeg.ffprobe(filePath, (err, metadata) => {
-    if (err) {
-      console.error('[StreamHandler] FFprobe error:', err.message);
-      return res.status(500).json({ error: 'Probe failed' });
-    }
+  let stat;
+  try {
+    stat = fs.statSync(filePath);
+  } catch {
+    return res.status(500).json({ error: 'Failed to stat file' });
+  }
 
-    const subtitles = metadata.streams
-      .filter(s => s.codec_type === 'subtitle' && ['subrip', 'ass', 'webvtt', 'mov_text'].includes(s.codec_name))
-      .map(s => ({
+  const metadata = await probeMedia(filePath, stat.mtimeMs);
+  if (!metadata) {
+    return res.status(500).json({ error: 'Probe failed' });
+  }
+
+  const videoStream = metadata.streams.find(s => s.codec_type === 'video');
+  const audioStream = metadata.streams.find(s => s.codec_type === 'audio');
+
+  const subtitles = (metadata.streams || [])
+    .filter(s => s.codec_type === 'subtitle')
+    .map(s => {
+      const lang = s.tags && (s.tags.language || s.tags.lang) ? (s.tags.language || s.tags.lang).toLowerCase() : 'unknown';
+      const title = s.tags && s.tags.title ? s.tags.title : `Track ${s.index} (${lang.toUpperCase()})`;
+      const isDefault = !!(s.disposition && s.disposition.default);
+      return {
         index: s.index,
         codec: s.codec_name,
-        language: s.tags && s.tags.language ? s.tags.language : 'Unknown',
-        title: s.tags && s.tags.title ? s.tags.title : `Track ${s.index}`
-      }));
+        language: lang,
+        title,
+        isDefault
+      };
+    });
 
-    res.json({ subtitles });
+  res.json({
+    duration: metadata.format?.duration ? parseFloat(metadata.format.duration) : null,
+    videoCodec: videoStream?.codec_name || null,
+    audioCodec: audioStream?.codec_name || null,
+    width: videoStream?.width || null,
+    height: videoStream?.height || null,
+    subtitles,
   });
 }
 
+/**
+ * Extracts any embedded subtitle stream directly into clean WebVTT
+ */
 function handleSubtitleExtract(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   const rawPath = req.query.path;
   const trackIndex = req.query.track;
-  
-  if (!rawPath || !trackIndex) return res.status(400).send('Missing path or track parameter');
-  
+
+  if (!rawPath || trackIndex === undefined) {
+    return res.status(400).send('Missing path or track parameter');
+  }
+
   const filePath = decodeURIComponent(rawPath);
-  if (!fs.existsSync(filePath)) return res.status(404).send('File not found');
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send('File not found');
+  }
 
   res.writeHead(200, {
-    'Content-Type': 'text/vtt',
-    'Cache-Control': 'no-cache',
+    'Content-Type': 'text/vtt; charset=utf-8',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
   });
 
   const command = ffmpeg(filePath)
@@ -282,7 +370,7 @@ function handleSubtitleExtract(req, res) {
       '-f webvtt'
     ])
     .on('error', (err) => {
-      if (!err.message.includes('Output stream closed')) {
+      if (!err.message.includes('Output stream closed') && !err.message.includes('pipe:1')) {
         console.error('[StreamHandler] Subtitle extract error:', err.message);
       }
     });
@@ -293,13 +381,16 @@ function handleSubtitleExtract(req, res) {
   res.on('close', () => {
     try {
       command.kill('SIGKILL');
-    } catch (e) {}
+    } catch {
+      // Ignore kill error on socket close
+    }
   });
 }
 
 module.exports = {
   handleStreamRequest,
   handleStreamHealth,
+  handleStreamUpload,
   handleMediaInfo,
   handleSubtitleExtract,
 };

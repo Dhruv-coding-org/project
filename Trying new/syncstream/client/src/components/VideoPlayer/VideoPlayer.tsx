@@ -162,9 +162,93 @@ export function VideoPlayer({
   const [availableSubtitleTracks, setAvailableSubtitleTracks] = useState<EmbeddedSubtitleTrack[]>([]);
   const [activeSubtitleTrackIndex, setActiveSubtitleTrackIndex] = useState<number | null>(null);
   
-  // VLC Engine State
   const [guestLocalFileUrl, setGuestLocalFileUrl] = useState<string | null>(null);
   const [isStarred, setIsStarred] = useState(false);
+
+  // Auto Captions Engine State (Embedded Subtitles + Live Speech-to-Text)
+  const [autoCaptionEnabled, setAutoCaptionEnabled] = useState(false);
+  const [liveAutoCaptionText, setLiveAutoCaptionText] = useState('');
+  const [captionFontSize, setCaptionFontSize] = useState<'sm' | 'md' | 'lg'>('md');
+  const [showCaptionMenu, setShowCaptionMenu] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const speechRecRef = useRef<any>(null);
+
+  // Initialize SpeechRecognition on mount for universal Live Speech Auto-Captions
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) return;
+
+    try {
+      const rec = new SpeechRec();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = navigator.language || 'en-US';
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      rec.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript.trim()) {
+          setLiveAutoCaptionText(transcript.trim());
+        }
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      rec.onerror = (e: any) => {
+        if (e.error !== 'no-speech' && e.error !== 'aborted') {
+          console.debug('[AutoCaption] Speech recognition notice:', e.error);
+        }
+      };
+
+      rec.onend = () => {
+        if (autoCaptionEnabled && playing) {
+          try { rec.start(); } catch { /* ignore */ }
+        }
+      };
+
+      speechRecRef.current = rec;
+    } catch (e) {
+      console.debug('[AutoCaption] Speech recognition init failed:', e);
+    }
+
+    return () => {
+      if (speechRecRef.current) {
+        try { speechRecRef.current.abort(); } catch { /* ignore */ }
+        speechRecRef.current = null;
+      }
+    };
+  }, [autoCaptionEnabled, playing]);
+
+  // Manage SpeechRecognition running state
+  useEffect(() => {
+    const rec = speechRecRef.current;
+    if (!rec) return;
+
+    if (autoCaptionEnabled && playing) {
+      try {
+        rec.start();
+      } catch {
+        // Already running
+      }
+    } else {
+      try {
+        rec.stop();
+      } catch { /* ignore */ }
+    }
+  }, [autoCaptionEnabled, playing]);
+
+  // Fade out live caption text after silence
+  useEffect(() => {
+    if (!liveAutoCaptionText) return;
+    const timer = setTimeout(() => {
+      setLiveAutoCaptionText('');
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [liveAutoCaptionText]);
 
   async function handleStarVideo() {
     if (!videoSource) return;
@@ -184,7 +268,6 @@ export function VideoPlayer({
 
   const isUrl = videoSource?.sourceType === 'url';
   const isFile = videoSource?.sourceType === 'file';
-  const isVlc = videoSource?.isVlc === true;
   const isYouTube = isUrl && videoSource ? !!extractYouTubeId(videoSource.url) : false;
   const isVimeo = isUrl && videoSource ? !!extractVimeoId(videoSource.url) : false;
   const isEmbedProvider = isYouTube || isVimeo;
@@ -549,17 +632,9 @@ export function VideoPlayer({
       video.load();
     } else if (isFile) {
       const video = videoRef.current;
-      if (!video && !isVlc) return;
+      if (!video) return;
 
-      if (isHost && isVlc) {
-        usingObjectStream.current = false;
-        setUsingObjectStreamState(false);
-        if (video && video.srcObject) video.srcObject = null;
-        if (video) {
-          video.removeAttribute('src');
-          video.load();
-        }
-      } else if (isHost || guestLocalFileUrl) {
+      if (isHost || guestLocalFileUrl) {
         const targetUrl = resolveMediaUrl(guestLocalFileUrl || videoSource.url);
         
         // Always use Web Transcoder for host streaming local files (enables inbuilt playback + WebRTC sync)
@@ -619,192 +694,9 @@ export function VideoPlayer({
       cleanupWebAudio();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoSource, isHost, isEmbedProvider, transcodeMode, isVlc]);
+  }, [videoSource, isHost, isEmbedProvider, transcodeMode]);
 
-  // ── (1.5) VLC MASTER CLOCK ENGINE ─────────────────────────────────
-  const lastVlcState = useRef<{ playing: boolean; time: number }>({ playing: false, time: 0 });
 
-  useEffect(() => {
-    if (!isHost || !isVlc || !videoSource) return;
-
-    let pollInterval: ReturnType<typeof setInterval>;
-    let isCancelled = false;
-
-    async function initVlc() {
-      if (!videoSource || isCancelled) return;
-      setIsLoading(true);
-      setLoadingStatus('Launching VLC Media Player...');
-      
-      try {
-        let target = videoSource.url;
-        if (target.includes('/api/stream')) {
-          try {
-            const urlObj = new URL(target);
-            const p = urlObj.searchParams.get('path');
-            if (p) target = p;
-          } catch (e) {
-            console.debug('URL parse skipped:', e);
-          }
-        }
-
-        if (target.startsWith('blob:')) {
-          throw new Error('VLC cannot open in-memory browser blob URLs. Please open this video in the SyncStream Desktop App or load via Stream URL.');
-        }
-
-        // Try Electron native bridge first if available, otherwise call backend server
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const electronAPI = typeof window !== 'undefined' ? (window as any).electronAPI : null;
-        if (electronAPI?.launchVlc) {
-          try {
-            await electronAPI.launchVlc(target);
-          } catch (e) {
-            console.debug('Electron launchVlc bridge error:', e);
-          }
-        }
-
-        // Start VLC via backend server
-        const res = await fetch(`${getServerUrl()}/api/vlc/start?path=${encodeURIComponent(target)}`);
-        let data: { error?: string; success?: boolean } = {};
-        try {
-          data = await res.json();
-        } catch {
-          throw new Error('VLC server returned an invalid response. Please verify VLC is installed.');
-        }
-        if (!res.ok || data.error) {
-          throw new Error(data.error || 'Failed to start VLC');
-        }
-        
-        if (isCancelled) return;
-        setIsLoading(false);
-        setVideoReady(true);
-        setAudioReady(true);
-        setPlaying(true);
-        setVideoError(null);
-
-        // Initial delay for VLC HTTP interface to spin up
-        await new Promise(r => setTimeout(r, 1000));
-        if (isCancelled) return;
-
-        // Start Polling VLC status
-        pollInterval = setInterval(async () => {
-          if (isCancelled) return;
-          try {
-            const statusRes = await fetch(`${getServerUrl()}/api/vlc/status`);
-            if (!statusRes.ok) return;
-            let status;
-            try {
-              status = await statusRes.json();
-            } catch {
-              return;
-            }
-            
-            // Sync React state to VLC state
-            if (typeof status?.time === 'number' && isFinite(status.time)) {
-              setCurrentTime(status.time);
-              // Broadcast seek if time jumped by more than 2.5s
-              if (Math.abs(status.time - lastVlcState.current.time) > 2.5) {
-                onSeek(status.time);
-                lastVlcState.current.time = status.time;
-              } else {
-                lastVlcState.current.time = status.time;
-              }
-            }
-
-            if (typeof status?.length === 'number' && isFinite(status.length) && status.length > 0) {
-              setDuration(status.length);
-            }
-            
-            const isVlcPlaying = status?.state === 'playing';
-            if (isVlcPlaying !== lastVlcState.current.playing) {
-              lastVlcState.current.playing = isVlcPlaying;
-              setPlaying(isVlcPlaying);
-              if (isVlcPlaying) {
-                onPlay(typeof status?.time === 'number' ? status.time : currentTime);
-              } else {
-                onPause(typeof status?.time === 'number' ? status.time : currentTime);
-              }
-            }
-            
-          } catch (pollErr) {
-            console.debug('VLC poll error:', pollErr);
-          }
-        }, 500);
-
-      } catch (err: unknown) {
-        console.error('VLC launch error:', err);
-        const errMsg = err instanceof Error ? err.message : 'Failed to launch VLC Media Player. Make sure it is installed.';
-        setVideoError(errMsg);
-        setIsLoading(false);
-      }
-    }
-
-    initVlc();
-
-    return () => {
-      isCancelled = true;
-      if (pollInterval) clearInterval(pollInterval);
-    };
-  }, [isHost, isVlc, videoSource, onPlay, onPause, onSeek, currentTime]);
-
-  const handleLaunchVlc = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setLoadingStatus('Launching VLC Media Player...');
-      let target = videoSource?.url || '';
-      if (target.includes('/api/stream')) {
-        try {
-          const urlObj = new URL(target);
-          const p = urlObj.searchParams.get('path');
-          if (p) target = p;
-        } catch (e) {
-          console.debug('URL parse skipped:', e);
-        }
-      }
-
-      if (target.startsWith('blob:')) {
-        throw new Error('VLC cannot open in-memory browser blob URLs. Please open this video in the SyncStream Desktop App or load via Stream URL.');
-      }
-
-      // Try Electron native bridge first if available
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const electronAPI = typeof window !== 'undefined' ? (window as any).electronAPI : null;
-      if (electronAPI?.launchVlc) {
-        try {
-          await electronAPI.launchVlc(target);
-        } catch (e) {
-          console.debug('Electron launchVlc bridge error:', e);
-        }
-      }
-
-      const query = target ? `?path=${encodeURIComponent(target)}` : '';
-      const res = await fetch(`${getServerUrl()}/api/vlc/start${query}`);
-      let data: { error?: string; success?: boolean } = {};
-      try {
-        data = await res.json();
-      } catch {
-        throw new Error('VLC server returned an invalid response. Please verify VLC is installed.');
-      }
-      if (!res.ok || data.error) {
-        throw new Error(data.error || 'Failed to launch VLC');
-      }
-
-      setIsLoading(false);
-      setVideoError(null);
-
-      // If host and not in VLC mode, switch room source to VLC sync mode
-      if (isHost && videoSource && !isVlc) {
-        socket.emit('change-source', {
-          ...videoSource,
-          isVlc: true
-        });
-      }
-    } catch (err: unknown) {
-      console.error('[VideoPlayer] Failed to launch VLC:', err);
-      const errMsg = err instanceof Error ? err.message : 'Failed to launch VLC Media Player. Make sure it is installed.';
-      setVideoError(errMsg);
-      setIsLoading(false);
-    }
-  }, [videoSource, isHost, isVlc]);
 
   // Stall recovery timer
   useEffect(() => {
@@ -831,7 +723,79 @@ export function VideoPlayer({
     }
   }, [isLoading, videoSource, transcodeMode]);
 
-  // Fetch embedded subtitles for local files
+  const handleSelectSubtitleTrack = useCallback(async (trackIndex: number | null) => {
+    setActiveSubtitleTrackIndex(trackIndex);
+
+    if (isYouTube) {
+      if (trackIndex === null) {
+        setSubtitlesVisible(false);
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const yt = (plyrRef.current as any)?.embed;
+          if (yt) {
+            if (typeof yt.unloadModule === 'function') yt.unloadModule('captions');
+            if (typeof yt.setOption === 'function') yt.setOption('captions', 'track', {});
+          }
+          const iframe = containerRef.current?.querySelector('iframe');
+          if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unloadModule', args: ['captions'] }), '*');
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setOption', args: ['captions', 'track', {}] }), '*');
+          }
+        } catch (e) {
+          console.debug('YouTube subtitle off error:', e);
+        }
+      } else {
+        setSubtitlesVisible(true);
+        const selectedTrack = availableSubtitleTracks.find(t => t.index === trackIndex);
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const yt = (plyrRef.current as any)?.embed;
+          if (yt) {
+            if (typeof yt.loadModule === 'function') yt.loadModule('captions');
+            if (typeof yt.setOption === 'function') {
+              yt.setOption('captions', 'track', selectedTrack?.language ? { languageCode: selectedTrack.language } : { languageCode: 'en' });
+            }
+          }
+          const iframe = containerRef.current?.querySelector('iframe');
+          if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'loadModule', args: ['captions'] }), '*');
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setOption', args: ['captions', 'track', selectedTrack?.language ? { languageCode: selectedTrack.language } : { languageCode: 'en' }] }), '*');
+          }
+        } catch (e) {
+          console.debug('YouTube subtitle track select error:', e);
+        }
+      }
+      return;
+    }
+
+    if (trackIndex === null) {
+      setSubtitlesVisible(false);
+      setActiveSubtitleTrackIndex(null);
+      if (onChangeSubtitles && canControl) onChangeSubtitles(null);
+      return;
+    }
+
+    if (videoSource?.url.includes('/api/stream')) {
+      const urlObj = new URL(videoSource.url);
+      const pathParam = urlObj.searchParams.get('path');
+      if (pathParam) {
+        setLoadingStatus('Extracting subtitle track...');
+        setIsLoading(true);
+        try {
+          const res = await fetch(`${getServerUrl()}/api/subtitle/extract?path=${encodeURIComponent(pathParam)}&track=${trackIndex}`);
+          const vttText = await res.text();
+          if (onChangeSubtitles) onChangeSubtitles(vttText);
+          setSubtitlesVisible(true);
+        } catch (err) {
+          console.error('[VideoPlayer] Subtitle extract failed:', err);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+  }, [isYouTube, availableSubtitleTracks, canControl, onChangeSubtitles, videoSource]);
+
+  // Fetch embedded subtitles for local files & auto-activate primary track
   useEffect(() => {
     if (isFile && isHost && videoSource?.url.includes('/api/stream')) {
       try {
@@ -841,8 +805,19 @@ export function VideoPlayer({
           fetch(`${getServerUrl()}/api/media-info?path=${encodeURIComponent(pathParam)}`)
             .then(res => (res.ok ? res.json() : null))
             .then(data => {
-              if (data?.subtitles) {
+              if (data?.subtitles && Array.isArray(data.subtitles) && data.subtitles.length > 0) {
                 setAvailableSubtitleTracks(data.subtitles);
+                // Auto-select English or first subtitle track
+                const bestTrack = data.subtitles.find((t: EmbeddedSubtitleTrack) =>
+                  t.language?.toLowerCase().startsWith('en') ||
+                  t.title?.toLowerCase().includes('en')
+                ) || data.subtitles[0];
+
+                if (bestTrack) {
+                  handleSelectSubtitleTrack(bestTrack.index);
+                  setAutoCaptionEnabled(true);
+                  setSubtitlesVisible(true);
+                }
               }
             })
             .catch(err => console.debug('[VideoPlayer] Subtitle check skipped:', err));
@@ -856,7 +831,7 @@ export function VideoPlayer({
       setAvailableSubtitleTracks([]);
       setActiveSubtitleTrackIndex(null);
     };
-  }, [videoSource, isFile, isHost]);
+  }, [videoSource, isFile, isHost, handleSelectSubtitleTrack]);
 
   // Query YouTube captions tracklist when YouTube embed is ready
   useEffect(() => {
@@ -968,77 +943,7 @@ export function VideoPlayer({
     });
   }, [isYouTube, availableSubtitleTracks, activeSubtitleTrackIndex]);
 
-  const handleSelectSubtitleTrack = async (trackIndex: number | null) => {
-    setActiveSubtitleTrackIndex(trackIndex);
 
-    if (isYouTube) {
-      if (trackIndex === null) {
-        setSubtitlesVisible(false);
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const yt = (plyrRef.current as any)?.embed;
-          if (yt) {
-            if (typeof yt.unloadModule === 'function') yt.unloadModule('captions');
-            if (typeof yt.setOption === 'function') yt.setOption('captions', 'track', {});
-          }
-          const iframe = containerRef.current?.querySelector('iframe');
-          if (iframe?.contentWindow) {
-            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unloadModule', args: ['captions'] }), '*');
-            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setOption', args: ['captions', 'track', {}] }), '*');
-          }
-        } catch (e) {
-          console.debug('YouTube subtitle off error:', e);
-        }
-      } else {
-        setSubtitlesVisible(true);
-        const selectedTrack = availableSubtitleTracks.find(t => t.index === trackIndex);
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const yt = (plyrRef.current as any)?.embed;
-          if (yt) {
-            if (typeof yt.loadModule === 'function') yt.loadModule('captions');
-            if (typeof yt.setOption === 'function') {
-              yt.setOption('captions', 'track', selectedTrack?.language ? { languageCode: selectedTrack.language } : { languageCode: 'en' });
-            }
-          }
-          const iframe = containerRef.current?.querySelector('iframe');
-          if (iframe?.contentWindow) {
-            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'loadModule', args: ['captions'] }), '*');
-            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setOption', args: ['captions', 'track', selectedTrack?.language ? { languageCode: selectedTrack.language } : { languageCode: 'en' }] }), '*');
-          }
-        } catch (e) {
-          console.debug('YouTube subtitle track select error:', e);
-        }
-      }
-      return;
-    }
-
-    if (trackIndex === null) {
-      setSubtitlesVisible(false);
-      setActiveSubtitleTrackIndex(null);
-      if (onChangeSubtitles && canControl) onChangeSubtitles(null);
-      return;
-    }
-
-    if (videoSource?.url.includes('/api/stream')) {
-      const urlObj = new URL(videoSource.url);
-      const pathParam = urlObj.searchParams.get('path');
-      if (pathParam) {
-        setLoadingStatus('Extracting subtitle track...');
-        setIsLoading(true);
-        try {
-          const res = await fetch(`${getServerUrl()}/api/subtitle/extract?path=${encodeURIComponent(pathParam)}&track=${trackIndex}`);
-          const vttText = await res.text();
-          if (onChangeSubtitles) onChangeSubtitles(vttText);
-          setSubtitlesVisible(true);
-        } catch (err) {
-          console.error('[VideoPlayer] Subtitle extract failed:', err);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    }
-  };
 
   // ── (2) VOLUME & MUTED ─────────────────────────────────────────
   useEffect(() => {
@@ -1460,12 +1365,6 @@ export function VideoPlayer({
       audioCtxRef.current.resume().catch(e => console.warn('[VideoPlayer] AudioContext resume failed:', e));
     }
 
-    if (isVlc && isHost) {
-      const cmd = playing ? 'pl_pause' : 'pl_play';
-      fetch(`${getServerUrl()}/api/vlc/command?command=${cmd}`).catch(() => {});
-      return;
-    }
-
     if (isEmbedProvider && plyrRef.current) {
       const player = plyrRef.current;
       if (player.paused) {
@@ -1490,7 +1389,7 @@ export function VideoPlayer({
         onPause(video.currentTime);
       }
     }
-  }, [canControl, isVlc, isHost, isEmbedProvider, playing, onPlay, onPause]);
+  }, [canControl, isEmbedProvider, onPlay, onPause]);
 
   function handleSeek(e: ChangeEvent<HTMLInputElement>) {
     if (!canControl) return;
@@ -1498,9 +1397,7 @@ export function VideoPlayer({
     setCurrentTime(t);
     onSeek(t);
 
-    if (isVlc && isHost) {
-      fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${t}`).catch(() => {});
-    } else if (isEmbedProvider && plyrRef.current) {
+    if (isEmbedProvider && plyrRef.current) {
       plyrRef.current.currentTime = t;
     } else {
       const video = videoRef.current;
@@ -1587,9 +1484,7 @@ export function VideoPlayer({
             const newTime = Math.max(0, currentTime - 10);
             setCurrentTime(newTime);
             onSeek(newTime);
-            if (isVlc && isHost) {
-              fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${newTime}`).catch(() => {});
-            } else if (isEmbedProvider && plyrRef.current) {
+            if (isEmbedProvider && plyrRef.current) {
               plyrRef.current.currentTime = newTime;
             } else {
               const video = videoRef.current;
@@ -1604,9 +1499,7 @@ export function VideoPlayer({
             const newTime = Math.min(duration, currentTime + 10);
             setCurrentTime(newTime);
             onSeek(newTime);
-            if (isVlc && isHost) {
-              fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${newTime}`).catch(() => {});
-            } else if (isEmbedProvider && plyrRef.current) {
+            if (isEmbedProvider && plyrRef.current) {
               plyrRef.current.currentTime = newTime;
             } else {
               const video = videoRef.current;
@@ -1624,7 +1517,7 @@ export function VideoPlayer({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, toggleMute, toggleFullscreen, toggleSubtitles, canControl, currentTime, duration, isEmbedProvider, onSeek, isVlc, isHost]);
+  }, [togglePlay, toggleMute, toggleFullscreen, toggleSubtitles, canControl, currentTime, duration, isEmbedProvider, onSeek]);
 
   useEffect(() => {
     const onFsChange = () => setFullscreen(!!document.fullscreenElement);
@@ -1688,24 +1581,8 @@ export function VideoPlayer({
       {/* Live Floating Emoji Reactions Overlay */}
       <EmojiReactions reactions={activeReactions} />
       
-      {/* VLC Splash Screen */}
-      {isVlc && isHost && (
-        <div className="vp-placeholder" style={{ background: '#000', zIndex: 10 }}>
-          <div className="vp-placeholder-icon">
-            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-              <path d="M32 4L12 56h40L32 4z" fill="#ff8800"/>
-              <path d="M32 16L18 52h28L32 16z" fill="#fff"/>
-              <path d="M32 24l-8 22h16l-8-22z" fill="#ff8800"/>
-            </svg>
-          </div>
-          <h2>Playing in VLC Media Player</h2>
-          <p>SyncStream is using your native VLC player as the master clock.</p>
-          <p style={{ opacity: 0.7, fontSize: '0.9em' }}>Pause or seek in VLC and your friends will sync instantly!</p>
-        </div>
-      )}
-
       {/* Native Video element (for Local Files + Direct URLs) */}
-      {(!hasSource || !isEmbedProvider) && !isVlc && (
+      {(!hasSource || !isEmbedProvider) && (
         <video
           ref={videoRef}
           className="vp-video"
@@ -1742,7 +1619,9 @@ export function VideoPlayer({
       <SubtitleOverlay
         cues={subtitleCues}
         currentTime={currentTime}
-        visible={subtitlesVisible && subtitleCues.length > 0}
+        visible={subtitlesVisible || autoCaptionEnabled}
+        liveAutoCaptionText={autoCaptionEnabled ? liveAutoCaptionText : ''}
+        fontSize={captionFontSize}
       />
 
       {/* Loading overlay with status */}
@@ -1783,17 +1662,6 @@ export function VideoPlayer({
           {isYouTube ? (
             <>
               <div className="vp-error-actions">
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={handleLaunchVlc}
-                  style={{ backgroundColor: '#ff8800', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  title="Launch VLC Media Player and stream this YouTube link"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2L3 19h18L12 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" fill="currentColor"/>
-                  </svg>
-                  Open in VLC Player
-                </button>
                 <a
                   href={`${videoSource?.url}${videoSource?.url.includes('?') ? '&' : '?'}t=${Math.floor(currentTime || 0)}`}
                   target="_blank"
@@ -1812,24 +1680,12 @@ export function VideoPlayer({
                 Major music labels (such as T-Series, VEVO, and Sony) restrict their videos from playing in third-party embedded web players (YouTube Error 150/101).<br />
                 <strong>How to bypass:</strong><br />
                 1. <strong>SyncStream Desktop App</strong>: Use the Desktop App which has a native embed header bypass.<br />
-                2. <strong>VLC Player Mode</strong>: Click <em>Open in VLC Player</em> above to stream without iframe restrictions.<br />
-                3. <strong>Screen / Tab Share</strong>: If you're host, broadcast the YouTube tab directly via WebRTC!
+                2. <strong>Screen / Tab Share</strong>: If you're host, broadcast the YouTube tab directly via WebRTC!
               </div>
             </>
           ) : (
             <>
               <div className="vp-error-actions">
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={handleLaunchVlc}
-                  style={{ backgroundColor: '#ff8800', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  title="Launch VLC Media Player and stream locally"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2L3 19h18L12 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" fill="currentColor"/>
-                  </svg>
-                  Open in System VLC Player
-                </button>
                 <button className="btn btn-primary btn-sm" onClick={handleRetryForceMP4}>
                   ⚡ Force Muted Play
                 </button>
@@ -1838,8 +1694,8 @@ export function VideoPlayer({
                 </button>
               </div>
               <div className="vp-error-tip">
-                💡 <strong>Inbuilt Transcoder:</strong><br />
-                SyncStream uses a powerful built-in web transcoder to play HEVC and MKV files seamlessly across browsers!
+                💡 <strong>Universal Transcoder:</strong><br />
+                SyncStream automatically transcodes HEVC, MKV, AVI, and unsupported audio codecs in real-time for seamless in-app playback!
               </div>
             </>
           )}
@@ -2017,8 +1873,7 @@ export function VideoPlayer({
                 const t = Math.max(0, currentTime - 10);
                 setCurrentTime(t);
                 onSeek(t);
-                if (isVlc && isHost) fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${t}`).catch(() => {});
-                else if (isEmbedProvider && plyrRef.current) plyrRef.current.currentTime = t;
+                if (isEmbedProvider && plyrRef.current) plyrRef.current.currentTime = t;
                 else if (videoRef.current) videoRef.current.currentTime = t;
               }}
               disabled={!canControl || !hasSource}
@@ -2038,8 +1893,7 @@ export function VideoPlayer({
                 const t = Math.min(duration, currentTime + 10);
                 setCurrentTime(t);
                 onSeek(t);
-                if (isVlc && isHost) fetch(`${getServerUrl()}/api/vlc/command?command=seek&val=${t}`).catch(() => {});
-                else if (isEmbedProvider && plyrRef.current) plyrRef.current.currentTime = t;
+                if (isEmbedProvider && plyrRef.current) plyrRef.current.currentTime = t;
                 else if (videoRef.current) videoRef.current.currentTime = t;
               }}
               disabled={!canControl || !hasSource}
@@ -2157,21 +2011,95 @@ export function VideoPlayer({
               📺
             </button>
 
-            {/* Open in VLC Button */}
+            {/* Auto Caption & Subtitles Options Button */}
             {hasSource && (
-              <button
-                className={`btn-icon vp-btn ${isVlc ? 'active' : ''}`}
-                onClick={handleLaunchVlc}
-                title={isVlc ? "VLC Sync Active (Click to Re-launch / Resync)" : "Open & Sync in VLC Media Player 🎬"}
-                aria-label="Open in VLC Media Player"
-                id="vp-open-vlc-btn"
-                style={{ color: isVlc ? '#ff8800' : '#ffa500' }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L3 19h18L12 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" fill={isVlc ? "rgba(255,136,0,0.3)" : "none"}/>
-                  <path d="M8.5 13h7M7 16h10M10.5 8h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-              </button>
+              <div style={{ position: 'relative' }}>
+                <button
+                  className={`btn-icon vp-btn vp-autocc-btn ${autoCaptionEnabled ? 'active' : ''}`}
+                  onClick={() => setShowCaptionMenu(prev => !prev)}
+                  title={autoCaptionEnabled ? "Auto Captions: ON (Click for options)" : "Enable Auto Captions & Subtitles ⚡"}
+                  aria-label="Auto Captions and Subtitle Settings"
+                  id="vp-autocc-btn"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor"/>
+                  </svg>
+                  <span>CC</span>
+                </button>
+
+                {/* Auto Captions & Subtitle Control Popover */}
+                {showCaptionMenu && (
+                  <div className="vp-caption-menu">
+                    <div className="vp-caption-menu-header">
+                      <span className="vp-caption-menu-title">
+                        <span>⚡</span> Auto Captions & CC
+                      </span>
+                      <button
+                        className="vp-caption-menu-close"
+                        onClick={() => setShowCaptionMenu(false)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* Live Speech Auto Caption Toggle */}
+                    <div className="vp-caption-menu-section">
+                      <div className="vp-caption-toggle-row">
+                        <span className="vp-caption-toggle-label">Live Speech Auto CC</span>
+                        <input
+                          type="checkbox"
+                          checked={autoCaptionEnabled}
+                          onChange={(e) => {
+                            const val = e.target.checked;
+                            setAutoCaptionEnabled(val);
+                            if (val) setSubtitlesVisible(true);
+                          }}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Embedded Tracks Selector */}
+                    {availableSubtitleTracks.length > 0 && (
+                      <div className="vp-caption-menu-section">
+                        <label className="vp-caption-menu-label">Embedded Subtitle Track</label>
+                        <select
+                          className="vp-subtitle-select"
+                          style={{ width: '100%', maxWidth: '100%', height: '30px' }}
+                          value={activeSubtitleTrackIndex === null ? '' : activeSubtitleTrackIndex}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            handleSelectSubtitleTrack(val ? parseInt(val, 10) : null);
+                          }}
+                        >
+                          <option value="">Off / None</option>
+                          {availableSubtitleTracks.map((track) => (
+                            <option key={track.index} value={track.index}>
+                              {track.title !== `Track ${track.index}` ? track.title : `${track.language.toUpperCase()} (${track.codec})`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Font Size Options */}
+                    <div className="vp-caption-menu-section" style={{ marginBottom: 0 }}>
+                      <label className="vp-caption-menu-label">Caption Size</label>
+                      <div className="vp-caption-size-buttons">
+                        {(['sm', 'md', 'lg'] as const).map((sz) => (
+                          <button
+                            key={sz}
+                            className={`vp-caption-size-btn ${captionFontSize === sz ? 'active' : ''}`}
+                            onClick={() => setCaptionFontSize(sz)}
+                          >
+                            {sz === 'sm' ? 'Small' : sz === 'md' ? 'Medium' : 'Large'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Subtitle Track Selector for Embedded Subtitles */}

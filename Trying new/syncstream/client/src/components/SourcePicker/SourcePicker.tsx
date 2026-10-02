@@ -60,17 +60,9 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
   const electronRequire = typeof window !== 'undefined' && (window as any).require ? (window as any).require('electron') : null;
   const isElectronBrowser = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('electron');
   const isElectron = isElectronBrowser || !!electronAPI || !!electronRequire;
-  const [vlcInstalled, setVlcInstalled] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
-  useEffect(() => {
-    // Always check VLC status; if the backend is running locally, it may be available
-    fetch(`${getServerUrl()}/api/vlc/check`)
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => {
-        if (data?.installed) setVlcInstalled(true);
-      })
-      .catch(() => {});
-  }, []);
 
   async function processFileObj(file: File) {
     if (!file) return;
@@ -100,15 +92,63 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
       console.log('[SourcePicker] Using stream URL:', streamUrl);
       setFileUrl(streamUrl);
     } else {
-      // No disk path available (web browser or restricted Electron) — use blob URL
-      const objectUrl = URL.createObjectURL(file);
-      console.log('[SourcePicker] No disk path, using blob URL:', objectUrl);
-      setFileUrl(objectUrl);
+      // Web browser mode without local disk path — if non-native container, upload to stream server
+      const isNonNative = /\.(mkv|avi|mov|flv|wmv|ts|m2ts|mts|ogv|3gp|divx)$/i.test(file.name);
+      if (isNonNative) {
+        uploadFileToStreamServer(file);
+      } else {
+        const objectUrl = URL.createObjectURL(file);
+        console.log('[SourcePicker] Using native blob URL:', objectUrl);
+        setFileUrl(objectUrl);
+      }
     }
 
     setFileName(file.name);
     setFileSize(file.size);
     setError('');
+  }
+
+  function uploadFileToStreamServer(file: File) {
+    setIsUploading(true);
+    setUploadProgress(0);
+    setError('');
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${getServerUrl()}/api/stream/upload?name=${encodeURIComponent(file.name)}`);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        setUploadProgress(pct);
+      }
+    };
+
+    xhr.onload = () => {
+      setIsUploading(false);
+      setUploadProgress(null);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const resp = JSON.parse(xhr.responseText);
+          if (resp.streamUrl) {
+            setFileUrl(resp.streamUrl);
+          } else {
+            setError('Server prepared stream, but no URL was returned.');
+          }
+        } catch {
+          setError('Failed to parse server upload response.');
+        }
+      } else {
+        setError(`Universal media preparation failed (HTTP ${xhr.status}).`);
+      }
+    };
+
+    xhr.onerror = () => {
+      setIsUploading(false);
+      setUploadProgress(null);
+      setError('Network error while preparing media stream on server.');
+    };
+
+    xhr.send(file);
   }
 
   // Use Electron's native file dialog for reliable path extraction
@@ -340,8 +380,19 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
                 aria-label="Select local video or audio file"
               />
               <p className="source-hint">
-                <strong>Supported Formats:</strong> MP4, WebM, MKV, MOV, AVI, FLV, WMV, M4V, 3GP, OGV, TS, MP3, WAV, FLAC, AAC, M4A, OGG, OPUS, WMA. (Plays locally on your device with 0 upload delay).
+                <strong>Supported Formats:</strong> MP4, WebM, MKV, MOV, AVI, FLV, WMV, M4V, 3GP, OGV, TS, MP3, WAV, FLAC, AAC, M4A, OGG, OPUS, WMA. (Plays seamlessly in-app with hardware acceleration and automatic transcoding).
               </p>
+              {isUploading && (
+                <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(249, 115, 22, 0.12)', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.3)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#ff8800', fontWeight: 600, marginBottom: '4px' }}>
+                    <span>⚡ Preparing Universal Stream...</span>
+                    <span>{uploadProgress !== null ? `${uploadProgress}%` : 'Processing...'}</span>
+                  </div>
+                  <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+                    <div style={{ width: `${uploadProgress || 0}%`, height: '100%', background: 'linear-gradient(90deg, #f97316, #ef4444)', transition: 'width 0.2s ease' }} />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -406,46 +457,12 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
             <button type="button" className="btn btn-ghost" onClick={onClose} id="source-cancel-btn">
               Cancel
             </button>
-            {((tab === 'file' && fileUrl) || (tab === 'url' && url.trim())) && (
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (tab === 'file') {
-                    if (!fileUrl) {
-                      setError('Please select a local video or audio file first.');
-                      return;
-                    }
-                    onConfirm({ sourceType: 'file', url: fileUrl, title: fileName, isVlc: true });
-                  } else {
-                    const trimmed = url.trim();
-                    if (!trimmed) {
-                      setError('Please enter a video URL first.');
-                      return;
-                    }
-                    onConfirm({ sourceType: 'url', url: trimmed, isVlc: true });
-                  }
-                  if (onSubtitlesLoaded) {
-                    onSubtitlesLoaded(subtitleText);
-                  }
-                }}
-                style={{ backgroundColor: '#ff8800', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                title={vlcInstalled ? "Launch in VLC Media Player and synchronize room clock" : "Open with VLC Media Player"}
-                id="source-vlc-btn"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L3 19h18L12 2z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" fill="currentColor"/>
-                </svg>
-                Host in VLC
-              </button>
-            )}
-            <button type="submit" className="btn btn-primary" id="source-confirm-btn">
+            <button type="submit" className="btn btn-primary" id="source-confirm-btn" disabled={isUploading}>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M4 7l4-3v6L4 7z" fill="currentColor"/>
                 <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
               </svg>
-              Load Media
+              {isUploading ? 'Preparing Media...' : 'Load Media'}
             </button>
           </div>
         </form>
