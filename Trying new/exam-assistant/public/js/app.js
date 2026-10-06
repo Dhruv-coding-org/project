@@ -5,8 +5,8 @@
 
   // State
   let currentRequirement = 'one-nighter';
-  let currentProvider = localStorage.getItem('examlens_provider') || 'auto';
-  let selectedOllamaModel = localStorage.getItem('examlens_ollama_model') || '';
+  let currentProvider = localStorage.getItem('examlens_provider') || 'ollama';
+  let selectedOllamaModel = localStorage.getItem('examlens_ollama_model') || 'llama3.2:1b';
   let syllabusText = '';
   let syllabusFilename = '';
   let conversationHistory = [];

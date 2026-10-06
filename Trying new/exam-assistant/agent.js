@@ -8,7 +8,7 @@ class ExamTutorAgent {
     this.syllabusText = "";
     this.syllabusUnits = [];
     this.ollamaUrl = "http://127.0.0.1:11434";
-    this.defaultOllamaModel = "llama3.2";
+    this.defaultOllamaModel = "llama3.2:1b";
     this._ollamaCache = null;
     this._ollamaCacheTime = 0;
   }
