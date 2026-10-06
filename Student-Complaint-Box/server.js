@@ -58,4 +58,4 @@ if (!process.env.FUNCTION_TARGET) {
 
 // Export for Firebase Cloud Functions
 const functions = require('firebase-functions');
-exports.api = functions.https.onRequest(app);
+exports.api = functions.https.onRequest(app);
