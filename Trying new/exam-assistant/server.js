@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
 require('dotenv').config();
 
 const engine = require('./engine');
@@ -17,28 +18,75 @@ app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Configure Multer for PDF uploads in memory
+// Configure Multer for file uploads in memory
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 25 * 1024 * 1024 } // 25 MB max
+  limits: { fileSize: 30 * 1024 * 1024 } // 30 MB max
 });
 
-// Endpoint: Parse PDF to clean text
+// Endpoint: Parse DOCX, PDF, or Text documents to clean text
+async function parseUploadedDocument(file) {
+  const originalName = file.originalname.toLowerCase();
+
+  if (originalName.endsWith('.docx')) {
+    const result = await mammoth.extractRawText({ buffer: file.buffer });
+    return {
+      text: result.value,
+      format: 'Word Document (.docx)',
+      warnings: result.messages || []
+    };
+  } else if (originalName.endsWith('.pdf')) {
+    const data = await pdfParse(file.buffer);
+    return {
+      text: data.text,
+      format: 'PDF Document (.pdf)',
+      pages: data.numpages
+    };
+  } else {
+    // Fallback to text
+    return {
+      text: file.buffer.toString('utf-8'),
+      format: 'Plain Text'
+    };
+  }
+}
+
+app.post('/api/parse-document', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    const result = await parseUploadedDocument(req.file);
+    res.json({
+      success: true,
+      filename: req.file.originalname,
+      text: result.text,
+      format: result.format,
+      pages: result.pages
+    });
+  } catch (err) {
+    console.error('Document parsing error:', err);
+    res.status(500).json({ error: 'Failed to extract text from document: ' + err.message });
+  }
+});
+
+// Backward-compatible alias for existing callers
 app.post('/api/parse-pdf', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    const data = await pdfParse(req.file.buffer);
+    const result = await parseUploadedDocument(req.file);
     res.json({
       success: true,
       filename: req.file.originalname,
-      text: data.text,
-      pages: data.numpages
+      text: result.text,
+      format: result.format,
+      pages: result.pages
     });
   } catch (err) {
-    console.error('PDF parsing error:', err);
-    res.status(500).json({ error: 'Failed to parse PDF document. Ensure it contains selectable text.' });
+    console.error('Document parsing error:', err);
+    res.status(500).json({ error: 'Failed to extract text from document: ' + err.message });
   }
 });
 

@@ -761,13 +761,16 @@
   }
 
   async function handleFileUpload(file, textarea, dropzone) {
-    if (file.type === 'application/pdf') {
+    const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+    const isDocx = file.name.toLowerCase().endsWith('.docx') || file.type.includes('wordprocessingml') || file.type.includes('officedocument');
+
+    if (isPdf || isDocx) {
       dropzone.querySelector('.upload-icon').textContent = '⏳';
       const formData = new FormData();
       formData.append('file', file);
 
       try {
-        const res = await fetch('/api/parse-pdf', {
+        const res = await fetch('/api/parse-document', {
           method: 'POST',
           body: formData
         });
@@ -776,9 +779,10 @@
         if (data.success) {
           textarea.value = data.text;
           dropzone.querySelector('.upload-icon').textContent = '✅';
-          dropzone.querySelector('div:nth-child(2)').textContent = `${file.name} (${data.pages} pages extracted)`;
+          const fileInfo = data.pages ? `${data.pages} pages extracted` : `${data.format || 'Word Doc'} parsed`;
+          dropzone.querySelector('div:nth-child(2)').textContent = `${file.name} (${fileInfo})`;
         } else {
-          alert('Could not parse PDF: ' + data.error);
+          alert('Could not parse document: ' + data.error);
           dropzone.querySelector('.upload-icon').textContent = '❌';
         }
       } catch (err) {
@@ -786,7 +790,7 @@
         dropzone.querySelector('.upload-icon').textContent = '❌';
       }
     } else {
-      // Plain text file
+      // Plain text file (.txt, .md, etc.)
       const reader = new FileReader();
       reader.onload = (e) => {
         textarea.value = e.target.result;
