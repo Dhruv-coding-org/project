@@ -7,8 +7,10 @@ class ExamTutorAgent {
   constructor() {
     this.syllabusText = "";
     this.syllabusUnits = [];
-    this.ollamaUrl = "http://localhost:11434";
+    this.ollamaUrl = "http://127.0.0.1:11434";
     this.defaultOllamaModel = "llama3.2";
+    this._ollamaCache = null;
+    this._ollamaCacheTime = 0;
   }
 
   setSyllabus(text, units = []) {
@@ -16,24 +18,33 @@ class ExamTutorAgent {
     this.syllabusUnits = units;
   }
 
-  // Check if Ollama is running locally
+  // Check if Ollama is running locally (Fast 400ms timeout with 15s cache)
   async checkOllamaStatus() {
+    const now = Date.now();
+    if (this._ollamaCache && (now - this._ollamaCacheTime < 15000)) {
+      return this._ollamaCache;
+    }
+
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1500);
+      const timeoutId = setTimeout(() => controller.abort(), 400);
       const res = await fetch(`${this.ollamaUrl}/api/tags`, { signal: controller.signal });
       clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
-        return {
+        this._ollamaCache = {
           available: true,
           models: data.models ? data.models.map(m => m.name) : []
         };
+        this._ollamaCacheTime = now;
+        return this._ollamaCache;
       }
     } catch (e) {
       // Ollama not running
     }
-    return { available: false, models: [] };
+    this._ollamaCache = { available: false, models: [] };
+    this._ollamaCacheTime = now;
+    return this._ollamaCache;
   }
 
   async generateResponse({ message, requirement, syllabusText, history = [], apiKey = null, provider = 'auto', modelName = null }) {

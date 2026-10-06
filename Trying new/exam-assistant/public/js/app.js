@@ -60,8 +60,6 @@
   async function init() {
     setupTheme();
     setupEventListeners();
-    await checkOllamaStatus();
-    await fetchSampleDatasets();
 
     if (engineProviderSelect) {
       engineProviderSelect.value = currentProvider;
@@ -70,13 +68,17 @@
       apiKeyInput.value = apiKey;
     }
 
-    // Auto-load sample syllabus if nothing is loaded yet
+    // Load sample datasets and auto-ingest immediately
+    await fetchSampleDatasets();
     if (sampleDatasets?.operatingSystems) {
       ingestSyllabusText(
         sampleDatasets.operatingSystems.syllabus,
         'Operating_Systems_Syllabus.docx'
       );
     }
+
+    // Check Ollama asynchronously in the background (zero blocking!)
+    checkOllamaStatus().catch(() => {});
   }
 
   // --- OLLAMA STATUS CHECK ---
@@ -299,16 +301,25 @@
     conversationHistory.push({ role: 'user', content: text });
   }
 
+  function renderMarkdown(text) {
+    if (!text) return '';
+    try {
+      if (typeof window.marked?.parse === 'function') {
+        return window.marked.parse(text);
+      } else if (typeof window.marked === 'function') {
+        return window.marked(text);
+      }
+    } catch (e) {
+      console.warn('Marked parse error:', e);
+    }
+    return escapeHtml(text).replace(/\n/g, '<br>');
+  }
+
   function addAgentMessage(markdownText, source = '', followUps = []) {
     const row = document.createElement('div');
     row.className = 'agent-msg-row';
 
-    let parsedHtml = '';
-    if (window.marked) {
-      parsedHtml = marked.parse(markdownText);
-    } else {
-      parsedHtml = escapeHtml(markdownText).replace(/\n/g, '<br>');
-    }
+    const parsedHtml = renderMarkdown(markdownText);
 
     let sourceBadge = '';
     if (source && source !== 'System') {
@@ -400,8 +411,12 @@
     if (!message || !message.trim()) return;
 
     if (!syllabusText) {
-      alert('Please upload your syllabus Word (.docx) or PDF first, or click "Sample Syllabus" at the top!');
-      return;
+      if (sampleDatasets?.operatingSystems) {
+        await ingestSyllabusText(sampleDatasets.operatingSystems.syllabus, 'Operating_Systems_Syllabus.docx');
+      } else {
+        alert('Please upload your syllabus Word (.docx) or PDF first, or click "Sample Syllabus" at the top!');
+        return;
+      }
     }
 
     addUserMessage(message);
