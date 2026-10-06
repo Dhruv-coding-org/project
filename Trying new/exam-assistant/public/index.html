@@ -180,33 +180,51 @@
 
   </div>
 
-  <!-- Settings Modal (For Gemini / OpenAI API Key) -->
+  <!-- Settings Modal (Local Ollama / Gemini / Engine Mode) -->
   <div id="settingsModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 style="font-family: var(--font-serif); font-size: 1.35rem;">AI Agent Settings</h3>
+        <h3 style="font-family: var(--font-serif); font-size: 1.35rem;">AI Brain &amp; Engine Settings</h3>
         <button id="btnCloseSettings" class="btn-close-modal">&times;</button>
       </div>
       <div class="modal-body">
-        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
-          ExamLens works <strong>100% out of the box</strong> using its built-in intelligent pedagogical engine. You can optionally connect your Google Gemini API key to enable live Gemini 1.5/2.0 Flash reasoning directly on your uploaded syllabus.
-        </p>
-
+        
+        <!-- Engine Provider Selection -->
         <div class="input-group">
-          <label class="input-label" for="apiKeyInput">Google Gemini API Key (Optional)</label>
-          <input type="password" id="apiKeyInput" class="text-input" placeholder="AIzaSy...">
-          <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.35rem;">
-            Get a free key from <a href="https://aistudio.google.com" target="_blank" style="color: var(--accent-rust);">Google AI Studio</a>. Saved only in your browser's local storage.
+          <label class="input-label" for="engineProviderSelect">Choose AI Provider</label>
+          <select id="engineProviderSelect" class="text-input">
+            <option value="auto">⚡ Auto (Ollama if running, else Gemini, else Dynamic Engine)</option>
+            <option value="ollama">🖥️ Local Ollama (Runs 100% on your PC resources)</option>
+            <option value="gemini">☁️ Google Gemini (Free live cloud reasoning)</option>
+            <option value="dynamic">🧠 Dynamic Syllabus Semantic Engine (Built-in)</option>
+          </select>
+        </div>
+
+        <!-- Ollama Status Box -->
+        <div id="ollamaConfigBox" class="card" style="padding: 1rem; margin-bottom: 1.25rem; background-color: var(--bg-secondary);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <strong style="font-size: 0.85rem;">🖥️ Local Ollama Status:</strong>
+            <span id="ollamaStatusBadge" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">Checking...</span>
+          </div>
+          <div id="ollamaModelsContainer" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.35rem;">
+            <!-- Detected models -->
+          </div>
+          <div id="ollamaHelpText" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; line-height: 1.4;">
+            To run fully on your PC's CPU/GPU: open PowerShell and run: <br>
+            <code style="display: block; background: var(--bg-surface); padding: 4px 8px; border-radius: 4px; margin-top: 4px; font-family: var(--font-mono);">winget install Ollama.Ollama</code>
+            Then download a fast model: <code style="font-family: var(--font-mono);">ollama run llama3.2</code>
           </div>
         </div>
 
-        <div class="input-group" style="margin-top: 1rem;">
-          <label class="input-label">Engine Mode</label>
-          <select id="engineModeSelect" class="text-input">
-            <option value="auto">Auto (Use Gemini Key if provided, else Smart Local Agent)</option>
-            <option value="local">Smart Local Pedagogical Agent (No API key needed)</option>
-          </select>
+        <!-- Gemini API Key Box -->
+        <div id="geminiConfigBox" class="input-group">
+          <label class="input-label" for="apiKeyInput">Google Gemini API Key (Optional)</label>
+          <input type="password" id="apiKeyInput" class="text-input" placeholder="Paste AIzaSy... key for live Gemini 1.5/2.0 Flash">
+          <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.35rem;">
+            Get a 100% free key with no credit card at <a href="https://aistudio.google.com" target="_blank" style="color: var(--accent-rust);">aistudio.google.com</a>.
+          </div>
         </div>
+
       </div>
       <div class="modal-footer">
         <button id="btnSaveSettings" class="btn-primary">Save Settings</button>

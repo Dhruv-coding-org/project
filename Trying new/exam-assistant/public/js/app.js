@@ -4,12 +4,15 @@
   'use strict';
 
   // State
-  let currentRequirement = 'one-nighter'; // 'one-nighter' | 'comprehensive' | 'eli5' | 'quiz-me' | 'cheat-sheet'
+  let currentRequirement = 'one-nighter';
+  let currentProvider = localStorage.getItem('examlens_provider') || 'auto';
+  let selectedOllamaModel = localStorage.getItem('examlens_ollama_model') || '';
   let syllabusText = '';
   let syllabusFilename = '';
-  let conversationHistory = []; // { role: 'user' | 'model', content: string }
+  let conversationHistory = [];
   let apiKey = localStorage.getItem('examlens_gemini_key') || '';
   let sampleDatasets = null;
+  let ollamaInfo = { available: false, models: [] };
 
   // DOM Elements
   const activeDocPill = document.getElementById('activeDocPill');
@@ -38,10 +41,13 @@
   // Modal
   const settingsModal = document.getElementById('settingsModal');
   const btnCloseSettings = document.getElementById('btnCloseSettings');
+  const engineProviderSelect = document.getElementById('engineProviderSelect');
   const apiKeyInput = document.getElementById('apiKeyInput');
+  const ollamaStatusBadge = document.getElementById('ollamaStatusBadge');
+  const ollamaModelsContainer = document.getElementById('ollamaModelsContainer');
   const btnSaveSettings = document.getElementById('btnSaveSettings');
 
-  // Requirement display names
+  // Requirement labels
   const reqLabels = {
     'one-nighter': '⚡ One-Nighter Survival (80/20 Cram)',
     'comprehensive': '🎓 Deep Exam Masterclass',
@@ -54,18 +60,52 @@
   async function init() {
     setupTheme();
     setupEventListeners();
+    await checkOllamaStatus();
     await fetchSampleDatasets();
 
+    if (engineProviderSelect) {
+      engineProviderSelect.value = currentProvider;
+    }
     if (apiKeyInput && apiKey) {
       apiKeyInput.value = apiKey;
     }
 
-    // Auto-load sample syllabus if no syllabus loaded yet so the agent is immediately alive!
+    // Auto-load sample syllabus if nothing is loaded yet
     if (sampleDatasets?.operatingSystems) {
       ingestSyllabusText(
         sampleDatasets.operatingSystems.syllabus,
         'Operating_Systems_Syllabus.docx'
       );
+    }
+  }
+
+  // --- OLLAMA STATUS CHECK ---
+  async function checkOllamaStatus() {
+    try {
+      const res = await fetch('/api/ollama/status');
+      const data = await res.json();
+      ollamaInfo = data;
+
+      if (ollamaStatusBadge) {
+        if (data.available) {
+          ollamaStatusBadge.innerHTML = `<span style="color: #10B981;">● Online (Local PC)</span>`;
+          if (data.models && data.models.length > 0) {
+            ollamaModelsContainer.innerHTML = `
+              <div style="margin-top: 4px;">Detected Local Models: <strong>${data.models.join(', ')}</strong></div>
+            `;
+            if (!selectedOllamaModel) selectedOllamaModel = data.models[0];
+          } else {
+            ollamaModelsContainer.innerHTML = `
+              <div style="margin-top: 4px; color: var(--accent-ochre);">Ollama is running, but no models found. Run: <code>ollama pull llama3.2</code></div>
+            `;
+          }
+        } else {
+          ollamaStatusBadge.innerHTML = `<span style="color: var(--text-muted);">○ Offline / Not Installed</span>`;
+          ollamaModelsContainer.innerHTML = ``;
+        }
+      }
+    } catch (e) {
+      console.warn('Ollama check failed', e);
     }
   }
 
@@ -82,7 +122,7 @@
     localStorage.setItem('examlens_theme', next);
   });
 
-  // --- FETCH SAMPLE DATASETS ---
+  // --- SAMPLE DATASETS ---
   async function fetchSampleDatasets() {
     try {
       const res = await fetch('/api/sample-datasets');
@@ -100,7 +140,6 @@
     syllabusText = text;
     syllabusFilename = filename;
 
-    // Notify backend agent memory
     try {
       const res = await fetch('/api/set-syllabus', {
         method: 'POST',
@@ -110,27 +149,28 @@
       const data = await res.json();
 
       if (data.success) {
-        // Update header indicator
         activeDocPill.classList.add('active');
         activeDocName.textContent = `📄 ${filename} (${data.unitsCount} Units)`;
 
-        // Update sidebar feedback
         uploadFeedback.style.display = 'block';
         feedbackFilename.textContent = filename;
         feedbackMeta.textContent = `${data.unitsCount} Units • ${data.topicsCount} Topics in agent memory`;
 
-        // Render unit chips
         renderUnitChips(data.units);
 
-        // Clear chat and introduce agent
         chatContainer.innerHTML = '';
         conversationHistory = [];
 
+        const engineNotice = ollamaInfo.available
+          ? `(Running via **Local Ollama** on your computer's resources)`
+          : apiKey ? `(Running via **Google Gemini Cloud**)` : `(Running via **Dynamic Syllabus Semantic Engine**)`;
+
         addAgentMessage(
-          `### 👋 Welcome to your Private Exam Tutor Session!\n\n` +
-          `I have ingested your entire syllabus: **${filename}** (${data.unitsCount} Units and ${data.topicsCount} topics are now loaded into my active memory).\n\n` +
-          `**My Active Mode:** \`${reqLabels[currentRequirement]}\`\n\n` +
-          `Tell me how you would like to proceed: you can ask me to break down any unit, focus strictly on guaranteed 10-mark questions for tonight, or quiz you like a university examiner.`
+          `### 👋 Private Exam Tutor Initialized!\n\n` +
+          `I have ingested your entire syllabus: **${filename}** (${data.unitsCount} Units, ${data.topicsCount} discrete topics loaded).\n\n` +
+          `**Active Mode:** \`${reqLabels[currentRequirement]}\` ${engineNotice}\n\n` +
+          `Tell me what to teach you, or pick one of the quick prompts below (e.g. *"Teach me Unit 2 from the exam POV"*, *"What are the guaranteed 10-markers?"*, *"Give me the One-Nighter 80/20 plan"*).`,
+          'System'
         );
       }
     } catch (err) {
@@ -153,7 +193,7 @@
       chip.textContent = `${u.unitNumber ? 'Unit ' + u.unitNumber : u.title}`;
       chip.title = u.title;
       chip.addEventListener('click', () => {
-        sendUserRequirement(`Teach me ${u.title} from the syllabus according to my current requirement.`);
+        sendUserRequirement(`Teach me ${u.title} from my uploaded syllabus according to my active requirement.`);
       });
       unitsChipContainer.appendChild(chip);
     });
@@ -190,7 +230,7 @@
     const isPdf = file.name.toLowerCase().endsWith('.pdf');
 
     syllabusDropzone.querySelector('.upload-icon').textContent = '⏳';
-    syllabusDropzone.querySelector('.upload-title').textContent = 'Reading syllabus...';
+    syllabusDropzone.querySelector('.upload-title').textContent = 'Extracting syllabus...';
 
     if (isDocx || isPdf) {
       const formData = new FormData();
@@ -216,7 +256,6 @@
         resetDropzone();
       }
     } else {
-      // Plain text
       const reader = new FileReader();
       reader.onload = async (e) => {
         syllabusDropzone.querySelector('.upload-icon').textContent = '✅';
@@ -240,10 +279,9 @@
       currentRequirement = card.getAttribute('data-req');
       currentPersonaLabel.textContent = reqLabels[currentRequirement] || currentRequirement;
 
-      // Notify the agent in the chat
       addAgentMessage(
-        `🔄 **Requirement Updated:** I have switched into **${reqLabels[currentRequirement]}** mode.\n\n` +
-        `Ask me anything or pick a topic from your syllabus, and I will format all my explanations to fit this exact requirement.`
+        `🔄 **Requirement Updated:** Switched into **${reqLabels[currentRequirement]}** mode.\n\n` +
+        `Every concept or topic will now be structured specifically around this requirement.`
       );
     });
   });
@@ -261,7 +299,7 @@
     conversationHistory.push({ role: 'user', content: text });
   }
 
-  function addAgentMessage(markdownText, followUps = []) {
+  function addAgentMessage(markdownText, source = '', followUps = []) {
     const row = document.createElement('div');
     row.className = 'agent-msg-row';
 
@@ -270,6 +308,11 @@
       parsedHtml = marked.parse(markdownText);
     } else {
       parsedHtml = escapeHtml(markdownText).replace(/\n/g, '<br>');
+    }
+
+    let sourceBadge = '';
+    if (source && source !== 'System') {
+      sourceBadge = `<div style="font-size: 0.725rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 600;">⚡ Engine: ${escapeHtml(source)}</div>`;
     }
 
     let followUpsHtml = '';
@@ -284,16 +327,15 @@
     row.innerHTML = `
       <div class="msg-avatar agent">AI</div>
       <div class="msg-content-box">
+        ${sourceBadge}
         ${parsedHtml}
         ${followUpsHtml}
       </div>
     `;
 
-    // Attach click events to followup buttons
     row.querySelectorAll('.followup-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const prompt = btn.getAttribute('data-prompt');
-        sendUserRequirement(prompt);
+        sendUserRequirement(btn.getAttribute('data-prompt'));
       });
     });
 
@@ -302,23 +344,50 @@
     conversationHistory.push({ role: 'model', content: markdownText });
   }
 
-  function showTypingIndicator() {
-    const id = 'typing-indicator-' + Date.now();
+  function showThinkingIndicator() {
+    const id = 'thinking-indicator-' + Date.now();
     const row = document.createElement('div');
     row.id = id;
     row.className = 'agent-msg-row';
     row.innerHTML = `
       <div class="msg-avatar agent">AI</div>
-      <div class="msg-content-box" style="color: var(--text-muted); font-style: italic;">
-        Consulting your syllabus and preparing exam-oriented response...
+      <div class="msg-content-box" style="color: var(--text-secondary);">
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.85rem; color: var(--accent-rust);">
+          <span style="display: inline-block; animation: spin 1s infinite linear;">⚙️</span>
+          <span id="${id}-step">Thinking &amp; analyzing your syllabus...</span>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;" id="${id}-sub">
+          Cross-referencing topics and marking schemes...
+        </div>
       </div>
     `;
     chatContainer.appendChild(row);
     scrollToBottom();
-    return id;
+
+    // Step-by-step thinking simulation
+    let stepCount = 0;
+    const interval = setInterval(() => {
+      stepCount++;
+      const stepEl = document.getElementById(`${id}-step`);
+      const subEl = document.getElementById(`${id}-sub`);
+      if (!stepEl) {
+        clearInterval(interval);
+        return;
+      }
+      if (stepCount === 1) {
+        stepEl.textContent = 'Extracting relevant unit & exam topics...';
+        subEl.textContent = 'Mapping syllabus concepts to your study requirement...';
+      } else if (stepCount === 2) {
+        stepEl.textContent = 'Synthesizing examiner rubric & model points...';
+        subEl.textContent = 'Drafting diagrams and full-mark answer structures...';
+      }
+    }, 700);
+
+    return { id, interval };
   }
 
-  function removeTypingIndicator(id) {
+  function removeThinkingIndicator({ id, interval }) {
+    if (interval) clearInterval(interval);
     const el = document.getElementById(id);
     if (el) el.remove();
   }
@@ -327,7 +396,6 @@
     chatContainer.scrollTop = chatContainer.scrollHeight;
   }
 
-  // Send message to backend agent
   async function sendUserRequirement(message) {
     if (!message || !message.trim()) return;
 
@@ -337,7 +405,7 @@
     }
 
     addUserMessage(message);
-    const typingId = showTypingIndicator();
+    const thinking = showThinkingIndicator();
 
     try {
       const res = await fetch('/api/agent-chat', {
@@ -348,27 +416,28 @@
           requirement: currentRequirement,
           syllabusText,
           history: conversationHistory,
-          apiKey
+          apiKey,
+          provider: currentProvider,
+          modelName: selectedOllamaModel
         })
       });
 
       const data = await res.json();
-      removeTypingIndicator(typingId);
+      removeThinkingIndicator(thinking);
 
       if (data.success) {
-        addAgentMessage(data.reply, data.suggestedFollowUps || []);
+        addAgentMessage(data.reply, data.source, data.suggestedFollowUps || []);
       } else {
         addAgentMessage(`⚠️ **Agent Error:** ${data.error || 'Failed to generate response'}`);
       }
     } catch (err) {
-      removeTypingIndicator(typingId);
+      removeThinkingIndicator(thinking);
       addAgentMessage(`⚠️ **Network Error:** Could not reach tutor agent (${err.message}).`);
     }
   }
 
   // --- EVENT LISTENERS ---
   function setupEventListeners() {
-    // Send button
     btnSendMessage.addEventListener('click', () => {
       const text = agentUserInput.value.trim();
       if (text) {
@@ -378,7 +447,6 @@
       }
     });
 
-    // Enter to send
     agentUserInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -391,21 +459,17 @@
       }
     });
 
-    // Auto resize textarea
     agentUserInput.addEventListener('input', () => {
       agentUserInput.style.height = 'auto';
       agentUserInput.style.height = Math.min(140, agentUserInput.scrollHeight) + 'px';
     });
 
-    // Quick chips
     quickChips.forEach(chip => {
       chip.addEventListener('click', () => {
-        const prompt = chip.getAttribute('data-prompt');
-        sendUserRequirement(prompt);
+        sendUserRequirement(chip.getAttribute('data-prompt'));
       });
     });
 
-    // Load sample syllabus button
     btnLoadSampleSyllabus.addEventListener('click', () => {
       if (sampleDatasets?.operatingSystems) {
         ingestSyllabusText(
@@ -416,7 +480,8 @@
     });
 
     // Settings Modal
-    btnOpenSettings.addEventListener('click', () => {
+    btnOpenSettings.addEventListener('click', async () => {
+      await checkOllamaStatus();
       settingsModal.style.display = 'flex';
     });
 
@@ -432,9 +497,17 @@
 
     btnSaveSettings.addEventListener('click', () => {
       apiKey = apiKeyInput.value.trim();
+      currentProvider = engineProviderSelect.value;
       localStorage.setItem('examlens_gemini_key', apiKey);
+      localStorage.setItem('examlens_provider', currentProvider);
       settingsModal.style.display = 'none';
-      alert('Settings saved! ' + (apiKey ? 'Gemini API key connected.' : 'Smart local tutor engine enabled.'));
+
+      let msg = 'Settings saved! ';
+      if (currentProvider === 'ollama') msg += 'Configured to run locally via Ollama.';
+      else if (currentProvider === 'gemini') msg += 'Configured to use Google Gemini Cloud.';
+      else msg += 'Configured to Auto (Ollama if running, else Gemini, else Dynamic Engine).';
+
+      alert(msg);
     });
   }
 
@@ -448,6 +521,5 @@
       .replace(/'/g, '&#039;');
   }
 
-  // Launch
   init();
 })();

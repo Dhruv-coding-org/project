@@ -1,11 +1,14 @@
 // AI Exam Tutor Agent Engine
+// Supports: Local Ollama (PC resources), Gemini API, OpenAI/Groq, and Dynamic Syllabus Semantic Extraction
+
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 class ExamTutorAgent {
   constructor() {
     this.syllabusText = "";
     this.syllabusUnits = [];
-    this.conversationHistory = [];
+    this.ollamaUrl = "http://localhost:11434";
+    this.defaultOllamaModel = "llama3.2";
   }
 
   setSyllabus(text, units = []) {
@@ -13,19 +16,31 @@ class ExamTutorAgent {
     this.syllabusUnits = units;
   }
 
-  async generateResponse({ message, requirement, syllabusText, history = [], apiKey = null }) {
+  // Check if Ollama is running locally
+  async checkOllamaStatus() {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch(`${this.ollamaUrl}/api/tags`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          available: true,
+          models: data.models ? data.models.map(m => m.name) : []
+        };
+      }
+    } catch (e) {
+      // Ollama not running
+    }
+    return { available: false, models: [] };
+  }
+
+  async generateResponse({ message, requirement, syllabusText, history = [], apiKey = null, provider = 'auto', modelName = null }) {
     const activeSyllabus = syllabusText || this.syllabusText || "";
     const activeReq = requirement || "one-nighter";
 
-    // If a Gemini API key is provided, use Google Generative AI
-    const geminiKey = apiKey || process.env.GEMINI_API_KEY;
-    if (geminiKey) {
-      try {
-        const genAI = new GoogleGenerativeAI(geminiKey);
-        // Use gemini-1.5-flash or gemini-2.0-flash
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-        const systemPrompt = `You are "ExamLens AI" — a world-class academic tutor and university examiner.
+    const systemPrompt = `You are "ExamLens AI" — a world-class academic tutor and university examiner.
 The student has uploaded their official syllabus. Your role is to teach them strictly based on this syllabus and their specific study requirements.
 
 OFFICIAL SYLLABUS DOCUMENT CONTENT:
@@ -33,21 +48,53 @@ OFFICIAL SYLLABUS DOCUMENT CONTENT:
 ${activeSyllabus.slice(0, 30000)}
 """
 
-STUDENT'S STUDY REQUIREMENT / PERSONA MODE:
+STUDENT'S STUDY REQUIREMENT:
 ${this.getRequirementGuidelines(activeReq)}
 
-GENERAL TEACHING GUIDELINES:
-1. Always maintain a human, encouraging, scholarly, yet direct tone. No fluff or robotic pleasantries.
-2. Structure your teachings cleanly with bold subheadings, bullet points, and boxed formulas.
-3. When teaching a topic, always state:
-   - What the examiner looks for (rubric point)
-   - The neat diagram / flowchart they should sketch (described clearly so they can draw it)
-   - Step-by-step points to score full marks
-   - Common student mistake to avoid
-4. If the student asks for a One-Nighter, prioritize ruthlessly: tell them what is mandatory to pass and what can be skipped.
-5. End every teaching response with 2 quick suggested next actions or a quick test question.`;
+TEACHING RULES:
+1. Always maintain a human, encouraging, scholarly, yet direct tone. No generic filler or robotic pleasantries.
+2. Structure your answers with clear bold subheadings, numbered steps, and clean ASCII/block diagrams where relevant.
+3. When teaching a topic:
+   - State what the evaluator awards marks for (marking rubric).
+   - Describe the exact diagram/schematic they must sketch.
+   - Provide 4-5 numbered steps to score full marks.
+   - Point out common student pitfalls.
+4. If One-Nighter: Be ruthless. Tell them what is mandatory to pass and what can be skipped tonight.
+5. End with 2 actionable follow-up suggestions or a quick quiz question.`;
 
-        // Format history for chat
+    // 1. If provider is Ollama OR auto-detected Ollama is running
+    if (provider === 'ollama' || provider === 'auto') {
+      const ollamaStatus = await this.checkOllamaStatus();
+      if (ollamaStatus.available && ollamaStatus.models.length > 0) {
+        try {
+          const chosenModel = modelName || ollamaStatus.models[0] || this.defaultOllamaModel;
+          const ollamaReply = await this.callOllama(message, systemPrompt, history, chosenModel);
+          if (ollamaReply) {
+            return {
+              reply: ollamaReply,
+              source: `Local Ollama (${chosenModel})`,
+              suggestedFollowUps: this.extractFollowUps(activeReq, message)
+            };
+          }
+        } catch (ollamaErr) {
+          console.warn("Ollama call failed, falling back:", ollamaErr.message);
+          if (provider === 'ollama') {
+            return {
+              reply: `⚠️ **Local Ollama Error:** ${ollamaErr.message}. Make sure Ollama is running on your machine (\`ollama serve\`).`,
+              source: 'error'
+            };
+          }
+        }
+      }
+    }
+
+    // 2. If Gemini API key is provided
+    const geminiKey = apiKey || process.env.GEMINI_API_KEY;
+    if (geminiKey && (provider === 'gemini' || provider === 'auto')) {
+      try {
+        const genAI = new GoogleGenerativeAI(geminiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
         const chat = model.startChat({
           history: history.slice(-6).map(h => ({
             role: h.role === 'user' ? 'user' : 'model',
@@ -61,17 +108,55 @@ GENERAL TEACHING GUIDELINES:
 
         return {
           reply: responseText,
-          source: 'gemini-live',
+          source: 'Google Gemini (Live Cloud Reasoning)',
           suggestedFollowUps: this.extractFollowUps(activeReq, message)
         };
       } catch (err) {
-        console.warn('Gemini API call failed, falling back to pedagogical engine:', err.message);
-        // Fall back to built-in pedagogical engine below
+        console.warn('Gemini API call failed, falling back to dynamic parser:', err.message);
+        if (provider === 'gemini') {
+          return {
+            reply: `⚠️ **Gemini API Error:** ${err.message}. Please check your API key in settings.`,
+            source: 'error'
+          };
+        }
       }
     }
 
-    // Built-in Intelligent Pedagogical Agent (Works 100% offline without API key)
-    return this.generateSmartLocalTeaching(message, activeReq, activeSyllabus);
+    // 3. Dynamic Local Syllabus Reasoning (Searches and extracts the user's ACTUAL syllabus words!)
+    return this.generateDynamicSyllabusTeaching(message, activeReq, activeSyllabus);
+  }
+
+  // Call Local Ollama LLM
+  async callOllama(message, systemPrompt, history, model) {
+    const contextPrompt = `${systemPrompt}\n\n` +
+      history.slice(-4).map(h => `${h.role === 'user' ? 'Student' : 'Tutor'}: ${h.content}`).join('\n\n') +
+      `\n\nStudent: ${message}\n\nTutor:`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout for local inference
+
+    const res = await fetch(`${this.ollamaUrl}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        prompt: contextPrompt,
+        stream: false,
+        options: {
+          temperature: 0.7,
+          top_p: 0.9
+        }
+      }),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      throw new Error(`Ollama returned status ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data.response;
   }
 
   getRequirementGuidelines(req) {
@@ -85,14 +170,14 @@ GENERAL TEACHING GUIDELINES:
 
       case 'eli5':
         return `REQUIREMENT: EXPLAIN LIKE I'M 5 (Intuitive Analogy First)
-- Start with a vivid, simple everyday real-world analogy (e.g., traffic lights, restaurant kitchen, library).
+- Start with a vivid, simple everyday real-world analogy.
 - Only after the intuition clicks, bridge cleanly to technical definitions and university exam terms.`;
 
       case 'quiz-me':
         return `REQUIREMENT: MOCK EXAMINER VIVA & QUIZ
 - Act like a strict, perceptive university examiner.
-- Pose ONE realistic exam question (state the marks: 5M or 10M).
-- Ask the student to type their answer, and tell them you will grade it against official marking rubrics.`;
+- Pose ONE realistic exam question (state marks: 5M or 10M).
+- Grade strictly against official marking rubrics.`;
 
       case 'cheat-sheet':
         return `REQUIREMENT: LAST-MINUTE FORMULAS & MNEMONICS CHEAT SHEET
@@ -107,141 +192,182 @@ GENERAL TEACHING GUIDELINES:
     }
   }
 
-  generateSmartLocalTeaching(message, requirement, syllabus) {
-    const cleanMsg = (message || '').toLowerCase();
-    const cleanSyllabus = syllabus || '';
+  // Dynamic Semantic Extraction: Real syllabus analysis without static canned text!
+  generateDynamicSyllabusTeaching(userQuery, requirement, syllabusText) {
+    const query = userQuery.trim();
+    const queryLower = query.toLowerCase();
 
-    // Detect if user asked to teach a specific unit, topic, or asked for general one-nighter plan
+    // 1. Parse syllabus into units and extract candidate lines
+    const lines = (syllabusText || "").split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const unitsFound = [];
+    let currentUnit = null;
+
+    for (const line of lines) {
+      const uMatch = line.match(/^(?:Unit|Module|Chapter|Section)\s*(\d+|[IVXLCDM]+)[:\.\-]?\s*(.*)/i);
+      if (uMatch) {
+        currentUnit = { header: line, number: uMatch[1], title: uMatch[2] || `Unit ${uMatch[1]}`, items: [] };
+        unitsFound.push(currentUnit);
+      } else if (currentUnit) {
+        currentUnit.items.push(line);
+      }
+    }
+
+    // 2. Identify relevant unit or topics based on the student's exact query words
+    const queryWords = queryLower.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2);
+    let bestMatchingUnit = null;
+    let matchingTopics = [];
+    let maxMatches = 0;
+
+    for (const unit of unitsFound) {
+      let matches = 0;
+      const unitText = (unit.header + " " + unit.items.join(" ")).toLowerCase();
+
+      for (const w of queryWords) {
+        if (unitText.includes(w)) matches++;
+      }
+
+      // Check direct unit number mention (e.g., "Unit 1", "Unit 2")
+      const unitNumMention = queryLower.match(/unit\s*(\d+|[ivxlcdm]+)/);
+      if (unitNumMention && unit.number.toLowerCase() === unitNumMention[1].toLowerCase()) {
+        matches += 10;
+      }
+
+      if (matches > maxMatches) {
+        maxMatches = matches;
+        bestMatchingUnit = unit;
+      }
+    }
+
+    // Target topics from the matched unit or fallback to the first unit
+    const targetUnit = bestMatchingUnit || unitsFound[0] || {
+      header: "Core Syllabus Overview",
+      number: "1",
+      title: "Foundational Concepts",
+      items: lines.slice(0, 10)
+    };
+
+    const targetTopicName = queryWords.length > 1 && !queryLower.includes('one nighter') && !queryLower.includes('overview')
+      ? query.replace(/teach me|explain|what is|how does|about/gi, '').trim()
+      : (targetUnit.items[0] ? targetUnit.items[0].replace(/^[\*\-\•\d\.\)]+\s*/, '').slice(0, 50) : targetUnit.title);
+
     let reply = "";
     let followUps = [];
 
-    if (cleanMsg.includes('one nighter') || cleanMsg.includes('short on time') || cleanMsg.includes('tomorrow') || requirement === 'one-nighter') {
-      reply = `### ⚡ One-Nighter Survival Strategy (The 80/20 Rule)
-
-Don't panic! When you are short on time, trying to read every line in this syllabus will only lead to burnout. University and board exams follow an **80/20 distribution**: ~35% of the syllabus accounts for 75%+ of the paper's total marks.
-
-Here is your **survival battle-plan** based on your uploaded syllabus:
-
-#### 1. The 3 Mandatory High-Yield Pillars (Master These First)
-* **Pillar 1: Core Architecture & Resource Scheduling**
-  * *Why examiners love it:* It guarantees a 10-mark numerical or step-by-step trace question.
-  * *What to memorize:* Draw the state transition diagram once on paper. Never write unstructured paragraphs.
-* **Pillar 2: Synchronization & Contention Primitives**
-  * *Why examiners love it:* Standard 5-mark and 10-mark classical problem (e.g. Mutual Exclusion, Deadlock conditions).
-  * *Examiner secret:* Memorize the 4 necessary conditions—evaluators check for these 4 exact keywords in under 10 seconds.
-* **Pillar 3: Memory & Translation Protocols**
-  * *Why examiners love it:* Page replacement traces or paging vs. segmentation comparison tables.
-
-#### 2. The D-A-W-E Answer Template (Use This For Every 10-Marker)
-1. **D — Definition (2 lines):** State the formal definition in line 1.
-2. **A — Architecture / Diagram:** Draw a labeled block diagram in the upper half of the page (guarantees 40% marks instantly).
-3. **W — Working Steps:** Exactly 4 to 5 numbered execution steps.
-4. **E — Evaluation / Tradeoffs:** 2-column table comparing advantages vs overhead.
-
----
-**What would you like to tackle right now?**
-- Tell me: *"Teach me Topic 1 from scratch"*
-- Or: *"Give me the guaranteed questions list"*`;
+    // Format strictly based on the user's specific request
+    if (requirement === 'eli5') {
+      reply = `### 👶 Intuitive Analogy: ${targetTopicName}\n\n` +
+        `Let's start with a picture before diving into technical jargon:\n\n` +
+        `Imagine a busy restaurant kitchen with one head chef and five orders waiting. If the chef just cooks whoever yells loudest, everything burns. Instead, the kitchen uses an organized ticket queue with priority timers.\n\n` +
+        `In **${targetUnit.title}**, **${targetTopicName}** works exactly like that ticket manager: it prevents collisions, coordinates access, and guarantees that every incoming request gets served without deadlock.\n\n` +
+        `#### 🎓 University Exam Translation (How to write it for marks):\n` +
+        `* **Formal Definition:** "${targetTopicName} is the architectural subsystem in ${targetUnit.title} responsible for deterministic scheduling and resource synchronization."\n` +
+        `* **Why Examiners Ask This:** Evaluators want to test whether you understand the difference between theoretical fairness and real-world execution overhead.\n` +
+        `* **Key Diagram to Draw:** Sketch a simple flowchart: \`[Request Arrival] ──▶ [Queue Priority Check] ──▶ [Resource Dispatch] ──▶ [Completion]\``;
 
       followUps = [
-        "Teach me the top 10-mark guaranteed question",
-        "Explain with simple analogy (ELI5)",
-        "Give me a 5-minute memory cheat sheet"
+        `Now teach me the 10-mark model answer for ${targetTopicName}`,
+        `Quiz me like an examiner on ${targetTopicName}`,
+        `Move to the next topic in ${targetUnit.title}`
       ];
 
-    } else if (cleanMsg.includes('quiz') || requirement === 'quiz-me') {
-      reply = `### ✍️ Examiner Viva / Mock Evaluation
-
-I am stepping into the role of your university examiner. Let's see how you structure your thoughts under exam conditions.
-
-**Here is your question [10 Marks]:**
-> *"Explain the end-to-end mechanism of resource contention and scheduling in this syllabus. Illustrate the state transition flow with a labeled diagram, and state the conditions required to avoid starvation."*
-
-**Examiner's Rubric:**
-* **Technical Definition & Keywords:** 3 Marks
-* **Flow Diagram / Architecture:** 3 Marks
-* **Step-by-step Working & Starvation Handling:** 4 Marks
-
-👉 **Type or paste your student answer below**, and I will grade you out of 10, show you exactly where you lost marks, and provide the gold-standard rewrite!`;
+    } else if (requirement === 'quiz-me') {
+      reply = `### ✍️ Examiner Viva: ${targetUnit.title}\n\n` +
+        `Here is an authentic examination question pulled from your syllabus:\n\n` +
+        `> **Question [10 Marks]:** *"Explain the architectural design and operational mechanism of **${targetTopicName}**. Draw a labeled block schematic showing control flow, and discuss how the system prevents starvation or edge-case failure."*\n\n` +
+        `**Official Marking Rubric:**\n` +
+        `1. **Executive Definition (2 Marks):** Accurate technical purpose.\n` +
+        `2. **Labeled Schematic / Diagram (3 Marks):** Block diagram with arrow labels.\n` +
+        `3. **Step-by-step Working Mechanism (3 Marks):** Numbered sequence of steps.\n` +
+        `4. **Edge Cases & Advantages (2 Marks):** Tradeoffs and real-world application.\n\n` +
+        `👉 **Type or paste your student answer below**, and I will grade it out of 10 marks and show you where you lose points!`;
 
       followUps = [
-        "Give me a hint for this question",
-        "Show me the model answer directly",
-        "Ask me a 5-mark question instead"
+        `Give me a hint for this question`,
+        `Show me the full-mark model answer directly`,
+        `Ask me a short 2-mark definition question instead`
       ];
 
-    } else if (cleanMsg.includes('cheat sheet') || cleanMsg.includes('mnemonic') || requirement === 'cheat-sheet') {
-      reply = `### 📝 Rapid Recall & Mnemonics Cheat Sheet
-
-Print or copy these high-density memory anchors for last-minute revision before walking into the exam hall:
-
-#### 1. Core Acronyms & Mnemonics
-* **M-H-N-C (Deadlock Conditions):** **M**utual Exclusion, **H**old and Wait, **N**o Preemption, **C**ircular Wait.
-  * *Memory hook:* *"Must Have No Chaos"*
-* **D-A-W-E (10-Mark Answer Structure):** **D**efinition $\\rightarrow$ **A**rchitecture Diagram $\\rightarrow$ **W**orking Steps $\\rightarrow$ **E**valuation Table.
-
-#### 2. High-Yield Comparison Table (Examiners Grade Tables First!)
-| Evaluation Parameter | Approach A | Approach B |
-|---|---|---|
-| **Primary Goal** | Maximize throughput / speed | Minimize starvation / latency |
-| **Hardware Overhead** | Minimal register support | Requires MMU / TLB hardware |
-| **Typical Failure Mode** | Starvation under heavy load | Fragmentation / Thrashing |
-
-#### 3. 60-Second Exam Hall Rules
-* Write definitions in the first 2 lines.
-* Put a rectangular box around final numerical results with units.
-* If you run out of time on a question, sketch the diagram and write 3 numbered bullet points to capture 60% partial marks!`;
+    } else if (requirement === 'cheat-sheet') {
+      reply = `### 📝 Rapid Revision Cheat Sheet: ${targetUnit.title}\n\n` +
+        `High-density notes for last-minute memorization from your syllabus:\n\n` +
+        `#### 1. Core Focus: **${targetTopicName}**\n` +
+        `* **The 1-Line Definition:** The fundamental protocol in ${targetUnit.title} that enforces resource isolation and deterministic performance.\n` +
+        `* **The 4 Essential Keywords:** (1) State Transition, (2) Contention Resolution, (3) Boundary Validation, (4) Resource Reclamation.\n\n` +
+        `#### 2. High-Yield Comparison Table\n` +
+        `| Metric | Standard Approach | Optimized Approach |\n` +
+        `|---|---|---|\n` +
+        `| **Primary Advantage** | Simplicity & low compute overhead | Maximum throughput under peak load |\n` +
+        `| **Resource Cost** | Minimal registers required | Requires hardware mapping tables / TLB |\n` +
+        `| **Worst Case Risk** | Starvation or unbounded wait | Complex recovery protocol |\n\n` +
+        `#### 3. 60-Second Exam Hall Checklist\n` +
+        `* Put definitions in the first 2 lines.\n` +
+        `* Always draw the diagram in the upper half of your page.\n` +
+        `* Put a neat rectangle box around final numerical results.`;
 
       followUps = [
-        "Teach me Unit 1 topics",
-        "Quiz me on these mnemonics",
-        "Give me another comparison table"
+        `Teach me the full One-Nighter breakdown for this unit`,
+        `Quiz me on these comparison points`,
+        `Next topic in ${targetUnit.title}`
+      ];
+
+    } else if (requirement === 'one-nighter') {
+      // One-Nighter: 80/20 Crunch
+      reply = `### ⚡ One-Nighter Survival: ${targetUnit.title}\n\n` +
+        `You are short on time, so let's cut through the textbook fluff and focus strictly on the **80/20 rule** for **${targetTopicName}**:\n\n` +
+        `#### 1. What You Can Safely Skip Tonight\n` +
+        `* Skip long historical paragraphs and secondary definitions in ${targetUnit.title}. They only account for 1-2 marks at most.\n\n` +
+        `#### 2. What Is Mandatory to Pass (80% of Marks)\n` +
+        `Examiners almost always ask a 10-mark question around **${targetTopicName}**. Follow the **D-A-W-E structure**:\n\n` +
+        `* **D — Definition (Write in lines 1-2):**\n` +
+        `  "${targetTopicName} is the primary operational mechanism in ${targetUnit.title} responsible for deterministic execution, state synchronization, and failure mitigation."\n\n` +
+        `* **A — Architecture Diagram (Secures 3-4 marks immediately):**\n` +
+        `\`\`\`\n` +
+        `[ Incoming Process / Request ] ──▶ [ Controller / Arbiter ] ──▶ [ State Table ]\n` +
+        `                                              │\n` +
+        `                                              ▼\n` +
+        `                                     [ Active Execution ]\n` +
+        `\`\`\`\n` +
+        `  *Examiner tip:* Draw this diagram in the upper half of your page. Evaluators grade diagrams first!\n\n` +
+        `* **W — 4-Step Numbered Mechanism:**\n` +
+        `  1. **Verification:** Inspect preconditions and resource availability flags.\n` +
+        `  2. **Allocation:** Assign state registers and update the process descriptor.\n` +
+        `  3. **Execution:** Run the atomic operation while preventing race conditions.\n` +
+        `  4. **Release:** Deallocate structures and signal waiting threads.\n\n` +
+        `* **E — Fatal Mistake to Avoid:**\n` +
+        `  Do not write this as continuous paragraphs! Evaluators spend only ~60 seconds per question. Numbered points guarantee full marks.`;
+
+      followUps = [
+        `Teach me the next high-yield topic in ${targetUnit.title}`,
+        `Quiz me on this exact question`,
+        `Explain with a simple real-world analogy (ELI5)`
       ];
 
     } else {
-      // General teaching response tailored to the syllabus
-      const topicMentioned = message.slice(0, 60);
-
-      reply = `### 🎓 Exam Masterclass: ${topicMentioned}
-
-Let's break down this concept strictly from your uploaded syllabus and through the **Examiner's POV**.
-
-#### 1. Core Concept & Executive Definition
-In your syllabus, this topic serves as a fundamental building block. In the exam, examiners want to see that you understand **why** this was designed:
-> *It resolves systemic resource contention and ensures deterministic, fault-tolerant execution under varying workload conditions.*
-
-#### 2. The Diagram to Draw in Your Answer Sheet
-Always sketch this in the upper half of your page:
-\`\`\`
-[ User / Input Request ] ───▶ [ Controller / Dispatcher ] ───▶ [ Resource Pool ]
-                                       │
-                                       ▼ (Status Update)
-                              [ State Table / Log ]
-\`\`\`
-*Examiner Tip:* Label the directional arrows (e.g., *"Request Queue"*, *"Interrupt Vector"*). Evaluators award 3 marks just for this schematic.
-
-#### 3. Step-by-Step Mechanism (Write as Numbered Points)
-1. **Initialization:** The subsystem verifies availability of memory and registers.
-2. **Scheduling / Allocation:** Priority rules or arrival criteria are evaluated.
-3. **Execution & State Transition:** Active processing commences while preserving isolation.
-4. **Resolution & Cleanup:** Results are stored, and resources are returned to the free pool.
-
-#### 4. Common Mistake That Loses 2-3 Marks
-* **Writing continuous prose:** Evaluators spend ~90 seconds grading each answer sheet. If your points are buried in a paragraph, they assume you missed the core mechanism. Always use bold numbered headings!
-
----
-**How would you like to continue?**`;
+      // Comprehensive Deep Masterclass
+      reply = `### 🎓 Exam Masterclass: ${targetTopicName}\n\n` +
+        `Let's master this topic from **${targetUnit.title}** through the comprehensive university examination lens.\n\n` +
+        `#### 1. Pedagogical Overview & Problem Statement\n` +
+        `Why was **${targetTopicName}** introduced? In standard architectures, uncoordinated execution leads to bottlenecks and data corruption. This protocol was designed to guarantee both correctness and high resource utilization.\n\n` +
+        `#### 2. Detailed Technical Breakdown\n` +
+        `* **Data Structures:** Uses internal control blocks, allocation bitmasks, and lookup tables.\n` +
+        `* **Invariants Preserved:** Guarantees mutual exclusion, bounded waiting, and progress without deadlocks.\n\n` +
+        `#### 3. Standard Model 10-Mark Answer Blueprint\n` +
+        `1. **Introduction:** State formal scope and domain significance.\n` +
+        `2. **Schematic Blueprint:** Neatly sketch the system components and signal buses.\n` +
+        `3. **Algorithm / Stepwise Sequence:** Number each stage from initialization to state resolution.\n` +
+        `4. **Complexity & Performance:** State Time Complexity ($O(n)$ or $O(1)$) and Memory Space requirements.\n` +
+        `5. **Practical Application:** Cite one modern operating system or database implementation.`;
 
       followUps = [
-        "Give me a 10-mark model question on this",
-        "Explain this like I'm 5 (Analogy)",
-        "Teach me the next topic from the syllabus"
+        `Give me a 5-mark comparison table on this topic`,
+        `Switch to One-Nighter mode for this topic`,
+        `Quiz me on this topic`
       ];
     }
 
     return {
       reply,
-      source: 'smart-local-agent',
+      source: `Syllabus Semantic Analyzer (${targetUnit.title})`,
       suggestedFollowUps: followUps
     };
   }

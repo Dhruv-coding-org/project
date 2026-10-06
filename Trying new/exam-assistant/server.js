@@ -236,10 +236,20 @@ app.post('/api/set-syllabus', (req, res) => {
   }
 });
 
+// Endpoint: Check local Ollama status
+app.get('/api/ollama/status', async (req, res) => {
+  try {
+    const status = await agent.checkOllamaStatus();
+    res.json({ success: true, ...status });
+  } catch (err) {
+    res.json({ success: false, available: false, error: err.message });
+  }
+});
+
 // Endpoint: Interactive AI Tutor Agent Chat
 app.post('/api/agent-chat', async (req, res) => {
   try {
-    const { message, requirement, syllabusText, history, apiKey } = req.body;
+    const { message, requirement, syllabusText, history, apiKey, provider, modelName } = req.body;
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
@@ -249,7 +259,9 @@ app.post('/api/agent-chat', async (req, res) => {
       requirement: requirement || 'one-nighter',
       syllabusText,
       history: history || [],
-      apiKey
+      apiKey,
+      provider: provider || 'auto',
+      modelName
     });
 
     res.json({
