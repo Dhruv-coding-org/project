@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ExamLens — Academic Cross-Analysis & High-Yield Exam Intelligence</title>
-  <meta name="description" content="Cross-analyse your syllabus and previous year question papers (PYQs). Study strictly from the examiner's point of view with One-Nighter survival mode.">
+  <title>ExamLens — AI Syllabus Tutor & Exam Agent</title>
+  <meta name="description" content="Upload your entire syllabus in Word (.docx) or PDF and let the AI Agent teach you strictly based on your exam requirements.">
   <link rel="stylesheet" href="css/styles.css">
+  <!-- Markdown parser for rich pedagogical formatting -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
@@ -15,27 +17,24 @@
       <div class="brand-section">
         <div class="brand-mark">EL</div>
         <div>
-          <h1 class="brand-title">ExamLens</h1>
-          <div class="brand-tagline">Academic Cross-Analysis &bull; Examiner POV Intelligence</div>
+          <h1 class="brand-title">ExamLens AI</h1>
+          <div class="brand-tagline">Conversational Syllabus Tutor &amp; Examiner Agent</div>
         </div>
       </div>
 
-      <!-- Mode Selector -->
-      <div class="mode-toggle-group">
-        <button id="btnModeSurvival" class="mode-btn active-survival" title="Focus exclusively on the highest probability topics to pass and score 75%+">
-          <span>⚡ One-Nighter</span>
-          <span class="mode-badge">80/20 Cram</span>
-        </button>
-        <button id="btnModeComprehensive" class="mode-btn" title="Full coverage of syllabus units and topic rubrics">
-          <span>🎓 Comprehensive</span>
-          <span class="mode-badge">Deep Prep</span>
-        </button>
+      <!-- Active Ingested Document Pill -->
+      <div id="activeDocPill" class="doc-status-pill">
+        <span class="status-dot"></span>
+        <span id="activeDocName">No syllabus loaded</span>
       </div>
 
       <!-- Header Actions -->
       <div class="header-actions">
-        <button id="btnQuickSample" class="btn-secondary-sm" title="Quickly load sample exam data">
-          <span>📚 Sample Data</span>
+        <button id="btnLoadSampleSyllabus" class="btn-secondary-sm" title="Load sample university syllabus">
+          <span>📚 Sample Syllabus</span>
+        </button>
+        <button id="btnOpenSettings" class="btn-secondary-sm" title="Configure AI API Key (Gemini/OpenAI)">
+          <span>⚙️ AI Settings</span>
         </button>
         <button id="btnToggleTheme" class="theme-toggle-btn" title="Toggle Dark/Light Mode">
           🌓
@@ -44,280 +43,176 @@
     </div>
   </header>
 
-  <!-- Global Navigation Tabs -->
-  <nav class="app-nav">
-    <div class="nav-inner">
-      <button class="nav-tab active" data-tab="tab-intelligence">
-        <span>📊 Priority Heatmap</span>
-        <span class="tab-badge" id="badgeTopicsCount">0 Topics</span>
-      </button>
-      <button class="nav-tab" data-tab="tab-survival">
-        <span>⚡ Survival Checklist</span>
-        <span class="tab-badge" id="badgeSurvivalCount">4-Hr Plan</span>
-      </button>
-      <button class="nav-tab" data-tab="tab-masterclass">
-        <span>📖 Topic Masterclass</span>
-      </button>
-      <button class="nav-tab" data-tab="tab-grader">
-        <span>✍️ Answer Evaluator</span>
-        <span class="tab-badge">Rubric</span>
-      </button>
-      <button class="nav-tab" data-tab="tab-predicted">
-        <span>📜 Predicted Paper</span>
-      </button>
-      <button class="nav-tab" data-tab="tab-upload">
-        <span>📁 Syllabus & PYQ Studio</span>
-      </button>
-    </div>
-  </nav>
+  <!-- Workspace Container: Sidebar + Agent Conversation Stage -->
+  <div class="agent-workspace">
 
-  <!-- Main App Container -->
-  <main class="main-container">
-
-    <!-- Active Dataset Context Banner -->
-    <section class="context-banner" id="activeDatasetBanner">
-      <div class="banner-content">
-        <h4 id="bannerSubjectTitle">No Subject Loaded Yet</h4>
-        <p id="bannerSubjectSubtitle">Upload your syllabus and past year papers (PYQs), or load the built-in Operating Systems sample dataset to see the intelligence engine in action.</p>
-      </div>
-      <div class="banner-actions">
-        <button class="btn-primary" id="btnBannerLoadOS">Load Operating Systems</button>
-        <button class="btn-outline" id="btnBannerLoadDBMS">Load DBMS</button>
-      </div>
-    </section>
-
-    <!-- TAB 1: Priority Heatmap & 80/20 Intelligence -->
-    <section id="tab-intelligence" class="tab-pane">
-      <div class="section-header">
-        <div>
-          <h2>Exam Intelligence & Priority Heatmap</h2>
-          <p>Cross-referenced from historical PYQ frequency and syllabus unit allocations.</p>
+    <!-- LEFT SIDEBAR: Syllabus Ingestion & Study Requirements -->
+    <aside class="agent-sidebar">
+      <!-- 1. Document Upload Area -->
+      <div class="sidebar-section">
+        <div class="sidebar-heading">
+          <span>1. Ingest Syllabus Document</span>
         </div>
-        <div class="filter-tags">
-          <button class="filter-tag-btn active" data-filter="all">All Topics</button>
-          <button class="filter-tag-btn" data-filter="critical">⚡ Survival Critical</button>
-          <button class="filter-tag-btn" data-filter="important">High Probability</button>
+        <p class="sidebar-desc">Upload your complete syllabus in Word (<strong>.docx</strong>), PDF, or text.</p>
+
+        <div class="upload-dropzone" id="syllabusDropzone">
+          <div class="upload-icon">📄</div>
+          <div class="upload-title">Drop Word (.docx) or PDF here</div>
+          <div class="upload-sub">or click to browse from computer</div>
+          <input type="file" id="syllabusFileInput" accept=".docx,.pdf,.txt" style="display: none;">
+        </div>
+
+        <div id="uploadFeedback" class="upload-feedback" style="display: none;">
+          <div class="feedback-title" id="feedbackFilename">Operating_Systems.docx</div>
+          <div class="feedback-meta" id="feedbackMeta">5 Units &bull; 24 Topics parsed into memory</div>
         </div>
       </div>
 
-      <!-- Quick Metrics Row -->
-      <div class="metrics-row">
-        <div class="metric-card">
-          <div class="metric-label">Syllabus Coverage</div>
-          <div class="metric-value" id="statUnits">5 Units</div>
-          <div class="metric-subtext" id="statTopics">24 discrete topics parsed</div>
+      <!-- 2. Teaching Requirements Selector -->
+      <div class="sidebar-section">
+        <div class="sidebar-heading">
+          <span>2. Teaching Requirement</span>
         </div>
-        <div class="metric-card">
-          <div class="metric-label">Historical PYQ Analysis</div>
-          <div class="metric-value" id="statPyqs">21 Questions</div>
-          <div class="metric-subtext" id="statHistoricalMarks">145 marks analyzed</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Survival Critical Topics</div>
-          <div class="metric-value" id="statCriticalTopics" style="color: var(--accent-rust);">6 Topics</div>
-          <div class="metric-subtext">80% marks concentrated here</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Recommended Strategy</div>
-          <div class="metric-value" id="statStrategy">80 / 20</div>
-          <div class="metric-subtext">Master top 6 topics first</div>
-        </div>
-      </div>
+        <p class="sidebar-desc">How would you like the AI Agent to teach your syllabus?</p>
 
-      <!-- Pareto 80/20 Callout Box -->
-      <div class="pareto-box" id="paretoBox">
-        <div class="pareto-content">
-          <h3>The 80/20 Exam Efficiency Rule</h3>
-          <p id="paretoDescription">Based on the historical question recurrence, <strong>top 6 topics</strong> account for over <strong>76% of total exam marks</strong>. If you are preparing last-minute, skip the remaining low-yield topics.</p>
-        </div>
-        <button class="btn-primary" id="btnJumpToSurvival">Switch to Survival Mode</button>
-      </div>
-
-      <!-- Search & Filters -->
-      <div class="filter-bar">
-        <input type="text" id="topicSearchInput" class="text-input" placeholder="Search topics (e.g. Scheduling, Deadlock, Paging)..." style="max-width: 380px;">
-        <span style="font-size: 0.85rem; color: var(--text-muted);" id="showingTopicsLabel">Showing 24 topics</span>
-      </div>
-
-      <!-- Topics Grid -->
-      <div class="topics-grid" id="topicsContainer">
-        <!-- Rendered dynamically -->
-      </div>
-    </section>
-
-    <!-- TAB 2: One-Nighter Survival Checklist -->
-    <section id="tab-survival" class="tab-pane" style="display: none;">
-      <div class="section-header">
-        <div>
-          <h2>⚡ The 4-Hour One-Nighter Survival Blueprint</h2>
-          <p>For when you are short on time. Strictly ordered by guaranteed marks return per minute spent.</p>
-        </div>
-        <button class="btn-outline" id="btnPrintSurvivalPlan">🖨️ Print Checklist</button>
-      </div>
-
-      <div class="card" style="margin-bottom: 2rem; background-color: var(--accent-rust-soft); border-color: rgba(191, 76, 40, 0.25);">
-        <h4 style="color: var(--accent-rust); margin-bottom: 0.4rem; font-family: var(--font-serif); font-size: 1.15rem;">Examiner's Rule for One-Nighters</h4>
-        <p style="font-size: 0.9rem; color: var(--text-main); line-height: 1.55;">
-          Never try to memorize entire textbook paragraphs tonight. Examiners award marks for <strong>keywords, numbered steps, and labeled diagrams</strong>. Spend 70% of your time on these high-probability questions below, draw each diagram on scratch paper once, and you will walk in with confidence.
-        </p>
-      </div>
-
-      <div class="survival-timeline" id="survivalTimelineContainer">
-        <!-- Rendered dynamically -->
-      </div>
-    </section>
-
-    <!-- TAB 3: Topic Masterclass (Examiner POV) -->
-    <section id="tab-masterclass" class="tab-pane" style="display: none;">
-      <div class="section-header">
-        <div>
-          <h2>Topic Masterclass — Examiner's Lens</h2>
-          <p>Learn exactly what the evaluator looks for to award maximum marks.</p>
-        </div>
-        <select id="topicDropdownSelector" class="text-input" style="max-width: 340px;">
-          <option value="">Select a topic to study...</option>
-        </select>
-      </div>
-
-      <div id="masterclassStudyContent">
-        <div class="card" style="text-align: center; padding: 3rem 1.5rem;">
-          <h3 style="font-family: var(--font-serif); font-size: 1.35rem; margin-bottom: 0.5rem;">Select any topic from the list or Priority Heatmap</h3>
-          <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 1.5rem;">You will receive the precise exam rubric, the required diagram specifications, model 10-mark answers, and the fatal mistakes that cost students 3-4 marks.</p>
-          <button class="btn-primary" id="btnStudyFirstCritical">Study Top Critical Topic</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 4: Answer Evaluator & Grader -->
-    <section id="tab-grader" class="tab-pane" style="display: none;">
-      <div class="section-header">
-        <div>
-          <h2>AI Examiner & Answer Grader</h2>
-          <p>Simulate realistic university/board evaluation. See where you would lose marks before the exam hall.</p>
-        </div>
-      </div>
-
-      <div class="grader-layout">
-        <!-- Input Form -->
-        <div class="card">
-          <div class="input-group">
-            <label class="input-label" for="graderQuestionSelect">Select Past Exam Question</label>
-            <select id="graderQuestionSelect" class="text-input">
-              <option value="">-- Choose from analyzed PYQs or type custom --</option>
-            </select>
-          </div>
-
-          <div class="input-group">
-            <label class="input-label" for="graderQuestionText">Exam Question</label>
-            <input type="text" id="graderQuestionText" class="text-input" placeholder="e.g. Explain SJF CPU scheduling with average waiting time calculation.">
-          </div>
-
-          <div class="input-group" style="display: flex; gap: 1rem;">
-            <div style="flex: 1;">
-              <label class="input-label" for="graderMaxMarks">Maximum Marks</label>
-              <select id="graderMaxMarks" class="text-input">
-                <option value="10">10 Marks (Long / Numerical)</option>
-                <option value="5">5 Marks (Conceptual / Comparative)</option>
-                <option value="2">2 Marks (Short Definition)</option>
-              </select>
+        <div class="requirement-selector">
+          <button class="req-card active" data-req="one-nighter">
+            <div class="req-icon">⚡</div>
+            <div class="req-body">
+              <div class="req-name">One-Nighter Survival</div>
+              <div class="req-detail">Short on time! 80/20 rule, only high-yield topics, diagrams &amp; must-know points.</div>
             </div>
-            <div style="flex: 1;">
-              <label class="input-label">Evaluation Rubric</label>
-              <div style="font-size: 0.8rem; color: var(--text-muted); padding-top: 0.4rem;">Keywords (40%), Structure & Diagrams (30%), Completeness (30%)</div>
+          </button>
+
+          <button class="req-card" data-req="comprehensive">
+            <div class="req-icon">🎓</div>
+            <div class="req-body">
+              <div class="req-name">Deep Exam Masterclass</div>
+              <div class="req-detail">Thorough topic-by-topic teaching with full examiner marking rubrics.</div>
             </div>
-          </div>
+          </button>
 
-          <div class="input-group">
-            <label class="input-label" for="graderStudentAnswer">Your Student Answer (Paste or Type)</label>
-            <textarea id="graderStudentAnswer" class="text-area" rows="9" placeholder="Type or paste the answer you plan to write in the exam..."></textarea>
-          </div>
+          <button class="req-card" data-req="eli5">
+            <div class="req-icon">👶</div>
+            <div class="req-body">
+              <div class="req-name">Explain Like I'm 5</div>
+              <div class="req-detail">Simple real-world analogies first before academic technical definitions.</div>
+            </div>
+          </button>
 
-          <button id="btnEvaluateAnswer" class="btn-primary" style="width: 100%; justify-content: center;">
-            <span>🔍 Evaluate & Grade Answer</span>
+          <button class="req-card" data-req="quiz-me">
+            <div class="req-icon">✍️</div>
+            <div class="req-body">
+              <div class="req-name">Examiner Viva &amp; Quiz</div>
+              <div class="req-detail">Pose exam questions, test me, and grade my written answers strictly.</div>
+            </div>
+          </button>
+
+          <button class="req-card" data-req="cheat-sheet">
+            <div class="req-icon">📝</div>
+            <div class="req-body">
+              <div class="req-name">Mnemonics &amp; Cheat Sheet</div>
+              <div class="req-detail">High-density acronyms, comparison tables, and 60-second review bullets.</div>
+            </div>
           </button>
         </div>
-
-        <!-- Evaluation Results Card -->
-        <div id="graderResultContainer">
-          <div class="card" style="text-align: center; padding: 3rem 1.5rem; color: var(--text-secondary);">
-            <div style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--border-medium);">✍️</div>
-            <h4 style="font-family: var(--font-serif); font-size: 1.25rem; color: var(--text-main); margin-bottom: 0.35rem;">Awaiting Answer Submission</h4>
-            <p style="font-size: 0.875rem;">Enter your answer on the left and click Evaluate to see your calculated score, rubric breakdown, missing keywords, and the examiner's model answer rewrite.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 5: Predicted Question Paper -->
-    <section id="tab-predicted" class="tab-pane" style="display: none;">
-      <div class="section-header">
-        <div>
-          <h2>AI Predicted Question Paper</h2>
-          <p>Synthesized mathematically from recurrence cycles, weightage curves, and unit distributions.</p>
-        </div>
-        <button class="btn-primary" id="btnRegeneratePaper">🔄 Refresh Prediction</button>
       </div>
 
-      <div class="paper-sheet" id="predictedPaperContainer">
-        <!-- Rendered dynamically -->
-      </div>
-    </section>
-
-    <!-- TAB 6: Syllabus & PYQ Upload Studio -->
-    <section id="tab-upload" class="tab-pane" style="display: none;">
-      <div class="section-header">
-        <div>
-          <h2>Syllabus & PYQ Ingestion Studio</h2>
-          <p>Upload PDF documents or paste curriculum text to run a fresh cross-analysis.</p>
+      <!-- 3. Syllabus Units Explorer -->
+      <div class="sidebar-section" id="unitsExplorerSection" style="display: none;">
+        <div class="sidebar-heading">
+          <span>3. Ingested Units &amp; Topics</span>
+        </div>
+        <div id="unitsChipContainer" class="units-chip-container">
+          <!-- Filled dynamically -->
         </div>
       </div>
+    </aside>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-        <!-- Syllabus Column -->
-        <div class="card">
-          <h3 style="font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: 0.75rem;">1. Official Syllabus</h3>
-          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Upload syllabus Word document (.docx), PDF, or paste text.</p>
-
-          <div class="upload-dropzone" id="syllabusDropzone">
-            <div class="upload-icon">📄</div>
-            <div style="font-weight: 600; font-size: 0.9rem;">Upload Syllabus (.docx / .pdf)</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Word document or PDF &bull; drag & drop</div>
-            <input type="file" id="syllabusFileInput" accept=".docx,.pdf,.txt" style="display: none;">
-          </div>
-
-          <div style="margin-top: 1rem;">
-            <label class="input-label" for="syllabusTextarea">Or Paste Syllabus Text</label>
-            <textarea id="syllabusTextarea" class="text-area" rows="8" placeholder="Unit 1: Fundamentals...&#10;Unit 2: Algorithms..."></textarea>
-          </div>
-        </div>
-
-        <!-- PYQs Column -->
-        <div class="card">
-          <h3 style="font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: 0.75rem;">2. Previous Year Papers (PYQs)</h3>
-          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Upload past papers Word doc (.docx), PDF, or paste questions.</p>
-
-          <div class="upload-dropzone" id="pyqDropzone">
-            <div class="upload-icon">📑</div>
-            <div style="font-weight: 600; font-size: 0.9rem;">Upload PYQ Papers (.docx / .pdf)</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Word document or PDF &bull; drag & drop</div>
-            <input type="file" id="pyqFileInput" accept=".docx,.pdf,.txt" style="display: none;">
-          </div>
-
-          <div style="margin-top: 1rem;">
-            <label class="input-label" for="pyqsTextarea">Or Paste Past Questions</label>
-            <textarea id="pyqsTextarea" class="text-area" rows="8" placeholder="[2024 - 10 Marks] Explain...&#10;[2023 - 5 Marks] Differentiate between..."></textarea>
-          </div>
-        </div>
+    <!-- RIGHT / MAIN: The AI Agent Teaching Session -->
+    <main class="agent-main-stage">
+      
+      <!-- Chat Conversation Area -->
+      <div class="agent-chat-container" id="chatContainer">
+        <!-- Messages will be rendered here -->
       </div>
 
-      <div style="margin-top: 1.5rem; text-align: center;">
-        <button id="btnRunCustomAnalysis" class="btn-primary" style="padding: 0.85rem 2.25rem; font-size: 1rem;">
-          🚀 Run Cross-Analysis Engine
+      <!-- Quick Action Requirement Chips -->
+      <div class="quick-chips-bar" id="quickChipsBar">
+        <button class="quick-chip" data-prompt="⚡ Give me the 80/20 One-Nighter breakdown of this syllabus. What must I study tonight to pass?">
+          ⚡ One-Nighter 80/20 Plan
+        </button>
+        <button class="quick-chip" data-prompt="Teach me Unit 1 from scratch focusing on what examiners award marks for.">
+          📖 Teach Unit 1
+        </button>
+        <button class="quick-chip" data-prompt="What are the guaranteed 10-mark questions most likely to be asked from this syllabus?">
+          🎯 Guaranteed 10-Markers
+        </button>
+        <button class="quick-chip" data-prompt="Give me a rapid mnemonics cheat sheet and comparison table for this syllabus.">
+          🧠 Mnemonics &amp; Cheat Sheet
+        </button>
+        <button class="quick-chip" data-prompt="Quiz me like an examiner on a 10-mark question from this syllabus and grade my answer.">
+          ✍️ Mock Examiner Quiz
         </button>
       </div>
-    </section>
 
-  </main>
+      <!-- Input Bar -->
+      <div class="agent-input-dock">
+        <div class="input-dock-inner">
+          <textarea 
+            id="agentUserInput" 
+            class="agent-textarea" 
+            rows="1" 
+            placeholder="Tell your AI tutor what to teach or ask any doubt (e.g., 'Teach me Unit 2 like I'm 5', 'Explain topic with exact diagram')..."
+          ></textarea>
+          <button id="btnSendMessage" class="btn-send-agent" title="Send requirement to AI Tutor">
+            <span>Send</span>
+            <span class="send-arrow">➔</span>
+          </button>
+        </div>
+        <div class="input-hint">
+          <span>Active Persona: <strong id="currentPersonaLabel">One-Nighter Survival (80/20)</strong></span>
+          <span>&bull; Press <strong>Enter</strong> to send, <strong>Shift+Enter</strong> for newline</span>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- Settings Modal (For Gemini / OpenAI API Key) -->
+  <div id="settingsModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="font-family: var(--font-serif); font-size: 1.35rem;">AI Agent Settings</h3>
+        <button id="btnCloseSettings" class="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+          ExamLens works <strong>100% out of the box</strong> using its built-in intelligent pedagogical engine. You can optionally connect your Google Gemini API key to enable live Gemini 1.5/2.0 Flash reasoning directly on your uploaded syllabus.
+        </p>
+
+        <div class="input-group">
+          <label class="input-label" for="apiKeyInput">Google Gemini API Key (Optional)</label>
+          <input type="password" id="apiKeyInput" class="text-input" placeholder="AIzaSy...">
+          <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.35rem;">
+            Get a free key from <a href="https://aistudio.google.com" target="_blank" style="color: var(--accent-rust);">Google AI Studio</a>. Saved only in your browser's local storage.
+          </div>
+        </div>
+
+        <div class="input-group" style="margin-top: 1rem;">
+          <label class="input-label">Engine Mode</label>
+          <select id="engineModeSelect" class="text-input">
+            <option value="auto">Auto (Use Gemini Key if provided, else Smart Local Agent)</option>
+            <option value="local">Smart Local Pedagogical Agent (No API key needed)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnSaveSettings" class="btn-primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
 
   <script src="js/app.js"></script>
 </body>

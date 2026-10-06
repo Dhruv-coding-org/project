@@ -9,6 +9,7 @@ require('dotenv').config();
 
 const engine = require('./engine');
 const sampleData = require('./sample-data');
+const agent = require('./agent');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -214,6 +215,50 @@ app.post('/api/tutor-chat', (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint: Ingest syllabus for agent memory
+app.post('/api/set-syllabus', (req, res) => {
+  try {
+    const { syllabusText, filename } = req.body;
+    const units = engine.parseSyllabus(syllabusText || "");
+    agent.setSyllabus(syllabusText, units);
+    res.json({
+      success: true,
+      filename: filename || 'Custom Syllabus',
+      unitsCount: units.length,
+      topicsCount: units.reduce((acc, u) => acc + u.topics.length, 0),
+      units
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint: Interactive AI Tutor Agent Chat
+app.post('/api/agent-chat', async (req, res) => {
+  try {
+    const { message, requirement, syllabusText, history, apiKey } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const response = await agent.generateResponse({
+      message,
+      requirement: requirement || 'one-nighter',
+      syllabusText,
+      history: history || [],
+      apiKey
+    });
+
+    res.json({
+      success: true,
+      ...response
+    });
+  } catch (err) {
+    console.error('Agent chat error:', err);
+    res.status(500).json({ error: 'AI Agent error: ' + err.message });
   }
 });
 
