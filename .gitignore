@@ -57,7 +57,20 @@ Trying new/committree/
 
 Trying new/cyberzero/
 Trying new/socialflow/
-Trying new/would_you_rather_generator/
 
 # Always track decision.md records
 !**/decision.md
+
+Trying new/would_you_rather_generator/outputs/
+Trying new/would_you_rather_generator/temp/
+
+
+# Python Cache & Virtual Environments
+__pycache__/
+**/__pycache__/
+*.py[cod]
+venv/
+**/venv/
+.venv/
+**/.venv/
+

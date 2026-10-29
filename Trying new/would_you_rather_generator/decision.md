@@ -37,6 +37,7 @@ The generator operates through a 4-stage pipeline:
 | :--- | :--- | :--- |
 | `2ffe9db` | Initial implementation: "something new" | Built automated video generator with MoviePy, Edge-TTS, and split-screen card layout for automated content creation. |
 | `c12f779` | MoviePy recursion bug patch & sound mixing fixes | Resolved crash in `FFMPEG_AudioReader` caused by boolean array indexing changes in modern NumPy. |
+| `audit-fix` | FFmpeg pre-flight diagnostics, temp file cleanup, 3x expanded corpus & tests | Added explicit FFmpeg availability check; added `--clean-temp` scratch frame purge; expanded dilemma database from 5 to 15 questions; created automated unit tests (`test_generator.py`); restored Git tracking in root `.gitignore`. |
 
 ---
 
