@@ -48,6 +48,7 @@
 | `4bc4db1` | Migrated server to Firebase Cloud Functions & relative API endpoints | Eliminated hardcoded localhost URLs to allow seamless switching between local dev and cloud serverless execution. Removed legacy Railway config. |
 | `b960547` & `c12f779` | Multi-role authentication refinements & bug fixes | Hardened JWT token validation across principal and student endpoints. |
 | `548707f` | UI responsiveness & complaint lifecycle enhancements | Refined status badge workflows, evidence file previewing, and anonymous display logic. |
+| `audit-fix` | Server resilience, JWT safety, package cleanup & UI polish | Cleaned corrupted null-bytes and bloated deps in `package.json`; removed startup `process.exit(1)` crash on missing Mongo; added safe JWT fallback resolver (`utils/jwt.js`); removed plaintext passwords from server boot logs; upgraded CSS design system with WCAG AA contrast badges. |
 
 ---
 

@@ -3,59 +3,64 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(uploadsDir));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/complaints', require('./routes/complaints'));
 app.use('/api/admin', require('./routes/admin'));
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/complaintbox';
 
 console.log('Attempting to connect to MongoDB at:', MONGODB_URI);
 
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+mongoose.connect(MONGODB_URI)
 .then(() => {
   console.log('✅ MongoDB connected successfully to:', MONGODB_URI);
 })
 .catch((err) => {
-  console.error('❌ MongoDB connection error:', err.message);
-  console.log('\n📌 Troubleshooting tips:');
-  console.log('1. MongoDB is installed and running');
-  console.log('2. Check if MongoDB service is started');
-  console.log('3. Verify the connection string is correct');
-  console.log('4. If using localhost, ensure MongoDB is listening on port 27017');
-  console.log('\nTo start MongoDB:');
-  console.log('  - Windows: net start MongoDB');
-  console.log('  - Mac: brew services start mongodb-community');
-  console.log('  - Linux: sudo systemctl start mongod');
-  process.exit(1);
+  console.warn('⚠️ MongoDB connection warning:', err.message);
+  console.warn('📌 Running in offline mode: Database operations will fail until MongoDB is started.');
+  console.warn('To start MongoDB: net start MongoDB (Windows) or brew services start mongodb-community (Mac)');
 });
 
 // Start server
 if (!process.env.FUNCTION_TARGET) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
-    console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-    console.log('\n📋 Login credentials:');
-    console.log('  👨‍🎓 Student: Register your account');
-    console.log('  👨‍🏫 Teacher: HOD@gmail.com / teacher123');
-    console.log('  👑 Principal: director@gmail.com / principal123');
-    console.log('\n✨ System ready!');
+    console.log(`\n🚀 Student Complaint Box server running on http://localhost:${PORT}`);
+    console.log('✨ Institutional Grievance System ready.\n');
   });
 }
 
-// Export for Firebase Cloud Functions
-const functions = require('firebase-functions');
-exports.api = functions.https.onRequest(app);
+// Export for Firebase Cloud Functions if available
+try {
+  const functions = require('firebase-functions');
+  exports.api = functions.https.onRequest(app);
+} catch (e) {
+  // Not running in Firebase Functions environment
+}
