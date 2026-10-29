@@ -47,6 +47,7 @@
 | `f05b8e8` | Firebase configuration setup | Added deployment hooks for serverless execution. |
 | `b960547` | Multi-platform scheduling and OAuth flow implementation | Configured Google and Instagram API authentication pipelines and token refresh handlers. |
 | `c12f779` | API error handling and status dot indicator fixes | Hardened token expiry handling and improved UI real-time polling. |
+| `audit-fix` | Suspense boundary on `/accounts`, upload validation & responsive navigation | Wrapped `useSearchParams()` in `<Suspense>` resolving Next.js 14 prerender failure; added video format and size checks in `/api/upload`; added mobile header, bottom dock, and responsive drawer in `Sidebar.tsx`. |
 
 ---
 
