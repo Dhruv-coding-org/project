@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../utils/jwt');
 const Admin = require('../models/Admin');
 const Complaint = require('../models/Complaint');
 const Student = require('../models/Student');
@@ -15,7 +16,7 @@ const adminAuth = (requiredRole = null) => async (req, res, next) => {
   if (!token) return res.status(401).json({ message: 'Not authorized' });
   
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
     const admin = await Admin.findById(decoded.id);
     if (!admin) return res.status(401).json({ message: 'Not authorized' });
     
@@ -40,7 +41,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
-    const token = jwt.sign({ id: admin._id, role: admin.role }, process.env.JWT_SECRET);
+    const token = jwt.sign({ id: admin._id, role: admin.role }, getJwtSecret());
     res.json({ token, admin: { id: admin._id, name: admin.name, email: admin.email, role: admin.role } });
   } catch (error) {
     res.status(500).json({ message: error.message });
