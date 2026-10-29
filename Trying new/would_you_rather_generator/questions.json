@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "question": "Would you rather...",
+    "option_a": "Have unlimited free flights for life",
+    "option_b": "Never have to wait in line again",
+    "percentage_a": 54,
+    "percentage_b": 46
+  },
+  {
+    "id": 2,
+    "question": "Would you rather...",
+    "option_a": "Be able to read minds",
+    "option_b": "See 5 minutes into the future",
+    "percentage_a": 41,
+    "percentage_b": 59
+  },
+  {
+    "id": 3,
+    "question": "Would you rather...",
+    "option_a": "Always have to speak in rhymes",
+    "option_b": "Always have to sing instead of speaking",
+    "percentage_a": 63,
+    "percentage_b": 37
+  },
+  {
+    "id": 4,
+    "question": "Would you rather...",
+    "option_a": "Find your true soulmate today",
+    "option_b": "Receive 10 million dollars in 5 years",
+    "percentage_a": 48,
+    "percentage_b": 52
+  },
+  {
+    "id": 5,
+    "question": "Would you rather...",
+    "option_a": "Have the power to control fire",
+    "option_b": "Have the power to control water",
+    "percentage_a": 38,
+    "percentage_b": 62
+  },
+  {
+    "id": 6,
+    "question": "Would you rather...",
+    "option_a": "Speak every human language fluently",
+    "option_b": "Talk to all animals and understand them",
+    "percentage_a": 51,
+    "percentage_b": 49
+  },
+  {
+    "id": 7,
+    "question": "Would you rather...",
+    "option_a": "Never need to sleep again with full energy",
+    "option_b": "Eat any food without gaining weight",
+    "percentage_a": 58,
+    "percentage_b": 42
+  },
+  {
+    "id": 8,
+    "question": "Would you rather...",
+    "option_a": "Instant teleportation anywhere on Earth",
+    "option_b": "Time travel 100 years into the future once",
+    "percentage_a": 76,
+    "percentage_b": 24
+  },
+  {
+    "id": 9,
+    "question": "Would you rather...",
+    "option_a": "Live in virtual reality with god mode",
+    "option_b": "Live in the real world as a billionaire",
+    "percentage_a": 33,
+    "percentage_b": 67
+  },
+  {
+    "id": 10,
+    "question": "Would you rather...",
+    "option_a": "Have a rewind button for your life",
+    "option_b": "Have a pause button for everyone around you",
+    "percentage_a": 65,
+    "percentage_b": 35
+  },
+  {
+    "id": 11,
+    "question": "Would you rather...",
+    "option_a": "Always know when someone is lying to you",
+    "option_b": "Always get away with any lie you tell",
+    "percentage_a": 69,
+    "percentage_b": 31
+  },
+  {
+    "id": 12,
+    "question": "Would you rather...",
+    "option_a": "Never lose your internet connection",
+    "option_b": "Never have your phone battery drop below 100%",
+    "percentage_a": 56,
+    "percentage_b": 44
+  },
+  {
+    "id": 13,
+    "question": "Would you rather...",
+    "option_a": "Be able to fly at 60 mph",
+    "option_b": "Be completely invisible at will",
+    "percentage_a": 47,
+    "percentage_b": 53
+  },
+  {
+    "id": 14,
+    "question": "Would you rather...",
+    "option_a": "Master every musical instrument instantly",
+    "option_b": "Master every programming language instantly",
+    "percentage_a": 45,
+    "percentage_b": 55
+  },
+  {
+    "id": 15,
+    "question": "Would you rather...",
+    "option_a": "Live in the Star Wars universe with the Force",
+    "option_b": "Live in the Harry Potter universe with magic",
+    "percentage_a": 46,
+    "percentage_b": 54
+  }
+]
