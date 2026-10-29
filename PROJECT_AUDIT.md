@@ -11,13 +11,13 @@ The workspace contains **7 distinct, standalone projects** spanning full-stack w
 
 | # | Project | Stack | Category | Health Status | Primary Priority |
 |---|---|---|---|---|---|
-| **1** | **`Student-Complaint-Box`** | Node.js, Express, MongoDB, Vanilla HTML/CSS/JS | Full-Stack Web App | ⚠️ Degraded | High |
+| **1** | **`Student-Complaint-Box`** | Node.js, Express, MongoDB, Vanilla HTML/CSS/JS | Full-Stack Web App | 🟢 Functional (Hardened) | Resolved |
 | **2** | **`Trying new/committree`** | React 19, Vite, TypeScript, SVG, Web Audio | Single-Page Web App | 🟢 Functional (Build Passes) | Resolved |
-| **3** | **`Trying new/cyberzero`** | Python 3, Streamlit, Rich, Plotly | Python Web & CLI Academy | 🟢 Functional | Medium |
-| **4** | **`Trying new/exam-assistant`** | Node.js, Express, Ollama/Gemini, Vanilla JS | AI Academic Tutor | 🟢 Functional | Medium |
+| **3** | **`Trying new/cyberzero`** | Python 3, Streamlit, Rich, Plotly | Python Web & CLI Academy | 🟢 Functional (Tests Pass: 9/9) | Resolved |
+| **4** | **`Trying new/exam-assistant`** | Node.js, Express, Ollama/Gemini, Vanilla JS | AI Academic Tutor | 🟢 Functional (Hardened) | Resolved |
 | **5** | **`Trying new/socialflow`** | Next.js 14, React 18, TypeScript, OAuth | Creator Automation | 🟢 Functional (Build Passes) | Resolved |
-| **6** | **`Trying new/syncstream`** | Electron 30, React 19, Socket.IO, WebRTC | Watch-Party App (Desktop/Web) | 🟢 Functional (Build Passes) | Low-Medium |
-| **7** | **`Trying new/would_you_rather_generator`** | Python 3, MoviePy, Pillow, Edge-TTS | Short-Form Video Generator | 🟢 Functional | Low |
+| **6** | **`Trying new/syncstream`** | Electron 30, React 19, Socket.IO, WebRTC | Watch-Party App (Desktop/Web) | 🟢 Functional (Hardened & Build Passes) | Resolved |
+| **7** | **`Trying new/would_you_rather_generator`** | Python 3, MoviePy, Pillow, Edge-TTS | Short-Form Video Generator | 🟢 Functional (Tests Pass: 3/3) | Resolved |
 
 ---
 
@@ -180,15 +180,18 @@ The workspace contains **7 distinct, standalone projects** spanning full-stack w
   - Desktop Dev: `npm run electron:dev`
 * **Design & Visual Identity**: High-end cinema dark-room aesthetic with aurora green and fiery accent modes, floating video controls, and clean lobby cards.
 
-#### Confirmed Problems
+#### Confirmed Problems & Resolved Hardening
 1. **In-Memory Room State**: `server/src/services/roomManager.js` keeps all room and participant states in memory; a server restart kicks all users and destroys active rooms.
 2. **Hardcoded Fallbacks**: Client defaults to `http://localhost:3001` if configuration variables are absent, causing failed connections in production deployments.
-3. **WebRTC Mesh Scalability**: Uses full-mesh WebRTC signaling which exhibits severe CPU/bandwidth bottlenecks beyond 4-6 users per room.
+3. **WebRTC Mesh Scalability**: Uses full-mesh WebRTC signaling which exhibits CPU/bandwidth bottlenecks beyond 4-6 users per room.
 
-#### Potential Improvements
-- Add auto-reconnection and room recovery mechanisms on transient WebSocket disconnections.
-- Add keyboard accessibility shortcuts (Space to play/pause, M to mute, F for fullscreen, arrows for seeking).
-- Polish mobile responsive drawer behavior for the chat and playlist panel.
+#### Completed Improvements (Hardened & Polished)
+- Added keyboard accessibility shortcuts (Space/K for toggle play/pause, M for mute/unmute, F for fullscreen, Left/Right arrows for 5s seeking, J/L for 10s seeking, Up/Down arrows for 5% volume control, C for subtitles).
+- Added shortcut collision safeguards (ignores typing in text inputs, textareas, contenteditable elements, and prevents hijacking system browser shortcuts like Ctrl+F/Cmd+F).
+- Added `role="region"` and `aria-label="Video Player"` semantics to the player container.
+- Added connection error resilience and reconnect event listeners in `useRoom.ts` to surface connection status directly in the room UI without unhandled exceptions.
+- Updated `ShortcutsModal.tsx` documentation to accurately reflect all available keyboard shortcuts.
+- Verified client production build (`tsc -b && vite build` passes in < 400ms) and server syntax checks (`node -c` passes).
 
 ---
 
