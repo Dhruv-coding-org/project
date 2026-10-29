@@ -1442,6 +1442,24 @@ export function VideoPlayer({
     }
   }
 
+  const changeVolume = useCallback((delta: number) => {
+    setVolume(prev => {
+      const next = Math.max(0, Math.min(1, Math.round((prev + delta) * 100) / 100));
+      setMuted(next === 0);
+      if (isEmbedProvider && plyrRef.current) {
+        plyrRef.current.volume = next;
+        plyrRef.current.muted = next === 0;
+      } else {
+        const video = videoRef.current;
+        if (video) {
+          video.volume = next;
+          video.muted = next === 0;
+        }
+      }
+      return next;
+    });
+  }, [isEmbedProvider]);
+
   const toggleMute = useCallback(() => {
     setMuted((prev: boolean) => {
       const next = !prev;
@@ -1479,12 +1497,25 @@ export function VideoPlayer({
   // ── (7) KEYBOARD SHORTCUTS ──────────────────────────────────────
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      const tag = (e.target as HTMLElement).tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (
+          tag === 'INPUT' ||
+          tag === 'TEXTAREA' ||
+          target.isContentEditable ||
+          target.getAttribute('role') === 'textbox'
+        ) {
+          return;
+        }
+      }
 
       switch (e.key) {
         case ' ':
         case 'k':
+        case 'K':
           e.preventDefault();
           togglePlay();
           break;
@@ -1498,11 +1529,22 @@ export function VideoPlayer({
           e.preventDefault();
           toggleFullscreen();
           break;
-          case 'ArrowLeft':
+        case 'ArrowUp':
+          e.preventDefault();
+          changeVolume(0.05);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          changeVolume(-0.05);
+          break;
+        case 'ArrowLeft':
+        case 'j':
+        case 'J':
           if (!canControl) return;
           e.preventDefault();
           {
-            const newTime = Math.max(0, currentTime - 10);
+            const seekDelta = (e.key === 'j' || e.key === 'J') ? 10 : 5;
+            const newTime = Math.max(0, currentTime - seekDelta);
             setCurrentTime(newTime);
             onSeek(newTime);
             if (isEmbedProvider && plyrRef.current) {
@@ -1514,10 +1556,13 @@ export function VideoPlayer({
           }
           break;
         case 'ArrowRight':
+        case 'l':
+        case 'L':
           if (!canControl) return;
           e.preventDefault();
           {
-            const newTime = Math.min(duration, currentTime + 10);
+            const seekDelta = (e.key === 'l' || e.key === 'L') ? 10 : 5;
+            const newTime = Math.min(duration, currentTime + seekDelta);
             setCurrentTime(newTime);
             onSeek(newTime);
             if (isEmbedProvider && plyrRef.current) {
@@ -1538,7 +1583,7 @@ export function VideoPlayer({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, toggleMute, toggleFullscreen, toggleSubtitles, canControl, currentTime, duration, isEmbedProvider, onSeek]);
+  }, [togglePlay, toggleMute, toggleFullscreen, toggleSubtitles, changeVolume, canControl, currentTime, duration, isEmbedProvider, onSeek]);
 
   useEffect(() => {
     const onFsChange = () => setFullscreen(!!document.fullscreenElement);
@@ -1591,6 +1636,8 @@ export function VideoPlayer({
       onMouseLeave={() => { if (playing) setShowControls(false); }}
       onTouchStart={resetHideTimer}
       tabIndex={0}
+      role="region"
+      aria-label="Video Player"
     >
       {/* Skeleton overlay on mount */}
       {showSkeleton && (

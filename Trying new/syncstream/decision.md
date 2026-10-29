@@ -62,6 +62,7 @@ syncstream/
 | `280f57d` | Render loop fix in `ServerConfigModal` | Eliminated cascading `setState` calls in `useEffect` hook that caused high CPU usage. |
 | `c840b77` | Theme update | Introduced dynamic fiery accent effects across the UI. |
 | `c4a262f`, `052b3ff`, `5290eb4` | Video playback & sync engine stabilization | Fixed sync race conditions, seek jitter, and video pause event synchronization across multiple peers. |
+| Hardening & Polish | Keyboard Accessibility & Connection Resilience | Added modifier key collision safeguards, keyboard seeking (Left/Right 5s, J/L 10s), volume up/down shortcuts (5%), ARIA player region semantics, updated shortcuts documentation, and handled socket connection error resilience in `useRoom.ts`. |
 
 ---
 
