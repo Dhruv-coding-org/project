@@ -48,6 +48,7 @@
 | `8029795` | Resolved Ollama IPv6 socket hang & robust markdown | Replaced `localhost` with explicit `127.0.0.1` to bypass Windows IPv6 resolution timeouts and added robust markdown formatting. |
 | `97640e4` | Local `llama3.2:1b` designated as active default AI | Configured ultra-fast, low-memory local inference suitable for average consumer laptops. |
 | `7ad87d1` | Port collision detection, nodemon & process safety | Prevented EADDRINUSE crashes and simplified continuous local development. |
+| `audit-fix` | Multi-session syllabus scoping, upload type checks & mobile layout | Added session map to `agent.js` preventing syllabus collisions across users; restricted upload MIME extensions (`.docx`, `.pdf`, `.txt`); created responsive mobile workspace tabs (`<= 850px`); added accessibility ARIA attributes. |
 
 ---
 

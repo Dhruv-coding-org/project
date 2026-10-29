@@ -30,13 +30,13 @@
 
       <!-- Header Actions -->
       <div class="header-actions">
-        <button id="btnLoadSampleSyllabus" class="btn-secondary-sm" title="Load sample university syllabus">
+        <button id="btnLoadSampleSyllabus" class="btn-secondary-sm" title="Load sample university syllabus" aria-label="Load Sample University Syllabus">
           <span>📚 Sample Syllabus</span>
         </button>
-        <button id="btnOpenSettings" class="btn-secondary-sm" title="Configure AI API Key (Gemini/OpenAI)">
+        <button id="btnOpenSettings" class="btn-secondary-sm" title="Configure AI API Key (Gemini/OpenAI)" aria-label="Open AI Brain and Settings">
           <span>⚙️ AI Settings</span>
         </button>
-        <button id="btnToggleTheme" class="theme-toggle-btn" title="Toggle Dark/Light Mode">
+        <button id="btnToggleTheme" class="theme-toggle-btn" title="Toggle Dark/Light Mode" aria-label="Toggle Dark and Light Mode">
           🌓
         </button>
       </div>
@@ -44,10 +44,10 @@
   </header>
 
   <!-- Workspace Container: Sidebar + Agent Conversation Stage -->
-  <div class="agent-workspace">
+  <div class="agent-workspace">`r`n    <!-- Mobile View Switcher Tabs (Visible <= 850px) -->`r`n    <div class="mobile-workspace-tabs" id="mobileWorkspaceTabs" role="tablist" aria-label="Mobile View Switcher">`r`n      <button id="tabBtnSyllabus" class="mobile-tab-btn" role="tab" aria-selected="false" aria-controls="agentSidebar">📄 Syllabus &amp; Units</button>`r`n      <button id="tabBtnChat" class="mobile-tab-btn active" role="tab" aria-selected="true" aria-controls="agentMainStage">💬 AI Tutor Chat</button>`r`n    </div>
 
     <!-- LEFT SIDEBAR: Syllabus Ingestion & Study Requirements -->
-    <aside class="agent-sidebar">
+    <aside class="agent-sidebar" id="agentSidebar">
       <!-- 1. Document Upload Area -->
       <div class="sidebar-section">
         <div class="sidebar-heading">
@@ -130,7 +130,7 @@
     </aside>
 
     <!-- RIGHT / MAIN: The AI Agent Teaching Session -->
-    <main class="agent-main-stage">
+    <main class="agent-main-stage" id="agentMainStage">
       
       <!-- Chat Conversation Area -->
       <div class="agent-chat-container" id="chatContainer">
@@ -160,12 +160,12 @@
       <div class="agent-input-dock">
         <div class="input-dock-inner">
           <textarea 
-            id="agentUserInput" 
+            id="agentUserInput" aria-label="Student Query Input" 
             class="agent-textarea" 
             rows="1" 
             placeholder="Tell your AI tutor what to teach or ask any doubt (e.g., 'Teach me Unit 2 like I'm 5', 'Explain topic with exact diagram')..."
           ></textarea>
-          <button id="btnSendMessage" class="btn-send-agent" title="Send requirement to AI Tutor">
+          <button id="btnSendMessage" class="btn-send-agent" title="Send requirement to AI Tutor" aria-label="Send message to AI Tutor">
             <span>Send</span>
             <span class="send-arrow">➔</span>
           </button>
@@ -185,7 +185,7 @@
     <div class="modal-card">
       <div class="modal-header">
         <h3 style="font-family: var(--font-serif); font-size: 1.35rem;">AI Brain &amp; Engine Settings</h3>
-        <button id="btnCloseSettings" class="btn-close-modal">&times;</button>
+        <button id="btnCloseSettings" class="btn-close-modal" aria-label="Close Settings Modal">&times;</button>
       </div>
       <div class="modal-body">
         

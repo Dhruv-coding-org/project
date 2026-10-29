@@ -6,6 +6,11 @@
   // State
   let currentRequirement = 'one-nighter';
   let currentProvider = localStorage.getItem('examlens_provider') || 'ollama';
+  let sessionId = localStorage.getItem('examlens_session_id');
+  if (!sessionId) {
+    sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    localStorage.setItem('examlens_session_id', sessionId);
+  }
   let selectedOllamaModel = localStorage.getItem('examlens_ollama_model') || 'llama3.2:1b';
   let syllabusText = '';
   let syllabusFilename = '';
@@ -146,7 +151,7 @@
       const res = await fetch('/api/set-syllabus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ syllabusText, filename })
+        body: JSON.stringify({ syllabusText, filename, sessionId })
       });
       const data = await res.json();
 
@@ -452,7 +457,35 @@
   }
 
   // --- EVENT LISTENERS ---
+  function setupMobileTabs() {
+    const tabBtnSyllabus = document.getElementById('tabBtnSyllabus');
+    const tabBtnChat = document.getElementById('tabBtnChat');
+    const agentSidebar = document.getElementById('agentSidebar');
+    const agentMainStage = document.getElementById('agentMainStage');
+
+    if (tabBtnSyllabus && tabBtnChat) {
+      tabBtnSyllabus.addEventListener('click', () => {
+        tabBtnSyllabus.classList.add('active');
+        tabBtnSyllabus.setAttribute('aria-selected', 'true');
+        tabBtnChat.classList.remove('active');
+        tabBtnChat.setAttribute('aria-selected', 'false');
+        if (agentSidebar) agentSidebar.classList.add('mobile-visible');
+        if (agentMainStage) agentMainStage.classList.add('mobile-hidden');
+      });
+
+      tabBtnChat.addEventListener('click', () => {
+        tabBtnChat.classList.add('active');
+        tabBtnChat.setAttribute('aria-selected', 'true');
+        tabBtnSyllabus.classList.remove('active');
+        tabBtnSyllabus.setAttribute('aria-selected', 'false');
+        if (agentSidebar) agentSidebar.classList.remove('mobile-visible');
+        if (agentMainStage) agentMainStage.classList.remove('mobile-hidden');
+      });
+    }
+  }
+
   function setupEventListeners() {
+    setupMobileTabs();
     btnSendMessage.addEventListener('click', () => {
       const text = agentUserInput.value.trim();
       if (text) {

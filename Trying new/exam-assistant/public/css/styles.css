@@ -786,19 +786,89 @@ body {
   background-color: var(--accent-rust-hover);
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .agent-workspace {
+/* Accessibility Focus Rings */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--border-focus) !important;
+  outline-offset: 2px !important;
+}
+
+/* Mobile Workspace Tabs */
+.mobile-workspace-tabs {
+  display: none;
+}
+
+@media (max-width: 850px) {
+  body {
+    height: 100vh;
+    display: flex;
     flex-direction: column;
   }
-  .agent-sidebar {
-    width: 100%;
-    max-height: 280px;
-    border-right: none;
-    border-bottom: 1px solid var(--border-light);
+  .header-inner {
+    padding: 0.5rem 1rem;
+    gap: 0.75rem;
   }
-  .agent-chat-container {
-    padding: 1.25rem;
+  .brand-tagline {
+    display: none;
+  }
+  .mobile-workspace-tabs {
+    display: flex;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+    z-index: 30;
+  }
+  .mobile-tab-btn {
+    flex: 1;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .mobile-tab-btn.active {
+    color: var(--accent-rust);
+    border-bottom-color: var(--accent-rust);
+    background: var(--accent-rust-soft);
+  }
+  .agent-workspace {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  .agent-sidebar {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-height: none;
+    border-right: none;
+    display: none;
+    z-index: 20;
+    background: var(--bg-surface);
+    overflow-y: auto;
+  }
+  .agent-sidebar.mobile-visible {
+    display: block;
+  }
+  .agent-main-stage {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .agent-main-stage.mobile-hidden {
+    display: none;
+  }
+  .quick-chips-bar {
+    padding: 0.5rem 1rem;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  .quick-chip {
+    white-space: nowrap;
   }
   .agent-input-dock {
     padding: 0.75rem 1rem;
