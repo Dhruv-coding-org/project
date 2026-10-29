@@ -249,7 +249,7 @@ app.get('/api/ollama/status', async (req, res) => {
 // Endpoint: Interactive AI Tutor Agent Chat
 app.post('/api/agent-chat', async (req, res) => {
   try {
-    const { message, requirement, syllabusText, history, apiKey, provider, modelName } = req.body;
+    const { message, requirement, syllabusText, history, apiKey, provider, modelName, sessionId } = req.body;
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
