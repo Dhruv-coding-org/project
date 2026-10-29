@@ -52,10 +52,15 @@ Thumbs.db
 .firebase/
 **/.firebase/
 
-
-
-Trying new/cyberzero/
-Trying new/would_you_rather_generator/
-
 # Always track decision.md records
 !**/decision.md
+
+# Python Cache & Virtual Environments
+__pycache__/
+**/__pycache__/
+*.py[cod]
+venv/
+**/venv/
+.venv/
+**/.venv/
+
