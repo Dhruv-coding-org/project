@@ -44,6 +44,7 @@ CyberZero is designed with a dual-interface model that shares a single unified s
 | `992e7c2` | Initial conception: "Want to learn cybersecurity" | Formulated the 22-module beginner curriculum using plain English analogies instead of overwhelming technical jargon. |
 | `992e7c2` | Unified dual-mode runtime (CLI + Streamlit) | Enabled users to choose between a cool terminal interface and an intuitive graphical dashboard without losing state. |
 | `c12f779` | Safety checks and simulator refinement | Ensured all labs run strictly in memory without executing dangerous local system commands or opening real network ports. |
+| `audit-fix` | Atomic state serialization, unit test suite & tracking recovery | Replaced non-atomic file writes with PID-isolated temp files and atomic rename in `engine/progress.py`; created comprehensive unit test suite (`test_cyberzero.py`); restored Git tracking in root `.gitignore`. |
 
 ---
 

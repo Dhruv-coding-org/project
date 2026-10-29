@@ -1,0 +1,13 @@
+{
+  "include": [
+    "."
+  ],
+  "extraPaths": [
+    ".",
+    "C:/Users/dhruv/OneDrive/Desktop/Project/Trying new/cyberzero"
+  ],
+  "venvPath": "C:/Users/dhruv/OneDrive/Desktop/Project/Trying new/cyberzero",
+  "venv": "venv",
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none"
+}
