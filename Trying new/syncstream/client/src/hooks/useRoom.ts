@@ -110,8 +110,18 @@ export function useRoom() {
   };
 
   useEffect(() => {
+    const handleConnectError = (err: Error) => {
+      console.warn('[SyncStream Socket] Connection error:', err.message);
+      setState(s => ({
+        ...s,
+        connected: false,
+        error: s.roomCode ? `Connection lost: ${err.message || 'Server unavailable'}` : null
+      }));
+    };
+
     socket.on('connect', () => setState(s => ({ ...s, connected: true, error: null })));
     socket.on('disconnect', () => setState(s => ({ ...s, connected: false })));
+    socket.on('connect_error', handleConnectError);
 
     socket.on('room-users', (users: RoomUser[]) => {
       setState(s => ({ ...s, users }));
@@ -199,6 +209,7 @@ export function useRoom() {
     return () => {
       socket.off('connect');
       socket.off('disconnect');
+      socket.off('connect_error', handleConnectError);
       socket.off('room-users');
       socket.off('user-joined');
       socket.off('user-left');
