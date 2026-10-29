@@ -47,6 +47,7 @@
 | `dd25319` - `f74f1f2` (v2) | In-memory Git Engine & SVG Graph | Built client-side Git virtual state machine so users could execute commands without needing real git binaries or backend servers. |
 | `6e6bbc4` - `b6e8fa0` (v5) | Gamification, Boss Battles & Modals | Added Interactive Rebase, Conflict Resolver, Reflog, Bisect, CI Pipeline, Speedrun Arena, and Web Audio sound synthesizer. |
 | `c12f779` | UI refinement and bug fixes | Polished visual layout, keyboard shortcuts, and responsive breakpoints. |
+| `audit-fix` | Build restoration & tracking recovery | Restored missing `package.json` and `index.html` allowing `npm run build` and `npm run dev` to execute cleanly in 336ms; restored Git tracking by removing blanket ignore in root `.gitignore`. |
 
 ---
 
