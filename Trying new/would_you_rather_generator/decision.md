@@ -15,18 +15,18 @@ The generator operates through a 4-stage pipeline:
 4. **MoviePy Compositing & Audio Mixing**: Combines visual clips, voiceover tracks, tick effects, and ding sound into a vertical 1080x1920 MP4 video.
 
 ### 2.2 Component Breakdown
-- **[generator.py](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/would_you_rather_generator/generator.py)**:
+- **[generator.py](./generator.py)**:
   - Main pipeline script orchestrating audio generation, timing synchronization, and video export.
   - **MoviePy Patch (`patch_moviepy_reader`)**: Fixes a critical recursion bug in MoviePy's `FFMPEG_AudioReader.get_frame` where boolean slicing in newer NumPy versions caused stack overflows.
   - Asynchronously interfaces with `edge_tts` using voice profiles (such as `en-US-ChristopherNeural`).
   - Stitches `tick.wav` during the 3-second decision countdown and triggers `ding.wav` on the percentage reveal.
-- **[renderer.py](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/would_you_rather_generator/renderer.py)**:
+- **[renderer.py](./renderer.py)**:
   - Renders custom 1080x1920 graphic frames using Python Imaging Library (Pillow).
   - Handles text wrapping and sizing using the bold `Anton-Regular.ttf` display font.
   - Draws top/bottom split cards (e.g. Red vs Blue or Purple vs Emerald), circular "VS" badge, and animated percentage reveal bars.
-- **[assets_manager.py](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/would_you_rather_generator/assets_manager.py)**:
+- **[assets_manager.py](./assets_manager.py)**:
   - Manages asset resolution for fonts, audio clips (`ding.wav`, `tick.wav`), and background textures.
-- **[questions.json](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/would_you_rather_generator/questions.json)**:
+- **[questions.json](./questions.json)**:
   - JSON database containing questions, option text, and crowd percentage splits.
 
 ---
@@ -38,6 +38,7 @@ The generator operates through a 4-stage pipeline:
 | `2ffe9db` | Initial implementation: "something new" | Built automated video generator with MoviePy, Edge-TTS, and split-screen card layout for automated content creation. |
 | `c12f779` | MoviePy recursion bug patch & sound mixing fixes | Resolved crash in `FFMPEG_AudioReader` caused by boolean array indexing changes in modern NumPy. |
 | `audit-fix` | FFmpeg pre-flight diagnostics, temp file cleanup, 3x expanded corpus & tests | Added explicit FFmpeg availability check; added `--clean-temp` scratch frame purge; expanded dilemma database from 5 to 15 questions; created automated unit tests (`test_generator.py`); restored Git tracking in root `.gitignore`. |
+| `path-isolation` | Directory-anchored outputs & relative path documentation | Replaced bare relative paths with `BASE_DIR`-anchored paths in `generator.py` and `renderer.py` to prevent stray folder generation at workspace root, and converted absolute URLs to relative links. |
 
 ---
 

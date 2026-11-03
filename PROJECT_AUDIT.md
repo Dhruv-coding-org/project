@@ -1,5 +1,5 @@
 # Comprehensive Multi-Project Audit Report
-**Workspace:** `c:\Users\dhruv\OneDrive\Desktop\Project`  
+**Workspace:** `<workspace-root>`  
 **Date:** October 2026  
 **Auditor:** Senior Full-Stack Developer, UI/UX Designer, Architect & Security QA
 

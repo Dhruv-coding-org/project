@@ -15,19 +15,19 @@
 - **Media Ingestion (`uploads/`)**: Multipart form storage holding staged media assets prior to dispatch.
 
 ### 2.2 Client Pages & Components
-- **[app/page.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/socialflow/app/page.tsx)**: Main dashboard presenting scheduled counts, publish success rates, and quick platform health indicators.
-- **[app/upload/page.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/socialflow/app/upload/page.tsx)**: Publishing studio for video upload, caption formatting, hashtag tagging, platform toggling, and date/time scheduling.
-- **[app/scheduled/page.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/socialflow/app/scheduled/page.tsx)**: Timeline queue of pending posts with rescheduling and deletion options.
-- **[app/history/page.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/socialflow/app/history/page.tsx)**: Audit trail showing published media IDs, timestamps, and error logs for failed dispatches.
-- **[app/accounts/page.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/socialflow/app/accounts/page.tsx)**: Account connection center for starting OAuth flows for Google/YouTube and Meta/Instagram.
-- **[components/Sidebar.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/socialflow/components/Sidebar.tsx)**: Persistent dark-mode navigation bar.
+- **[app/page.tsx](./app/page.tsx)**: Main dashboard presenting scheduled counts, publish success rates, and quick platform health indicators.
+- **[app/upload/page.tsx](./app/upload/page.tsx)**: Publishing studio for video upload, caption formatting, hashtag tagging, platform toggling, and date/time scheduling.
+- **[app/scheduled/page.tsx](./app/scheduled/page.tsx)**: Timeline queue of pending posts with rescheduling and deletion options.
+- **[app/history/page.tsx](./app/history/page.tsx)**: Audit trail showing published media IDs, timestamps, and error logs for failed dispatches.
+- **[app/accounts/page.tsx](./app/accounts/page.tsx)**: Account connection center for starting OAuth flows for Google/YouTube and Meta/Instagram.
+- **[components/Sidebar.tsx](./components/Sidebar.tsx)**: Persistent dark-mode navigation bar.
 
 ### 2.3 Platform Integration Modules (`lib/platforms/`)
-- **[youtube.ts](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/socialflow/lib/platforms/youtube.ts)**:
+- **[youtube.ts](./lib/platforms/youtube.ts)**:
   - Integrates with Google APIs via `googleapis`.
   - Implements OAuth 2.0 token refreshes and resumable video uploads into YouTube Data API v3 (`youtube.upload`).
   - Sets video privacy (`public`, `unlisted`, `private`) and category mappings.
-- **[instagram.ts](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/socialflow/lib/platforms/instagram.ts)**:
+- **[instagram.ts](./lib/platforms/instagram.ts)**:
   - Interacts with Meta's Instagram Graph API.
   - Manages two-step publishing: creating a media container with video URL and Polling container status (`IN_PROGRESS` -> `FINISHED`), followed by triggering `media_publish`.
 
@@ -48,6 +48,7 @@
 | `b960547` | Multi-platform scheduling and OAuth flow implementation | Configured Google and Instagram API authentication pipelines and token refresh handlers. |
 | `c12f779` | API error handling and status dot indicator fixes | Hardened token expiry handling and improved UI real-time polling. |
 | `audit-fix` | Suspense boundary on `/accounts`, upload validation & responsive navigation | Wrapped `useSearchParams()` in `<Suspense>` resolving Next.js 14 prerender failure; added video format and size checks in `/api/upload`; added mobile header, bottom dock, and responsive drawer in `Sidebar.tsx`. |
+| `privacy-docs` | Sanitized documentation links | Converted absolute file URLs to portable relative links for GitHub and local environment portability. |
 
 ---
 

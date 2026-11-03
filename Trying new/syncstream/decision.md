@@ -17,34 +17,34 @@ syncstream/
 ```
 
 ### 2.2 Server Architecture (`server/`)
-- **[server.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/server/server.js)**: Central HTTP & WebSocket server. Runs on port `3001` or as a background service via PM2 / Docker.
-- **[src/services/roomManager.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/server/src/services/roomManager.js)**:
+- **[server.js](./server/server.js)**: Central HTTP & WebSocket server. Runs on port `3001` or as a background service via PM2 / Docker.
+- **[src/services/roomManager.js](./server/src/services/roomManager.js)**:
   - Manages active watch party rooms, host permissions, participant lists, and playlist state.
   - Automatically reclaims memory by cleaning up empty rooms after grace periods.
-- **[src/handlers/syncHandler.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/server/src/handlers/syncHandler.js)**:
+- **[src/handlers/syncHandler.js](./server/src/handlers/syncHandler.js)**:
   - Handles `video:play`, `video:pause`, `video:seek`, and `video:rate` broadcasts.
   - Employs a drift-compensation algorithm that synchronizes client timestamps without stutter.
-- **[src/handlers/roomHandler.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/server/src/handlers/roomHandler.js)**: Room creation using 6-character room codes, host control locks (permitting or restricting guest seeking), and user join/leave lifecycles.
-- **[src/handlers/chatHandler.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/server/src/handlers/chatHandler.js)**: Delivers chat messages, system alerts, and real-time floating emoji bursts.
-- **[src/handlers/webrtcHandler.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/server/src/handlers/webrtcHandler.js)**: Acts as the WebRTC signaling exchange (SDP offers/answers and ICE candidates) for voice/video mesh rooms.
-- **[src/handlers/vlcHandler.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/server/src/handlers/vlcHandler.js)**: Remote control bridge for local VLC media players.
+- **[src/handlers/roomHandler.js](./server/src/handlers/roomHandler.js)**: Room creation using 6-character room codes, host control locks (permitting or restricting guest seeking), and user join/leave lifecycles.
+- **[src/handlers/chatHandler.js](./server/src/handlers/chatHandler.js)**: Delivers chat messages, system alerts, and real-time floating emoji bursts.
+- **[src/handlers/webrtcHandler.js](./server/src/handlers/webrtcHandler.js)**: Acts as the WebRTC signaling exchange (SDP offers/answers and ICE candidates) for voice/video mesh rooms.
+- **[src/handlers/vlcHandler.js](./server/src/handlers/vlcHandler.js)**: Remote control bridge for local VLC media players.
 
 ### 2.3 Client Architecture (`client/src/`)
-- **[components/VideoPlayer/VideoPlayer.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/client/src/components/VideoPlayer/VideoPlayer.tsx)**:
+- **[components/VideoPlayer/VideoPlayer.tsx](./client/src/components/VideoPlayer/VideoPlayer.tsx)**:
   - Multi-source player supporting direct MP4/WebM/HLS URLs, YouTube embeds, and local files.
   - Custom subtitle engine supporting SRT, VTT, and native YouTube CC track switching.
-  - Subtitle parser ([subtitleParser.ts](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/client/src/utils/subtitleParser.ts)) with subtitle synchronization offset adjustment.
+  - Subtitle parser ([subtitleParser.ts](./client/src/utils/subtitleParser.ts)) with subtitle synchronization offset adjustment.
   - YouTube embed restriction bypass that leverages Electron headers or smart fallback in browsers.
-- **[components/Playlist/PlaylistModal.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/client/src/components/Playlist/PlaylistModal.tsx)**:
+- **[components/Playlist/PlaylistModal.tsx](./client/src/components/Playlist/PlaylistModal.tsx)**:
   - Collaborative queue with drag-and-drop reordering.
   - Auto-plays the next queued video upon current video completion.
-- **[components/Lobby/Lobby.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/client/src/components/Lobby/Lobby.tsx)**: Modern room creation and joining interface.
-- **[components/ServerConfig/ServerConfigModal.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/client/src/components/ServerConfig/ServerConfigModal.tsx)**: Allows switching between cloud server URLs and local dev servers.
-- **[components/ThemeToggle/ThemeToggle.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/client/src/components/ThemeToggle/ThemeToggle.tsx)**: Switch between fiery and dark/light UI modes.
+- **[components/Lobby/Lobby.tsx](./client/src/components/Lobby/Lobby.tsx)**: Modern room creation and joining interface.
+- **[components/ServerConfig/ServerConfigModal.tsx](./client/src/components/ServerConfig/ServerConfigModal.tsx)**: Allows switching between cloud server URLs and local dev servers.
+- **[components/ThemeToggle/ThemeToggle.tsx](./client/src/components/ThemeToggle/ThemeToggle.tsx)**: Switch between fiery and dark/light UI modes.
 
 ### 2.4 Desktop Wrapper (`electron/`)
-- **[electron/main.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/electron/main.js)**: Electron runtime setting up browser windows, handling user-agent modifications to avoid YouTube "Sign-in required to confirm you're not a bot" embed blocks, and registering hardware acceleration.
-- **[electron/preload.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/syncstream/electron/preload.js)**: Context isolation bridge providing safe IPC access for desktop features.
+- **[electron/main.js](./electron/main.js)**: Electron runtime setting up browser windows, handling user-agent modifications to avoid YouTube "Sign-in required to confirm you're not a bot" embed blocks, and registering hardware acceleration.
+- **[electron/preload.js](./electron/preload.js)**: Context isolation bridge providing safe IPC access for desktop features.
 
 ---
 
@@ -63,6 +63,7 @@ syncstream/
 | `c840b77` | Theme update | Introduced dynamic fiery accent effects across the UI. |
 | `c4a262f`, `052b3ff`, `5290eb4` | Video playback & sync engine stabilization | Fixed sync race conditions, seek jitter, and video pause event synchronization across multiple peers. |
 | Hardening & Polish | Keyboard Accessibility & Connection Resilience | Added modifier key collision safeguards, keyboard seeking (Left/Right 5s, J/L 10s), volume up/down shortcuts (5%), ARIA player region semantics, updated shortcuts documentation, and handled socket connection error resilience in `useRoom.ts`. |
+| Privacy & Security | Anonymized Android package & runtime tunnel privacy | Changed Android applicationId/namespace from `com.dhruv.syncstream` to generic `com.syncstream.app`, untracked runtime tunnel state `syncstream_tunnel.json`, and sanitized documentation links. |
 
 ---
 

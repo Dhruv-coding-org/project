@@ -117,7 +117,7 @@ export const INITIAL_STATE: GitState = {
   },
   stagedFiles: [],
   modifiedFiles: ['index.html', 'styles.css', 'app.js', 'README.md'],
-  config: { 'user.name': 'Dhruv', 'user.email': 'dhruv@committree.git' },
+  config: { 'user.name': 'Anonymous', 'user.email': 'dev@committree.git' },
   reflog: ['C0 HEAD@{0}: commit (initial): Initial commit'],
   reflogEntries: [
     {
@@ -1587,10 +1587,10 @@ function handleConfig(state: GitState, args: string[]): GitCommandResult {
   const val = args.slice(1).join(' ').replace(/^["']|["']$/g, '');
 
   if (!key) {
-    return { state, output: ['user.name=Dhruv', 'user.email=dhruv@committree.git', 'core.editor=vscode', 'color.ui=auto'] };
+    return { state, output: ['user.name=Anonymous', 'user.email=dev@committree.git', 'core.editor=vscode', 'color.ui=auto'] };
   }
 
-  const newConfig = { ...(state.config || { 'user.name': 'Dhruv', 'user.email': 'dhruv@committree.git' }) };
+  const newConfig = { ...(state.config || { 'user.name': 'Anonymous', 'user.email': 'dev@committree.git' }) };
   if (val) {
     newConfig[key] = val;
     return { state: { ...state, config: newConfig }, output: [`Set global config '${key}' to '${val}'.`] };

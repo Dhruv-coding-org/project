@@ -51,16 +51,21 @@ router.post('/login', async (req, res) => {
 // Create default admins (run once)
 router.post('/setup', async (req, res) => {
   try {
-    const teacherExists = await Admin.findOne({ email: 'teacher@school.com' });
-    const principalExists = await Admin.findOne({ email: 'principal@school.com' });
+    const teacherEmail = process.env.ADMIN_TEACHER_EMAIL || 'teacher@school.com';
+    const teacherPass = process.env.ADMIN_TEACHER_PASSWORD || 'teacher123';
+    const principalEmail = process.env.ADMIN_PRINCIPAL_EMAIL || 'principal@school.com';
+    const principalPass = process.env.ADMIN_PRINCIPAL_PASSWORD || 'principal123';
+
+    const teacherExists = await Admin.findOne({ email: teacherEmail });
+    const principalExists = await Admin.findOne({ email: principalEmail });
     
     // Admins and Director login credentials
    
     if (!teacherExists) {
       await Admin.create({
         name: 'Teacher Admin',
-        email: 'HOD@gmail.com.com',
-        password: 'teacher123',
+        email: teacherEmail,
+        password: teacherPass,
         role: 'teacher',
         department: 'General'
       });
@@ -69,16 +74,16 @@ router.post('/setup', async (req, res) => {
     if (!principalExists) {
       await Admin.create({
         name: 'Principal',
-        email: 'director@gmail.com',
-        password: 'principal123',
+        email: principalEmail,
+        password: principalPass,
         role: 'principal'
       });
     }
     
     res.json({ 
       message: 'Admins created!',
-      teacher: { email: 'teacher@school.com', password: 'teacher123' },
-      principal: { email: 'principal@school.com', password: 'principal123' }
+      teacher: { email: teacherEmail, password: teacherPass },
+      principal: { email: principalEmail, password: principalPass }
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

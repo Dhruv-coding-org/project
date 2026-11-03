@@ -8,7 +8,7 @@
 ## 2. Architecture & Component Guide
 
 ### 2.1 Core Git Engine (`src/git/`)
-- **[gitEngine.ts](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/git/gitEngine.ts)**:
+- **[gitEngine.ts](./src/git/gitEngine.ts)**:
   - Custom TypeScript implementation of Git repository internals without needing a backend.
   - Maintains `commits`, `branches`, `tags`, `HEAD`, `stagingArea`, and `stashStack`.
   - Implements authentic Git mechanics:
@@ -17,25 +17,25 @@
     - **Rebase**: Re-applies commit series onto destination branches with rewritten hashes.
     - **Reset**: Implements `--soft`, `--mixed`, and `--hard` pointer rollbacks.
     - **Cherry-Pick & Revert**: Selective commit duplication and inverse commits.
-- **[challenges.ts](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/git/challenges.ts)**: Contains categorized curriculum levels (Beginner, Intermediate, Advanced) and state verification checkers to test user completion.
-- **[simulatedRepo.ts](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/git/simulatedRepo.ts)**: Prepares initial repo states for sandbox experiments and level resets.
+- **[challenges.ts](./src/git/challenges.ts)**: Contains categorized curriculum levels (Beginner, Intermediate, Advanced) and state verification checkers to test user completion.
+- **[simulatedRepo.ts](./src/git/simulatedRepo.ts)**: Prepares initial repo states for sandbox experiments and level resets.
 
 ### 2.2 Visualizers & UI Components (`src/components/`)
-- **[GitGraph.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/components/GitGraph.tsx)**: Dynamic SVG renderer with automatic node layout algorithms, Bezier curve parent-child connectors, active branch badges, and animated commit insertions.
-- **[Terminal.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/components/Terminal.tsx)**: Emulated command-line shell with auto-completion, argument validation, command history navigation (Up/Down arrows), and colored output.
-- **[ChallengeBox.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/components/ChallengeBox.tsx)**: Displays current objectives, hints, expected tree visualizations, and instant victory verification.
-- **[NodeInspector.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/components/NodeInspector.tsx)**: Detail inspector showing commit author, hash, commit message, parent list, and touched files.
-- **[InteractiveRebaseModal.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/components/InteractiveRebaseModal.tsx)**: Drag-and-drop rebase organizer to pick, squash, reword, or drop commits visually.
-- **[ConflictResolverModal.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/components/ConflictResolverModal.tsx)**: 3-way conflict editor displaying `<<<<<<< HEAD`, `=======`, and `>>>>>>> branch`.
-- **[GitBisectModal.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/components/GitBisectModal.tsx)**: Interactive binary search debugger to locate faulty commits.
-- **[ReflogModal.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/components/ReflogModal.tsx)**: Inspection tool for recovering orphaned commits and undone checkouts.
-- **[BossBattles.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/components/BossBattles.tsx)** & **[SpeedrunArena.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/components/SpeedrunArena.tsx)**: Gamified crisis modes with countdown timers and combo multipliers.
-- **[LevelStudio.tsx](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/components/LevelStudio.tsx)**: Custom level maker allowing users and educators to create, test, and share challenges.
+- **[GitGraph.tsx](./src/components/GitGraph.tsx)**: Dynamic SVG renderer with automatic node layout algorithms, Bezier curve parent-child connectors, active branch badges, and animated commit insertions.
+- **[Terminal.tsx](./src/components/Terminal.tsx)**: Emulated command-line shell with auto-completion, argument validation, command history navigation (Up/Down arrows), and colored output.
+- **[ChallengeBox.tsx](./src/components/ChallengeBox.tsx)**: Displays current objectives, hints, expected tree visualizations, and instant victory verification.
+- **[NodeInspector.tsx](./src/components/NodeInspector.tsx)**: Detail inspector showing commit author, hash, commit message, parent list, and touched files.
+- **[InteractiveRebaseModal.tsx](./src/components/InteractiveRebaseModal.tsx)**: Drag-and-drop rebase organizer to pick, squash, reword, or drop commits visually.
+- **[ConflictResolverModal.tsx](./src/components/ConflictResolverModal.tsx)**: 3-way conflict editor displaying `<<<<<<< HEAD`, `=======`, and `>>>>>>> branch`.
+- **[GitBisectModal.tsx](./src/components/GitBisectModal.tsx)**: Interactive binary search debugger to locate faulty commits.
+- **[ReflogModal.tsx](./src/components/ReflogModal.tsx)**: Inspection tool for recovering orphaned commits and undone checkouts.
+- **[BossBattles.tsx](./src/components/BossBattles.tsx)** & **[SpeedrunArena.tsx](./src/components/SpeedrunArena.tsx)**: Gamified crisis modes with countdown timers and combo multipliers.
+- **[LevelStudio.tsx](./src/components/LevelStudio.tsx)**: Custom level maker allowing users and educators to create, test, and share challenges.
 
 ### 2.3 Audio & Utilities (`src/utils/`, `src/store/`)
-- **[soundEngine.ts](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/utils/soundEngine.ts)**: Web Audio API procedural sound synthesizer (keyboard clicks, commit swooshes, success fanfares, warning alerts) without relying on heavy external audio assets.
-- **[profileStore.ts](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/store/profileStore.ts)**: LocalStorage-backed state storing user level progress, XP, unlocked themes, and speedrun records.
-- **[urlSharing.ts](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/committree/src/utils/urlSharing.ts)**: Encodes full Git repository state into URL hashes for zero-backend sharing.
+- **[soundEngine.ts](./src/utils/soundEngine.ts)**: Web Audio API procedural sound synthesizer (keyboard clicks, commit swooshes, success fanfares, warning alerts) without relying on heavy external audio assets.
+- **[profileStore.ts](./src/store/profileStore.ts)**: LocalStorage-backed state storing user level progress, XP, unlocked themes, and speedrun records.
+- **[urlSharing.ts](./src/utils/urlSharing.ts)**: Encodes full Git repository state into URL hashes for zero-backend sharing.
 
 ---
 
@@ -48,6 +48,7 @@
 | `6e6bbc4` - `b6e8fa0` (v5) | Gamification, Boss Battles & Modals | Added Interactive Rebase, Conflict Resolver, Reflog, Bisect, CI Pipeline, Speedrun Arena, and Web Audio sound synthesizer. |
 | `c12f779` | UI refinement and bug fixes | Polished visual layout, keyboard shortcuts, and responsive breakpoints. |
 | `audit-fix` | Build restoration & tracking recovery | Restored missing `package.json` and `index.html` allowing `npm run build` and `npm run dev` to execute cleanly in 336ms; restored Git tracking by removing blanket ignore in root `.gitignore`. |
+| `privacy-cleanup` | Anonymized demo persona & cleaned draft plans | Generalized simulated demo user to Anonymous (`dev@committree.git`), deleted obsolete `implementation_plan.md`, and sanitized documentation links. |
 
 ---
 

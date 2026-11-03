@@ -19,6 +19,10 @@ import moviepy.audio.io.readers
 import numpy as np
 import warnings
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_TEMP_DIR = os.path.join(BASE_DIR, "temp")
+DEFAULT_OUTPUTS_DIR = os.path.join(BASE_DIR, "outputs")
+
 def check_ffmpeg():
     if shutil.which('ffmpeg') is None:
         print('\n' + '='*60)
@@ -32,7 +36,7 @@ def check_ffmpeg():
         return False
     return True
 
-def cleanup_temp_dir(temp_dir='temp'):
+def cleanup_temp_dir(temp_dir=DEFAULT_TEMP_DIR):
     if os.path.exists(temp_dir):
         for f in os.listdir(temp_dir):
             fp = os.path.join(temp_dir, f)
@@ -140,8 +144,8 @@ def make_safe_audio(clip):
 def render_question_video(q_data, assets, voice="en-US-ChristopherNeural", fps=30):
     """Renders a single question video clip using MoviePy."""
     q_id = q_data["id"]
-    temp_dir = "temp"
-    output_video_path = f"outputs/q_{q_id}.mp4"
+    temp_dir = DEFAULT_TEMP_DIR
+    output_video_path = os.path.join(DEFAULT_OUTPUTS_DIR, f"q_{q_id}.mp4")
     
     # 1. Generate Voiceover TTS
     tts_text = f"Would you rather: {q_data['option_a']}? Or: {q_data['option_b']}?"
@@ -338,7 +342,7 @@ def main():
         print("\n" + "="*50)
         print("Compiling all questions into a single compilation video...")
         print("="*50)
-        compilation_output = "outputs/compilation.mp4"
+        compilation_output = os.path.join(DEFAULT_OUTPUTS_DIR, "compilation.mp4")
         
         video_clips = []
         try:

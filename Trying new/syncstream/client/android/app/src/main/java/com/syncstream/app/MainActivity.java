@@ -1,5 +1,6 @@
-package com.dhruv.syncstream;
+package com.syncstream.app;
 
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {}
+

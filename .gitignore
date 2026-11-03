@@ -66,3 +66,11 @@ venv/
 .venv/
 **/.venv/
 
+# ECC local machine install state
+.agents/ecc-install-state.json
+**/.agents/ecc-install-state.json
+
+# Local runtime tunnels
+**/syncstream_tunnel.json
+
+

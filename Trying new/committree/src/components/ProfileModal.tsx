@@ -179,7 +179,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               <input
                 type="text"
                 className="profile-name-input"
-                placeholder="e.g. Dhruv Git Wizard"
+                placeholder="e.g. Git Wizard"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 autoFocus

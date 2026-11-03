@@ -13,17 +13,17 @@ CyberZero is designed with a dual-interface model that shares a single unified s
 2. **Visual Command Center (`cyberzero_app.py`)**: A Streamlit web dashboard with interactive sliders, charts, phishing email inspection, and visual trophy cabinets.
 
 ### 2.2 Engine Modules (`engine/`)
-- **[curriculum.py](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/cyberzero/engine/curriculum.py)**:
+- **[curriculum.py](./engine/curriculum.py)**:
   Contains the 22-module structured curriculum split across 5 progressive phases:
   - *Phase 1: Foundation & The Digital World* (IP addresses, packets, DNS, ports).
   - *Phase 2: Personal Protection & Identity* (passwords, MFA, social engineering).
   - *Phase 3: Digital Contagions & Malware* (viruses, trojans, ransomware, worms).
   - *Phase 4: Web & Network Security* (HTTPS, certificates, firewalls, XSS, SQLi).
   - *Phase 5: Advanced Defense & Cryptography* (symmetric/asymmetric encryption, hashing, incident response).
-- **[simulators.py](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/cyberzero/engine/simulators.py)**: Safe in-memory simulated environments for hands-on labs (password cracking time estimator, phishing header inspector, Caesar cipher / SHA-256 playground).
-- **[boss_engine.py](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/cyberzero/engine/boss_engine.py)**: Handles culminating boss encounters testing accumulated knowledge under timed conditions.
-- **[cybot.py](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/cyberzero/engine/cybot.py)**: AI mentor engine providing context-specific hints, ELI5 analogies, and encouragement.
-- **[progress.py](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Trying%20new/cyberzero/engine/progress.py)**: State persistence manager serializing progress, XP, badges, and completed labs to `profile.json`.
+- **[simulators.py](./engine/simulators.py)**: Safe in-memory simulated environments for hands-on labs (password cracking time estimator, phishing header inspector, Caesar cipher / SHA-256 playground).
+- **[boss_engine.py](./engine/boss_engine.py)**: Handles culminating boss encounters testing accumulated knowledge under timed conditions.
+- **[cybot.py](./engine/cybot.py)**: AI mentor engine providing context-specific hints, ELI5 analogies, and encouragement.
+- **[progress.py](./engine/progress.py)**: State persistence manager serializing progress, XP, badges, and completed labs to `profile.json`.
 
 ### 2.3 Command Line Interface (`cli/`)
 - **`commands.py`**: Command parser and handler for commands like `status`, `modules`, `lesson <N>`, `lab <N>`, `boss <N>`, `hint`, and `reset`.
@@ -45,6 +45,7 @@ CyberZero is designed with a dual-interface model that shares a single unified s
 | `992e7c2` | Unified dual-mode runtime (CLI + Streamlit) | Enabled users to choose between a cool terminal interface and an intuitive graphical dashboard without losing state. |
 | `c12f779` | Safety checks and simulator refinement | Ensured all labs run strictly in memory without executing dangerous local system commands or opening real network ports. |
 | `audit-fix` | Atomic state serialization, unit test suite & tracking recovery | Replaced non-atomic file writes with PID-isolated temp files and atomic rename in `engine/progress.py`; created comprehensive unit test suite (`test_cyberzero.py`); restored Git tracking in root `.gitignore`. |
+| `sec-hardening` | Added .env.example & relative path documentation | Added environment configuration template for `PYTHONPATH` and converted absolute file URLs to relative links. |
 
 ---
 

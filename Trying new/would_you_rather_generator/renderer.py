@@ -2,6 +2,9 @@ import os
 # pyrefly: ignore [missing-import]
 from PIL import Image, ImageDraw, ImageFont
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_TEMP_DIR = os.path.join(BASE_DIR, "temp")
+
 def text_wrap(text, font, max_width, draw):
     """Wraps text to fit within a maximum pixel width."""
     words = text.split(' ')
@@ -111,7 +114,7 @@ def draw_card(draw, x_start, y_start, width, height, text, font_title, font_body
                 fill=accent_color if accent_color else border_color
             )
 
-def create_base_images(q_data, font_path, temp_dir="temp"):
+def create_base_images(q_data, font_path, temp_dir=DEFAULT_TEMP_DIR):
     """Generates the question and reveal frame images for a given question dict."""
     os.makedirs(temp_dir, exist_ok=True)
     
@@ -189,7 +192,7 @@ def create_base_images(q_data, font_path, temp_dir="temp"):
         paths[suffix] = out_path
     return paths
 
-def generate_countdown_badges(font_path, temp_dir="temp"):
+def generate_countdown_badges(font_path, temp_dir=DEFAULT_TEMP_DIR):
     """Generates the circular center badges (OR, 5, 4, 3, 2, 1) to overlay on the screen."""
     os.makedirs(temp_dir, exist_ok=True)
     

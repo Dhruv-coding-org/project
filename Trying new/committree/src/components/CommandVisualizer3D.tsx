@@ -55,8 +55,8 @@ const COMMAND_CARDS: CommandCardData[] = [
     description: 'Sets your developer name and email address that will be permanently attached to all your commit timestamps.',
     proTip: 'Check your current identity anytime by typing "git config --global user.name" without quotes.',
     diagramBefore: 'Author: Unknown Developer <unknown@git>',
-    diagramAfter:  'Author: Dhruv <dhruv@committree.git>',
-    exampleCommand: 'git config --global user.name "Dhruv"',
+    diagramAfter:  'Author: Anonymous <dev@committree.git>',
+    exampleCommand: 'git config --global user.name "Anonymous"',
   },
   {
     id: 'add',
@@ -354,7 +354,7 @@ const COMMAND_CARDS: CommandCardData[] = [
     description: 'Connects your local repository to a remote server URL (like GitHub) under a shorthand name like "origin".',
     proTip: 'Run "git remote -v" to verify your connected fetch and push URLs anytime!',
     diagramBefore: '[Local Repo Only, no connections]',
-    diagramAfter:  'origin -> https://github.com/Dhruv/project.git',
+    diagramAfter:  'origin -> https://github.com/developer/project.git',
     exampleCommand: 'git remote -v',
   },
 ];

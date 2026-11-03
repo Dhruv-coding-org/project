@@ -19,15 +19,15 @@
   - File Uploads: Multer handling multipart form data with storage inside `/uploads` and static serving.
 
 ### 2.2 Data Models (`models/`)
-- **[Student.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Student-Complaint-Box/models/Student.js)**: Holds student credentials, department, student ID, and active status.
-- **[Admin.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Student-Complaint-Box/models/Admin.js)**: Stores staff, HOD, and Principal accounts with assigned administrative privileges.
-- **[Complaint.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Student-Complaint-Box/models/Complaint.js)**: Represents grievance tickets with fields for category, description, anonymity status, attached evidence files, priority, resolution status (`Pending`, `In Progress`, `Resolved`, `Rejected`), activity logs, and two-way comments.
-- **[Blacklist.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Student-Complaint-Box/models/Blacklist.js)**: Stores blacklisted accounts and abuse records to block serial offenders while preserving anonymity for good-faith whistleblowers.
+- **[Student.js](./models/Student.js)**: Holds student credentials, department, student ID, and active status.
+- **[Admin.js](./models/Admin.js)**: Stores staff, HOD, and Principal accounts with assigned administrative privileges.
+- **[Complaint.js](./models/Complaint.js)**: Represents grievance tickets with fields for category, description, anonymity status, attached evidence files, priority, resolution status (`Pending`, `In Progress`, `Resolved`, `Rejected`), activity logs, and two-way comments.
+- **[Blacklist.js](./models/Blacklist.js)**: Stores blacklisted accounts and abuse records to block serial offenders while preserving anonymity for good-faith whistleblowers.
 
 ### 2.3 API Routes (`routes/`)
-- **[auth.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Student-Complaint-Box/routes/auth.js)**: Handles student/admin login, registration, JWT generation, and credential validation.
-- **[complaints.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Student-Complaint-Box/routes/complaints.js)**: Manages complaint creation (with Multer file upload), status updates, comment threads, and user-specific complaint listings.
-- **[admin.js](file:///c:/Users/dhruv/OneDrive/Desktop/Project/Student-Complaint-Box/routes/admin.js)**: Powers teacher and principal dashboards, departmental analytics, complaint status transitions, and blacklisting operations.
+- **[auth.js](./routes/auth.js)**: Handles student/admin login, registration, JWT generation, and credential validation.
+- **[complaints.js](./routes/complaints.js)**: Manages complaint creation (with Multer file upload), status updates, comment threads, and user-specific complaint listings.
+- **[admin.js](./routes/admin.js)**: Powers teacher and principal dashboards, departmental analytics, complaint status transitions, and blacklisting operations.
 
 ### 2.4 Frontend Clients (`public/`)
 - **`index.html`**: Institutional landing portal with quick navigation for students and staff.
@@ -49,6 +49,7 @@
 | `b960547` & `c12f779` | Multi-role authentication refinements & bug fixes | Hardened JWT token validation across principal and student endpoints. |
 | `548707f` | UI responsiveness & complaint lifecycle enhancements | Refined status badge workflows, evidence file previewing, and anonymous display logic. |
 | `audit-fix` | Server resilience, JWT safety, package cleanup & UI polish | Cleaned corrupted null-bytes and bloated deps in `package.json`; removed startup `process.exit(1)` crash on missing Mongo; added safe JWT fallback resolver (`utils/jwt.js`); removed plaintext passwords from server boot logs; upgraded CSS design system with WCAG AA contrast badges. |
+| `sec-hardening` | Environment hardening & admin seed parameterization | Added sanitized `.env.example`, converted absolute file URLs to portable relative links, and parameterized admin setup seed credentials via `ADMIN_*` environment variables. |
 
 ---
 
