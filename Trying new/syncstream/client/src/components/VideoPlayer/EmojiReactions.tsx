@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { EmojiReaction } from '../../types';
 import './EmojiReactions.css';
 
@@ -32,7 +33,7 @@ export function EmojiReactions({ reactions }: EmojiReactionsProps) {
             style={{
               left: `${leftPercent}%`,
               '--drift': `${drift}px`,
-            } as React.CSSProperties}
+            } as CSSProperties}
           >
             <span className="emoji-char">{r.emoji}</span>
             <span className="emoji-sender">{r.username}</span>

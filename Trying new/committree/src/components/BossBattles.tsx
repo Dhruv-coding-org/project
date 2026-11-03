@@ -14,7 +14,7 @@ export interface BossChallenge extends Challenge {
   xpReward: number;
 }
 
-export const BOSS_BATTLES: BossChallenge[] = [
+const BOSS_BATTLES: BossChallenge[] = [
   {
     id: 101,
     title: 'Boss 1: Detached HEAD Disaster 💥',

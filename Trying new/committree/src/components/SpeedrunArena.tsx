@@ -155,7 +155,7 @@ export const SpeedrunArena: React.FC = () => {
 
   // Timer effect
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (isRunning) {
       interval = setInterval(() => {
         setElapsedMs((prev) => prev + 100);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { type GitState, INITIAL_STATE, runGitCommand, executeInteractiveRebase, executePullRequestMerge } from './git/gitEngine';
-import { CHALLENGES, getStartingStateForChallenge, getTargetStateForChallenge } from './git/challenges';
+import { CHALLENGES, getStartingStateForChallenge, getTargetStateForChallenge, type Challenge } from './git/challenges';
 import { GitGraph } from './components/GitGraph';
 import { Terminal } from './components/Terminal';
 import { ChallengeBox } from './components/ChallengeBox';
@@ -100,7 +100,7 @@ function App() {
   // Mode selection: 'campaign' | 'sandbox' | 'visualizer' | 'speedrun' | 'studio' | 'boss'
   const [mode, setMode] = useState<'campaign' | 'sandbox' | 'visualizer' | 'speedrun' | 'studio' | 'boss'>('campaign');
   const [activeToastBadge, setActiveToastBadge] = useState<BadgeInfo | null>(null);
-  const [customChallenge, setCustomChallenge] = useState<any | null>(null);
+  const [customChallenge, setCustomChallenge] = useState<Challenge | null>(null);
 
   const handleAwardBadge = (badgeId: string) => {
     const { profile, newlyUnlocked, badge } = unlockBadgeForActiveProfile(badgeId);
@@ -232,7 +232,7 @@ function App() {
     ]);
   };
 
-  const loadCustomChallenge = (chal: any) => {
+  const loadCustomChallenge = (chal: Challenge) => {
     setCustomChallenge(chal);
     const freshState = getStartingStateForChallenge(chal);
     setCampaignState(freshState);

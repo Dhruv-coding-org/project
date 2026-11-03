@@ -17,6 +17,8 @@ export const LevelStudio: React.FC<LevelStudioProps> = ({ onPlayTest, onAwardBad
   const [copiedLink, setCopiedLink] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
 
+  const [challengeId] = useState(() => Date.now());
+
   const buildChallengeObject = (): Challenge => {
     const startingCommands = startingCmdsStr
       .split('\n')
@@ -28,7 +30,7 @@ export const LevelStudio: React.FC<LevelStudioProps> = ({ onPlayTest, onAwardBad
       .filter((c) => c.length > 0 && !c.startsWith('#'));
 
     return {
-      id: Date.now(),
+      id: challengeId,
       title: title.trim() || 'Custom Challenge',
       description: description.trim() || 'Solve the Git graph target.',
       objective: objective.trim() || 'Match the target tree structure.',
@@ -89,7 +91,7 @@ export const LevelStudio: React.FC<LevelStudioProps> = ({ onPlayTest, onAwardBad
         } else {
           setImportError('Invalid Challenge JSON format.');
         }
-      } catch (err) {
+      } catch {
         setImportError('Failed to parse JSON file.');
       }
     };
@@ -104,7 +106,7 @@ export const LevelStudio: React.FC<LevelStudioProps> = ({ onPlayTest, onAwardBad
     const targetState = getTargetStateForChallenge(currentChallenge);
     startNodeCount = Object.keys(startState.commits).length;
     targetNodeCount = Object.keys(targetState.commits).length;
-  } catch (e) {
+  } catch {
     // Ignore invalid commands during typing
   }
 

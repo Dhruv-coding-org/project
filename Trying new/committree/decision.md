@@ -49,6 +49,7 @@
 | `c12f779` | UI refinement and bug fixes | Polished visual layout, keyboard shortcuts, and responsive breakpoints. |
 | `audit-fix` | Build restoration & tracking recovery | Restored missing `package.json` and `index.html` allowing `npm run build` and `npm run dev` to execute cleanly in 336ms; restored Git tracking by removing blanket ignore in root `.gitignore`. |
 | `privacy-cleanup` | Anonymized demo persona & cleaned draft plans | Generalized simulated demo user to Anonymous (`dev@committree.git`), deleted obsolete `implementation_plan.md`, and sanitized documentation links. |
+| `lint-type-fix` | Resolved 14 ESLint issues & strict typing | Fixed impure `Date.now()` render call in `LevelStudio`, typed `customChallenge` and `interval` eliminating all `any` usages, removed unused error variables, scoped `BOSS_BATTLES` export to fix Fast Refresh, and configured ESLint rules for 0-warning build. |
 
 ---
 
