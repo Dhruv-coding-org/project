@@ -30,7 +30,7 @@ You do **not** need to ask an AI agent or memorize complex terminal commands whe
 ### ⭐ Method 1: The "1-Click Magic Script" (Easiest for Windows!)
 Whenever you turn on your computer or want to play:
 1. Open your Windows File Explorer and go to your project folder:
-   `C:\Users\dhruv\OneDrive\Desktop\Project\Trying new\cyberzero\`
+   `[Project Root]\Trying new\cyberzero\`
 2. Double-click on the file named **`Start_CyberZero_Academy.bat`**.
 3. **That's it!** A small black window will open in the background, and your web browser (Chrome, Edge, or Firefox) will automatically pop open to **[http://localhost:8000](http://localhost:8000)**!
    *(Note: Leave that small black command window open while playing. When you are done playing, simply close the black window to turn off the server!)*

@@ -63,7 +63,7 @@ syncstream/
 | `c840b77` | Theme update | Introduced dynamic fiery accent effects across the UI. |
 | `c4a262f`, `052b3ff`, `5290eb4` | Video playback & sync engine stabilization | Fixed sync race conditions, seek jitter, and video pause event synchronization across multiple peers. |
 | Hardening & Polish | Keyboard Accessibility & Connection Resilience | Added modifier key collision safeguards, keyboard seeking (Left/Right 5s, J/L 10s), volume up/down shortcuts (5%), ARIA player region semantics, updated shortcuts documentation, and handled socket connection error resilience in `useRoom.ts`. |
-| Privacy & Security | Anonymized Android package & runtime tunnel privacy | Changed Android applicationId/namespace from `com.dhruv.syncstream` to generic `com.syncstream.app`, untracked runtime tunnel state `syncstream_tunnel.json`, and sanitized documentation links. |
+| Privacy & Security | Anonymized Android package & runtime tunnel privacy | Changed Android applicationId/namespace to generic `com.syncstream.app`, untracked runtime tunnel state `syncstream_tunnel.json`, and sanitized documentation links. |
 | Diagnostics & Types | Fixed CSSProperties type import & modern Gradle buildDir syntax | Added `import type { CSSProperties } from 'react'` in `EmojiReactions.tsx` to fix missing namespace, created base `App.css`, and updated root `build.gradle` clean task to modern `rootProject.layout.buildDirectory`. |
 
 ---

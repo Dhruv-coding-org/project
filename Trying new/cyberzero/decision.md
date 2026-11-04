@@ -46,6 +46,7 @@ CyberZero is designed with a dual-interface model that shares a single unified s
 | `c12f779` | Safety checks and simulator refinement | Ensured all labs run strictly in memory without executing dangerous local system commands or opening real network ports. |
 | `audit-fix` | Atomic state serialization, unit test suite & tracking recovery | Replaced non-atomic file writes with PID-isolated temp files and atomic rename in `engine/progress.py`; created comprehensive unit test suite (`test_cyberzero.py`); restored Git tracking in root `.gitignore`. |
 | `sec-hardening` | Added .env.example & relative path documentation | Added environment configuration template for `PYTHONPATH` and converted absolute file URLs to relative links. |
+| `path-portability` | Anonymized absolute paths in docs and pyright | Replaced machine-specific Windows paths with portable relative paths in `BEGINNER_WALKTHROUGH.md` and `pyrightconfig.json`. |
 
 ---
 

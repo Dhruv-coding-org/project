@@ -3,10 +3,9 @@
     "."
   ],
   "extraPaths": [
-    ".",
-    "C:/Users/dhruv/OneDrive/Desktop/Project/Trying new/cyberzero"
+    "."
   ],
-  "venvPath": "C:/Users/dhruv/OneDrive/Desktop/Project/Trying new/cyberzero",
+  "venvPath": ".",
   "venv": "venv",
   "reportMissingImports": "none",
   "reportMissingModuleSource": "none"
