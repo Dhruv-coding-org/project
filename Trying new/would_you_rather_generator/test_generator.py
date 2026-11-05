@@ -39,5 +39,12 @@ class TestAssetsManager(unittest.TestCase):
         self.assertIn("ding", assets)
         self.assertIn("tick", assets)
 
+class TestGeneratorConfiguration(unittest.TestCase):
+    def test_ffmpeg_check_callable(self):
+        import generator
+        self.assertTrue(callable(generator.check_ffmpeg))
+        self.assertTrue(os.path.isabs(generator.DEFAULT_TEMP_DIR))
+        self.assertTrue(os.path.isabs(generator.DEFAULT_OUTPUTS_DIR))
+
 if __name__ == "__main__":
     unittest.main()

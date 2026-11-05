@@ -2,7 +2,7 @@ import os
 import math
 import struct
 import wave
-import requests
+import urllib.request
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FONTS_DIR = os.path.join(BASE_DIR, "assets", "fonts")
@@ -24,10 +24,11 @@ def download_font():
     url = "https://github.com/google/fonts/raw/main/ofl/anton/Anton-Regular.ttf"
     print(f"Downloading font from {url}...")
     try:
-        r = requests.get(url, timeout=15)
-        r.raise_for_status()
-        with open(font_path, "wb") as f:
-            f.write(r.content)
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=15) as response:
+            content = response.read()
+            with open(font_path, "wb") as f:
+                f.write(content)
         print("Font downloaded successfully.")
         return font_path
     except Exception as e:

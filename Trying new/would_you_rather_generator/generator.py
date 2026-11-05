@@ -1,4 +1,5 @@
 import os
+import shutil
 import json
 import argparse
 import asyncio
@@ -301,7 +302,7 @@ def main():
     assets = assets_manager.setup_assets()
     
     # Load Questions
-    questions_file = "questions.json"
+    questions_file = os.path.join(BASE_DIR, "questions.json")
     if not os.path.exists(questions_file):
         raise FileNotFoundError(f"Could not find questions configuration at {questions_file}")
         

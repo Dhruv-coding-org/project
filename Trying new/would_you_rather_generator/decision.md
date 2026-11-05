@@ -39,6 +39,7 @@ The generator operates through a 4-stage pipeline:
 | `c12f779` | MoviePy recursion bug patch & sound mixing fixes | Resolved crash in `FFMPEG_AudioReader` caused by boolean array indexing changes in modern NumPy. |
 | `audit-fix` | FFmpeg pre-flight diagnostics, temp file cleanup, 3x expanded corpus & tests | Added explicit FFmpeg availability check; added `--clean-temp` scratch frame purge; expanded dilemma database from 5 to 15 questions; created automated unit tests (`test_generator.py`); restored Git tracking in root `.gitignore`. |
 | `path-isolation` | Directory-anchored outputs & relative path documentation | Replaced bare relative paths with `BASE_DIR`-anchored paths in `generator.py` and `renderer.py` to prevent stray folder generation at workspace root, and converted absolute URLs to relative links. |
+| `robustness-fix` | Zero-dependency font fallback, `shutil` check & automated suite expansion | Replaced `requests` in `assets_manager.py` with standard library `urllib.request` to eliminate external runtime dependencies; fixed missing `import shutil` in `generator.py`; anchored `questions.json` to script directory; expanded test suite to verify FFmpeg pre-flight callable. |
 
 ---
 
