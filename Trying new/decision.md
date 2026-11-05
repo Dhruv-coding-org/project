@@ -21,7 +21,8 @@ The `Trying new` folder serves as the central innovation workspace and experimen
 ## 3. Global Architecture Principles for `Trying new`
 1. **Self-Contained Dependencies**: Each subfolder maintains its own `package.json` or `requirements.txt` / virtual environment. Dependencies are strictly isolated to avoid cross-project conflicts.
 2. **Dedicated `decision.md` Tracking**: Every subfolder contains a local `decision.md` that documents changes, component designs, and feature usage instructions.
-3. **No Direct Root Leakage**: Assets, temporary media, models, and build artifacts should remain inside each respective subfolder.
+3. **Universal Design System Adherence**: All web surfaces adhere to the design tokens and layout principles codified in [design.md](../design.md).
+4. **No Direct Root Leakage**: Assets, temporary media, models, and build artifacts should remain inside each respective subfolder.
 
 ---
 
