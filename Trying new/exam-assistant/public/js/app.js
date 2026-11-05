@@ -54,11 +54,11 @@
 
   // Requirement labels
   const reqLabels = {
-    'one-nighter': '⚡ One-Nighter Survival (80/20 Cram)',
-    'comprehensive': '🎓 Deep Exam Masterclass',
-    'eli5': "👶 Explain Like I'm 5 (Analogy First)",
-    'quiz-me': '✍️ Mock Examiner Viva & Quiz',
-    'cheat-sheet': '📝 Mnemonics & Rapid Cheat Sheet'
+    'one-nighter': 'High-Yield 80/20 Cram',
+    'comprehensive': 'Comprehensive Masterclass',
+    'eli5': "Concept Analogies (ELI5)",
+    'quiz-me': 'Examiner Viva & Quiz',
+    'cheat-sheet': 'Cheat Sheet & Rubrics'
   };
 
   // --- INITIALIZATION ---
@@ -157,7 +157,7 @@
 
       if (data.success) {
         activeDocPill.classList.add('active');
-        activeDocName.textContent = `📄 ${filename} (${data.unitsCount} Units)`;
+        activeDocName.textContent = `${filename} (${data.unitsCount} Units)`;
 
         uploadFeedback.style.display = 'block';
         feedbackFilename.textContent = filename;
@@ -173,10 +173,10 @@
           : apiKey ? `(Running via **Google Gemini Cloud**)` : `(Running via **Dynamic Syllabus Semantic Engine**)`;
 
         addAgentMessage(
-          `### 👋 Private Exam Tutor Initialized!\n\n` +
-          `I have ingested your entire syllabus: **${filename}** (${data.unitsCount} Units, ${data.topicsCount} discrete topics loaded).\n\n` +
-          `**Active Mode:** \`${reqLabels[currentRequirement]}\` ${engineNotice}\n\n` +
-          `Tell me what to teach you, or pick one of the quick prompts below (e.g. *"Teach me Unit 2 from the exam POV"*, *"What are the guaranteed 10-markers?"*, *"Give me the One-Nighter 80/20 plan"*).`,
+          `### Academic Tutor Initialized\n\n` +
+          `Ingested course syllabus: **${filename}** (${data.unitsCount} Units, ${data.topicsCount} discrete topics loaded).\n\n` +
+          `**Active Strategy:** \`${reqLabels[currentRequirement]}\` ${engineNotice}\n\n` +
+          `Select a quick action below or instruct the tutor with specific topics or questions (e.g. *"Teach Unit 1 focusing on full-mark criteria"*, *"What are the recurring 10-markers?"*, *"Give me the 80/20 breakdown"*).`,
           'System'
         );
       }
@@ -211,7 +211,7 @@
 
   syllabusDropzone.addEventListener('dragover', (e) => {
     e.preventDefault();
-    syllabusDropzone.style.borderColor = 'var(--accent-rust)';
+    syllabusDropzone.style.borderColor = 'var(--accent-terracotta)';
   });
 
   syllabusDropzone.addEventListener('dragleave', () => {
@@ -236,8 +236,10 @@
     const isDocx = file.name.toLowerCase().endsWith('.docx');
     const isPdf = file.name.toLowerCase().endsWith('.pdf');
 
-    syllabusDropzone.querySelector('.upload-icon').textContent = '⏳';
-    syllabusDropzone.querySelector('.upload-title').textContent = 'Extracting syllabus...';
+    const titleEl = syllabusDropzone.querySelector('.upload-title');
+    const subEl = syllabusDropzone.querySelector('.upload-sub');
+    if (titleEl) titleEl.textContent = 'Extracting syllabus...';
+    if (subEl) subEl.textContent = 'Parsing units and topics';
 
     if (isDocx || isPdf) {
       const formData = new FormData();
@@ -251,8 +253,8 @@
         const data = await res.json();
 
         if (data.success) {
-          syllabusDropzone.querySelector('.upload-icon').textContent = '✅';
-          syllabusDropzone.querySelector('.upload-title').textContent = 'Syllabus Loaded!';
+          if (titleEl) titleEl.textContent = 'Syllabus Loaded';
+          if (subEl) subEl.textContent = 'Ready for strategy selection';
           await ingestSyllabusText(data.text, file.name);
         } else {
           alert('Could not parse document: ' + data.error);
@@ -265,8 +267,8 @@
     } else {
       const reader = new FileReader();
       reader.onload = async (e) => {
-        syllabusDropzone.querySelector('.upload-icon').textContent = '✅';
-        syllabusDropzone.querySelector('.upload-title').textContent = 'Syllabus Loaded!';
+        if (titleEl) titleEl.textContent = 'Syllabus Loaded';
+        if (subEl) subEl.textContent = 'Ready for strategy selection';
         await ingestSyllabusText(e.target.result, file.name);
       };
       reader.readAsText(file);
@@ -274,8 +276,10 @@
   }
 
   function resetDropzone() {
-    syllabusDropzone.querySelector('.upload-icon').textContent = '📄';
-    syllabusDropzone.querySelector('.upload-title').textContent = 'Drop Word (.docx) or PDF here';
+    const titleEl = syllabusDropzone.querySelector('.upload-title');
+    const subEl = syllabusDropzone.querySelector('.upload-sub');
+    if (titleEl) titleEl.textContent = 'Select or drop syllabus document';
+    if (subEl) subEl.textContent = 'Accepts .docx, .pdf, or .txt';
   }
 
   // --- REQUIREMENTS SELECTION ---
@@ -287,8 +291,8 @@
       currentPersonaLabel.textContent = reqLabels[currentRequirement] || currentRequirement;
 
       addAgentMessage(
-        `🔄 **Requirement Updated:** Switched into **${reqLabels[currentRequirement]}** mode.\n\n` +
-        `Every concept or topic will now be structured specifically around this requirement.`
+        `**Strategy Updated:** Switched into **${reqLabels[currentRequirement]}** mode.\n\n` +
+        `Subsequent analysis and question grading will structure responses around this focus.`
       );
     });
   });
@@ -328,7 +332,7 @@
 
     let sourceBadge = '';
     if (source && source !== 'System') {
-      sourceBadge = `<div style="font-size: 0.725rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 600;">⚡ Engine: ${escapeHtml(source)}</div>`;
+      sourceBadge = `<div style="font-size: 0.725rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 600;">Engine: ${escapeHtml(source)}</div>`;
     }
 
     let followUpsHtml = '';
@@ -341,7 +345,7 @@
     }
 
     row.innerHTML = `
-      <div class="msg-avatar agent">AI</div>
+      <div class="msg-avatar agent">EL</div>
       <div class="msg-content-box">
         ${sourceBadge}
         ${parsedHtml}
@@ -366,11 +370,11 @@
     row.id = id;
     row.className = 'agent-msg-row';
     row.innerHTML = `
-      <div class="msg-avatar agent">AI</div>
+      <div class="msg-avatar agent">EL</div>
       <div class="msg-content-box" style="color: var(--text-secondary);">
-        <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.85rem; color: var(--accent-rust);">
-          <span style="display: inline-block; animation: spin 1s infinite linear;">⚙️</span>
-          <span id="${id}-step">Thinking &amp; analyzing your syllabus...</span>
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.85rem; color: var(--accent-terracotta);">
+          <span class="thinking-spinner"></span>
+          <span id="${id}-step">Analyzing course syllabus...</span>
         </div>
         <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;" id="${id}-sub">
           Cross-referencing topics and marking schemes...

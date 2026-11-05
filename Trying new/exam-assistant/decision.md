@@ -25,15 +25,14 @@
   - **Non-blocking Probe**: Pings AI health in the background without freezing the client UI.
 
 ### 2.3 Frontend & Design System (`public/`)
-- **Aesthetic Philosophy**: Styled like a scholarly academic reference desk—warm parchment ivory (`#F8F6F1`), dark carbon ink typography (`Lora` serif and `Plus Jakarta Sans`), and subtle terracotta accents (`#BF4C28`). Strictly avoids generic glowing neon AI tropes.
+- **Aesthetic Philosophy**: Strictly aligned with [`.agents/design.md`](../../.agents/design.md). Uses the official 5-color palette: Warm Alabaster (`#F9F8F5`), Pure Studio (`#FFFFFF`), Carbon Ink (`#1E1E1C`), Weathered Slate (`#6E6A63`), and Restrained Terracotta (`#B84A28`). Implements a Major Third (1.250) type scale with `Lora` and `Plus Jakarta Sans`, 8-step spacing scale (4px base), 3-step radius scale (4px, 8px, 14px), single ambient elevation, and zero emojis in UI controls (curated SVGs used exclusively).
 - **[public/index.html](./public/index.html)**:
-  - **Priority Heatmap**: High-yield vs low-yield topic visualization.
-  - **One-Nighter Cram Mode**: High-speed survival mode with 3-minute bullet summaries and mandatory diagrams.
-  - **Topic Masterclass**: Detailed rubric view and common exam pitfalls.
-  - **AI Examiner Grader**: Student answer submission with mark deduction explanations.
-  - **Interactive AI Tutor Chat**: Conversational study mentor aware of syllabus constraints.
-  - **Upload Studio**: Drag-and-drop document parser for custom course materials.
-- **[public/js/app.js](./public/js/app.js)**: Client-side state manager and API bridge.
+  - **Syllabus Ingestion**: Drag-and-drop document parser for `.docx`, `.pdf`, and `.txt` files with clean status indicators.
+  - **Study Strategy Selector**: 5 focused pedagogical modes (High-Yield 80/20 Cram, Comprehensive Masterclass, Concept Analogies ELI5, Examiner Viva & Quiz, Cheat Sheet & Rubrics).
+  - **Conversational Tutor Stage**: Asymmetric reading column with formatted examiner markdowns, rubric tables, and follow-up chips.
+  - **Mobile Dual-Viewport Tabs**: Responsive switcher tabs (`<= 850px`) preserving 44px touch targets.
+- **[public/css/styles.css](./public/css/styles.css)**: Centralized design system stylesheet implementing CSS variables for the 5-color palette, typography scale, spacing rhythm, and subtle ambient shadow.
+- **[public/js/app.js](./public/js/app.js)**: Client-side state manager, Ollama/Gemini API bridge, and dynamic markdown message renderer.
 
 ---
 
@@ -50,6 +49,7 @@
 | `7ad87d1` | Port collision detection, nodemon & process safety | Prevented EADDRINUSE crashes and simplified continuous local development. |
 | `audit-fix` | Multi-session syllabus scoping, upload type checks & mobile layout | Added session map to `agent.js` preventing syllabus collisions across users; restricted upload MIME extensions (`.docx`, `.pdf`, `.txt`); created responsive mobile workspace tabs (`<= 850px`); added accessibility ARIA attributes. |
 | `sec-hardening` | Added .env.example & relative path documentation | Provided environment configuration template for Gemini API key and port setup, and converted absolute URLs to relative links. |
+| `design-v2` | Universal design system compliance & anti-template overhaul | Codified tokens from `/.agents/design.md`: 5-color palette (`#F9F8F5`, `#1E1E1C`, `#B84A28`), Major Third (1.250) typographic hierarchy, 8-step spacing, 3-tier radius (`sm: 4px`, `md: 8px`, `lg: 14px`), single ambient elevation, removal of escaped newline artifact in HTML, and complete replacement of all UI emojis with curated SVG icons. |
 
 ---
 

@@ -3,22 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ExamLens — AI Syllabus Tutor & Exam Agent</title>
-  <meta name="description" content="Upload your entire syllabus in Word (.docx) or PDF and let the AI Agent teach you strictly based on your exam requirements.">
+  <title>ExamLens — Academic Syllabus Intelligence &amp; Examiner Agent</title>
+  <meta name="description" content="Academic syllabus intelligence and conversational examiner agent. Ingest course syllabi and practice exam-targeted mastery.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
-  <!-- Markdown parser for rich pedagogical formatting -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
-  <!-- Top App Navigation Header -->
+  <!-- Top Navigation Header -->
   <header class="app-header">
     <div class="header-inner">
       <div class="brand-section">
         <div class="brand-mark">EL</div>
         <div>
-          <h1 class="brand-title">ExamLens AI</h1>
-          <div class="brand-tagline">Conversational Syllabus Tutor &amp; Examiner Agent</div>
+          <h1 class="brand-title">ExamLens</h1>
+          <div class="brand-tagline">Syllabus Intelligence &amp; Evaluator Agent</div>
         </div>
       </div>
 
@@ -30,35 +32,48 @@
 
       <!-- Header Actions -->
       <div class="header-actions">
-        <button id="btnLoadSampleSyllabus" class="btn-secondary-sm" title="Load sample university syllabus" aria-label="Load Sample University Syllabus">
-          <span>📚 Sample Syllabus</span>
+        <button id="btnLoadSampleSyllabus" class="btn-secondary-sm" title="Load sample university course syllabus" aria-label="Load Sample University Syllabus">
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path><path d="M6 6h10"></path><path d="M6 10h10"></path></svg>
+          <span>Sample Course</span>
         </button>
-        <button id="btnOpenSettings" class="btn-secondary-sm" title="Configure AI API Key (Gemini/OpenAI)" aria-label="Open AI Brain and Settings">
-          <span>⚙️ AI Settings</span>
+        <button id="btnOpenSettings" class="btn-secondary-sm" title="Configure AI Inference Engine" aria-label="Open AI Inference Engine Settings">
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="21" y2="21"></line><line x1="4" x2="20" y1="14" y2="14"></line><line x1="4" x2="20" y1="7" y2="7"></line><circle cx="14" cy="21" r="2"></circle><circle cx="8" cy="14" r="2"></circle><circle cx="16" cy="7" r="2"></circle></svg>
+          <span>Engine Setup</span>
         </button>
-        <button id="btnToggleTheme" class="theme-toggle-btn" title="Toggle Dark/Light Mode" aria-label="Toggle Dark and Light Mode">
-          🌓
+        <button id="btnToggleTheme" class="theme-toggle-btn" title="Toggle theme contrast" aria-label="Toggle Dark and Light Mode">
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
         </button>
       </div>
     </div>
   </header>
 
   <!-- Workspace Container: Sidebar + Agent Conversation Stage -->
-  <div class="agent-workspace">`r`n    <!-- Mobile View Switcher Tabs (Visible <= 850px) -->`r`n    <div class="mobile-workspace-tabs" id="mobileWorkspaceTabs" role="tablist" aria-label="Mobile View Switcher">`r`n      <button id="tabBtnSyllabus" class="mobile-tab-btn" role="tab" aria-selected="false" aria-controls="agentSidebar">📄 Syllabus &amp; Units</button>`r`n      <button id="tabBtnChat" class="mobile-tab-btn active" role="tab" aria-selected="true" aria-controls="agentMainStage">💬 AI Tutor Chat</button>`r`n    </div>
+  <div class="agent-workspace">
+    <!-- Mobile View Switcher Tabs (Visible <= 850px) -->
+    <div class="mobile-workspace-tabs" id="mobileWorkspaceTabs" role="tablist" aria-label="Mobile View Switcher">
+      <button id="tabBtnSyllabus" class="mobile-tab-btn" role="tab" aria-selected="false" aria-controls="agentSidebar">
+        <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        <span>Syllabus &amp; Strategy</span>
+      </button>
+      <button id="tabBtnChat" class="mobile-tab-btn active" role="tab" aria-selected="true" aria-controls="agentMainStage">
+        <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        <span>Tutor Stage</span>
+      </button>
+    </div>
 
     <!-- LEFT SIDEBAR: Syllabus Ingestion & Study Requirements -->
     <aside class="agent-sidebar" id="agentSidebar">
       <!-- 1. Document Upload Area -->
-      <div class="sidebar-section">
-        <div class="sidebar-heading">
-          <span>1. Ingest Syllabus Document</span>
-        </div>
-        <p class="sidebar-desc">Upload your complete syllabus in Word (<strong>.docx</strong>), PDF, or text.</p>
+      <section class="sidebar-section">
+        <h2 class="sidebar-heading">Course Syllabus Ingestion</h2>
+        <p class="sidebar-desc">Upload course curriculum in Word (.docx), PDF, or plain text format.</p>
 
         <div class="upload-dropzone" id="syllabusDropzone">
-          <div class="upload-icon">📄</div>
-          <div class="upload-title">Drop Word (.docx) or PDF here</div>
-          <div class="upload-sub">or click to browse from computer</div>
+          <div class="upload-icon-box">
+            <svg class="dropzone-svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 12 15 15"></polyline></svg>
+          </div>
+          <div class="upload-title">Select or drop syllabus document</div>
+          <div class="upload-sub">Accepts .docx, .pdf, or .txt</div>
           <input type="file" id="syllabusFileInput" accept=".docx,.pdf,.txt" style="display: none;">
         </div>
 
@@ -66,67 +81,73 @@
           <div class="feedback-title" id="feedbackFilename">Operating_Systems.docx</div>
           <div class="feedback-meta" id="feedbackMeta">5 Units &bull; 24 Topics parsed into memory</div>
         </div>
-      </div>
+      </section>
 
       <!-- 2. Teaching Requirements Selector -->
-      <div class="sidebar-section">
-        <div class="sidebar-heading">
-          <span>2. Teaching Requirement</span>
-        </div>
-        <p class="sidebar-desc">How would you like the AI Agent to teach your syllabus?</p>
+      <section class="sidebar-section">
+        <h2 class="sidebar-heading">Study Strategy Mode</h2>
+        <p class="sidebar-desc">Select how the agent structures rubric criteria and explanations.</p>
 
         <div class="requirement-selector">
           <button class="req-card active" data-req="one-nighter">
-            <div class="req-icon">⚡</div>
+            <div class="req-icon-box">
+              <svg class="req-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+            </div>
             <div class="req-body">
-              <div class="req-name">One-Nighter Survival</div>
-              <div class="req-detail">Short on time! 80/20 rule, only high-yield topics, diagrams &amp; must-know points.</div>
+              <div class="req-name">High-Yield 80/20 Cram</div>
+              <div class="req-detail">Target the ~35% of concepts accounting for ~75%+ of historical examination marks.</div>
             </div>
           </button>
 
           <button class="req-card" data-req="comprehensive">
-            <div class="req-icon">🎓</div>
+            <div class="req-icon-box">
+              <svg class="req-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+            </div>
             <div class="req-body">
-              <div class="req-name">Deep Exam Masterclass</div>
-              <div class="req-detail">Thorough topic-by-topic teaching with full examiner marking rubrics.</div>
+              <div class="req-name">Comprehensive Masterclass</div>
+              <div class="req-detail">Rigorous syllabus walkthrough with full examiner marking rubrics and criteria.</div>
             </div>
           </button>
 
           <button class="req-card" data-req="eli5">
-            <div class="req-icon">👶</div>
+            <div class="req-icon-box">
+              <svg class="req-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </div>
             <div class="req-body">
-              <div class="req-name">Explain Like I'm 5</div>
-              <div class="req-detail">Simple real-world analogies first before academic technical definitions.</div>
+              <div class="req-name">Concept Analogies (ELI5)</div>
+              <div class="req-detail">Concrete real-world analogies before formal technical terminology and proofs.</div>
             </div>
           </button>
 
           <button class="req-card" data-req="quiz-me">
-            <div class="req-icon">✍️</div>
+            <div class="req-icon-box">
+              <svg class="req-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="m9 14 2 2 4-4"></path></svg>
+            </div>
             <div class="req-body">
               <div class="req-name">Examiner Viva &amp; Quiz</div>
-              <div class="req-detail">Pose exam questions, test me, and grade my written answers strictly.</div>
+              <div class="req-detail">Targeted examination questions with strict grading rubrics and deduction logs.</div>
             </div>
           </button>
 
           <button class="req-card" data-req="cheat-sheet">
-            <div class="req-icon">📝</div>
+            <div class="req-icon-box">
+              <svg class="req-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path></svg>
+            </div>
             <div class="req-body">
-              <div class="req-name">Mnemonics &amp; Cheat Sheet</div>
-              <div class="req-detail">High-density acronyms, comparison tables, and 60-second review bullets.</div>
+              <div class="req-name">Cheat Sheet &amp; Rubrics</div>
+              <div class="req-detail">High-density technical acronyms, comparison matrices, and review points.</div>
             </div>
           </button>
         </div>
-      </div>
+      </section>
 
       <!-- 3. Syllabus Units Explorer -->
-      <div class="sidebar-section" id="unitsExplorerSection" style="display: none;">
-        <div class="sidebar-heading">
-          <span>3. Ingested Units &amp; Topics</span>
-        </div>
+      <section class="sidebar-section" id="unitsExplorerSection" style="display: none;">
+        <h2 class="sidebar-heading">Ingested Units &amp; Modules</h2>
         <div id="unitsChipContainer" class="units-chip-container">
           <!-- Filled dynamically -->
         </div>
-      </div>
+      </section>
     </aside>
 
     <!-- RIGHT / MAIN: The AI Agent Teaching Session -->
@@ -139,20 +160,20 @@
 
       <!-- Quick Action Requirement Chips -->
       <div class="quick-chips-bar" id="quickChipsBar">
-        <button class="quick-chip" data-prompt="⚡ Give me the 80/20 One-Nighter breakdown of this syllabus. What must I study tonight to pass?">
-          ⚡ One-Nighter 80/20 Plan
+        <button class="quick-chip" data-prompt="Give me the 80/20 breakdown of this syllabus. What must I study to pass with highest confidence?">
+          80/20 High-Yield Plan
         </button>
-        <button class="quick-chip" data-prompt="Teach me Unit 1 from scratch focusing on what examiners award marks for.">
-          📖 Teach Unit 1
+        <button class="quick-chip" data-prompt="Teach me Unit 1 from scratch focusing on what examiners award full marks for.">
+          Teach Unit 1
         </button>
-        <button class="quick-chip" data-prompt="What are the guaranteed 10-mark questions most likely to be asked from this syllabus?">
-          🎯 Guaranteed 10-Markers
+        <button class="quick-chip" data-prompt="What are the recurring 10-mark questions historically asked from this syllabus?">
+          Recurring 10-Markers
         </button>
-        <button class="quick-chip" data-prompt="Give me a rapid mnemonics cheat sheet and comparison table for this syllabus.">
-          🧠 Mnemonics &amp; Cheat Sheet
+        <button class="quick-chip" data-prompt="Provide a rapid comparison matrix and revision summary for key mechanisms in this syllabus.">
+          Comparison Matrix &amp; Summary
         </button>
-        <button class="quick-chip" data-prompt="Quiz me like an examiner on a 10-mark question from this syllabus and grade my answer.">
-          ✍️ Mock Examiner Quiz
+        <button class="quick-chip" data-prompt="Quiz me like an examiner on a 10-mark question from this syllabus and grade my answer strictly.">
+          Mock Examiner Quiz
         </button>
       </div>
 
@@ -163,16 +184,16 @@
             id="agentUserInput" aria-label="Student Query Input" 
             class="agent-textarea" 
             rows="1" 
-            placeholder="Tell your AI tutor what to teach or ask any doubt (e.g., 'Teach me Unit 2 like I'm 5', 'Explain topic with exact diagram')..."
+            placeholder="Instruct the examiner tutor (e.g. 'Explain Unit 2 process scheduling with diagram', 'Grade my definition')..."
           ></textarea>
           <button id="btnSendMessage" class="btn-send-agent" title="Send requirement to AI Tutor" aria-label="Send message to AI Tutor">
             <span>Send</span>
-            <span class="send-arrow">➔</span>
+            <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
           </button>
         </div>
         <div class="input-hint">
-          <span>Active Persona: <strong id="currentPersonaLabel">One-Nighter Survival (80/20)</strong></span>
-          <span>&bull; Press <strong>Enter</strong> to send, <strong>Shift+Enter</strong> for newline</span>
+          <span>Active Strategy: <strong id="currentPersonaLabel">High-Yield 80/20 Cram</strong></span>
+          <span>Press <strong>Enter</strong> to send &bull; <strong>Shift+Enter</strong> for newline</span>
         </div>
       </div>
 
@@ -184,7 +205,7 @@
   <div id="settingsModal" class="modal-backdrop" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 style="font-family: var(--font-serif); font-size: 1.35rem;">AI Brain &amp; Engine Settings</h3>
+        <h3 class="modal-title">AI Brain &amp; Engine Settings</h3>
         <button id="btnCloseSettings" class="btn-close-modal" aria-label="Close Settings Modal">&times;</button>
       </div>
       <div class="modal-body">
@@ -193,26 +214,26 @@
         <div class="input-group">
           <label class="input-label" for="engineProviderSelect">Choose AI Provider</label>
           <select id="engineProviderSelect" class="text-input">
-            <option value="ollama" selected>🖥️ Local Ollama (Runs 100% on your PC resources)</option>
-            <option value="auto">⚡ Auto (Ollama if running, else Gemini, else Dynamic Engine)</option>
-            <option value="gemini">☁️ Google Gemini (Free live cloud reasoning)</option>
-            <option value="dynamic">🧠 Dynamic Syllabus Semantic Engine (Built-in)</option>
+            <option value="ollama" selected>Local Ollama (Hardware accelerated on PC)</option>
+            <option value="auto">Auto (Local Ollama, Gemini Cloud fallback, or Heuristic)</option>
+            <option value="gemini">Google Gemini Cloud (API inference)</option>
+            <option value="dynamic">Dynamic Syllabus Semantic Engine (Local Heuristic)</option>
           </select>
         </div>
 
         <!-- Ollama Status Box -->
-        <div id="ollamaConfigBox" class="card" style="padding: 1rem; margin-bottom: 1.25rem; background-color: var(--bg-secondary);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-            <strong style="font-size: 0.85rem;">🖥️ Local Ollama Status:</strong>
-            <span id="ollamaStatusBadge" style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">Checking...</span>
+        <div id="ollamaConfigBox" class="ollama-box">
+          <div class="ollama-status-row">
+            <span class="ollama-label">Local Ollama Status:</span>
+            <span id="ollamaStatusBadge" class="ollama-badge">Checking...</span>
           </div>
-          <div id="ollamaModelsContainer" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.35rem;">
+          <div id="ollamaModelsContainer" class="ollama-models">
             <!-- Detected models -->
           </div>
-          <div id="ollamaHelpText" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; line-height: 1.4;">
-            To run fully on your PC's CPU/GPU: open PowerShell and run: <br>
-            <code style="display: block; background: var(--bg-surface); padding: 4px 8px; border-radius: 4px; margin-top: 4px; font-family: var(--font-mono);">winget install Ollama.Ollama</code>
-            Then download a fast model: <code style="font-family: var(--font-mono);">ollama run llama3.2</code>
+          <div id="ollamaHelpText" class="ollama-help">
+            To run fully offline on your PC hardware, install Ollama in PowerShell:
+            <code class="code-block">winget install Ollama.Ollama</code>
+            Then pull a compact model: <code class="code-inline">ollama run llama3.2</code>
           </div>
         </div>
 
@@ -220,8 +241,8 @@
         <div id="geminiConfigBox" class="input-group">
           <label class="input-label" for="apiKeyInput">Google Gemini API Key (Optional)</label>
           <input type="password" id="apiKeyInput" class="text-input" placeholder="Paste AIzaSy... key for live Gemini 1.5/2.0 Flash">
-          <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.35rem;">
-            Get a 100% free key with no credit card at <a href="https://aistudio.google.com" target="_blank" style="color: var(--accent-rust);">aistudio.google.com</a>.
+          <div class="input-note">
+            Free tier keys available at <a href="https://aistudio.google.com" target="_blank" rel="noopener noreferrer">aistudio.google.com</a>.
           </div>
         </div>
 
