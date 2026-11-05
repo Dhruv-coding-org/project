@@ -7,7 +7,23 @@
 
 ## 2. Architecture & Component Guide
 
-### 2.1 Core Git Engine (`src/git/`)
+### 2.1 Visual Identity & Design System Alignment (`.agents/design.md`)
+The interface was overhauled to adhere to the Developer Workbench theme codified in `../../.agents/design.md`:
+- **5-Color Workbench Palette**:
+  - Base Background: Deep charcoal workbench (`#161514`)
+  - Elevated Container: Slate graphite (`#1E1D1B`)
+  - Border / Muted Stroke: Crisp charcoal contour (`#262422`)
+  - Typography / High Contrast Text: Warm paper white (`#EDEAE4`)
+  - Focused Accent: Terracotta branch orange (`#D45B36`)
+- **Typography & Font Stack**:
+  - Replaced generic `Inter` and system fonts with high-legibility `Plus Jakarta Sans` for interface controls and `JetBrains Mono` for terminal commands and code blocks.
+  - Scale adheres strictly to the Major Third ($1.250$) proportional progression.
+- **Anti-Template Enforcement**:
+  - Completely stripped floating ambient neon glow mesh spheres, rainbow gradient text, glowing card borders, and artificial glassmorphism backdrop filters.
+  - Replaced all emojis in navigation buttons, stats bars, action tabs, challenge victory badges, and terminal titles with lightweight semantic SVGs.
+  - Responsive mobile tab switcher ensuring smooth layout degradation below $850\text{px}$ with accessible $\ge 44\text{px}$ touch targets.
+
+### 2.2 Core Git Engine (`src/git/`)
 - **[gitEngine.ts](./src/git/gitEngine.ts)**:
   - Custom TypeScript implementation of Git repository internals without needing a backend.
   - Maintains `commits`, `branches`, `tags`, `HEAD`, `stagingArea`, and `stashStack`.
@@ -20,7 +36,7 @@
 - **[challenges.ts](./src/git/challenges.ts)**: Contains categorized curriculum levels (Beginner, Intermediate, Advanced) and state verification checkers to test user completion.
 - **[simulatedRepo.ts](./src/git/simulatedRepo.ts)**: Prepares initial repo states for sandbox experiments and level resets.
 
-### 2.2 Visualizers & UI Components (`src/components/`)
+### 2.3 Visualizers & UI Components (`src/components/`)
 - **[GitGraph.tsx](./src/components/GitGraph.tsx)**: Dynamic SVG renderer with automatic node layout algorithms, Bezier curve parent-child connectors, active branch badges, and animated commit insertions.
 - **[Terminal.tsx](./src/components/Terminal.tsx)**: Emulated command-line shell with auto-completion, argument validation, command history navigation (Up/Down arrows), and colored output.
 - **[ChallengeBox.tsx](./src/components/ChallengeBox.tsx)**: Displays current objectives, hints, expected tree visualizations, and instant victory verification.
@@ -32,7 +48,7 @@
 - **[BossBattles.tsx](./src/components/BossBattles.tsx)** & **[SpeedrunArena.tsx](./src/components/SpeedrunArena.tsx)**: Gamified crisis modes with countdown timers and combo multipliers.
 - **[LevelStudio.tsx](./src/components/LevelStudio.tsx)**: Custom level maker allowing users and educators to create, test, and share challenges.
 
-### 2.3 Audio & Utilities (`src/utils/`, `src/store/`)
+### 2.4 Audio & Utilities (`src/utils/`, `src/store/`)
 - **[soundEngine.ts](./src/utils/soundEngine.ts)**: Web Audio API procedural sound synthesizer (keyboard clicks, commit swooshes, success fanfares, warning alerts) without relying on heavy external audio assets.
 - **[profileStore.ts](./src/store/profileStore.ts)**: LocalStorage-backed state storing user level progress, XP, unlocked themes, and speedrun records.
 - **[urlSharing.ts](./src/utils/urlSharing.ts)**: Encodes full Git repository state into URL hashes for zero-backend sharing.
@@ -50,6 +66,7 @@
 | `audit-fix` | Build restoration & tracking recovery | Restored missing `package.json` and `index.html` allowing `npm run build` and `npm run dev` to execute cleanly in 336ms; restored Git tracking by removing blanket ignore in root `.gitignore`. |
 | `privacy-cleanup` | Anonymized demo persona & cleaned draft plans | Generalized simulated demo user to Anonymous (`dev@committree.git`), deleted obsolete `implementation_plan.md`, and sanitized documentation links. |
 | `lint-type-fix` | Resolved 14 ESLint issues & strict typing | Fixed impure `Date.now()` render call in `LevelStudio`, typed `customChallenge` and `interval` eliminating all `any` usages, removed unused error variables, scoped `BOSS_BATTLES` export to fix Fast Refresh, and configured ESLint rules for 0-warning build. |
+| `design-system-audit` | Anti-template overhaul & design system token adoption | Replaced generic Inter font with `Plus Jakarta Sans` / `JetBrains Mono`; removed floating glow mesh spheres, neon gradients, and glassmorphism; replaced UI emojis with curated SVG icons; implemented 5-color workbench dark palette (`#161514`, `#1E1D1B`, `#262422`, `#EDEAE4`, `#D45B36`) complying with `.agents/design.md`. |
 
 ---
 

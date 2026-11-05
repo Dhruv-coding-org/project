@@ -10,7 +10,7 @@ interface GitGraphProps {
 }
 
 const THEME_TRACK_COLORS: { [key: string]: string[] } = {
-  default: ['#10B981', '#06B6D4', '#8B5CF6', '#F59E0B', '#F43F5E', '#6366F1'],
+  default: ['#D45B36', '#3B82F6', '#10B981', '#F59E0B', '#64748B', '#8B5CF6'],
   cyberpunk: ['#00F0FF', '#FF007F', '#FFD700', '#39FF14', '#9D00FF', '#FF3F00'],
   github: ['#2EA043', '#58A6FF', '#D29922', '#A371F7', '#F85149', '#3FB950'],
   retro: ['#FFB000', '#00FF66', '#00FFFF', '#FF3300', '#FFFF00', '#33FF00'],

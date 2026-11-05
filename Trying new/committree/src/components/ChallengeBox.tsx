@@ -57,13 +57,15 @@ export const ChallengeBox: React.FC<ChallengeBoxProps> = ({
           className={`sub-tab-btn ${viewMode === 'objective' ? 'active' : ''}`}
           onClick={() => setViewMode('objective')}
         >
-          🎯 Objective & Task
+          <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+          <span>Objective &amp; Task</span>
         </button>
         <button
           className={`sub-tab-btn tutorial-tab ${viewMode === 'tutorial' ? 'active' : ''}`}
           onClick={() => setViewMode('tutorial')}
         >
-          📖 Concept Tutorial & Tips
+          <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path><path d="M6 6h10"></path><path d="M6 10h10"></path></svg>
+          <span>Concept Tutorial</span>
         </button>
       </div>
 

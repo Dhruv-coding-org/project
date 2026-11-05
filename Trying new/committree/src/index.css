@@ -1,102 +1,132 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Curated Harmonious HSL Tailored Color Palette */
-  --bg-main-hsl: 224, 71%, 4%;
-  --bg-panel-hsl: 224, 60%, 8%;
-  --bg-panel-darker-hsl: 224, 80%, 2%;
+  /* 5-Color Core Tokens for CommitTree Engineering Workbench */
+  --bg-canvas: #161514;
+  --bg-surface: #1E1D1B;
+  --bg-subtle: #262422;
+  --bg-hover: #2E2B28;
 
-  --bg-main: hsl(var(--bg-main-hsl));
-  --bg-panel: hsl(var(--bg-panel-hsl));
-  --bg-panel-darker: hsl(var(--bg-panel-darker-hsl));
+  --border-subtle: #2F2D29;
+  --border-strong: #3D3934;
+  --border-focus: #D45B36;
 
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-highlight: rgba(255, 255, 255, 0.18);
+  --text-primary: #EDEAE4;
+  --text-secondary: #BBB4A8;
+  --text-muted: #8E877C;
+  --text-inverse: #161514;
 
-  --text-main: #F3F4F6;
-  --text-secondary: #CBD5E1;
-  --text-muted: #9CA3AF;
-  --text-dark: #4B5563;
+  --accent-terracotta: #D45B36;
+  --accent-terracotta-hover: #E26E4A;
+  --accent-terracotta-soft: #2B1E19;
 
-  /* Accent Colors */
-  --accent-emerald: #10B981;
-  --accent-cyan: #06B6D4;
-  --accent-violet: #8B5CF6;
-  --accent-amber: #F59E0B;
-  --accent-rose: #F43F5E;
-  --accent-blue: #3B82F6;
-  --accent-color: #38BDF8;
+  /* Backward Compatibility Aliases */
+  --bg-main: var(--bg-canvas);
+  --bg-panel: var(--bg-surface);
+  --bg-panel-darker: var(--bg-subtle);
+  --border-color: var(--border-subtle);
+  --border-highlight: var(--border-strong);
+  --text-main: var(--text-primary);
+  --accent-color: var(--accent-terracotta);
 
-  /* Glass surfaces */
-  --glass-bg: rgba(15, 23, 42, 0.70);
-  --glass-border: rgba(56, 189, 248, 0.20);
-  --glass-blur: blur(20px);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255,255,255,0.04);
+  /* Functional Status Accents (Restrained, No Neon) */
+  --status-emerald: #10B981;
+  --status-amber: #D97706;
+  --status-rose: #DC2626;
+  --status-blue: #3B82F6;
 
-  /* Modal surfaces */
-  --modal-bg: rgba(10, 15, 30, 0.92);
-  --modal-border: rgba(56, 189, 248, 0.25);
-  --modal-blur: blur(24px);
-  --modal-shadow: 0 24px 64px rgba(0,0,0,0.7), 0 0 40px rgba(56,189,248,0.08), 0 0 0 1px rgba(255,255,255,0.06);
+  /* Type Scale (Major Third - 1.250) */
+  --text-caption: 0.80rem;
+  --text-body: 1.00rem;
+  --text-lead: 1.25rem;
+  --text-h3: 1.563rem;
+  --text-h2: 1.953rem;
+  --text-h1: 2.441rem;
+
+  /* Spacing Scale (8 Steps, Base Unit 4px / 0.25rem) */
+  --space-1: 0.25rem;
+  --space-2: 0.50rem;
+  --space-3: 0.75rem;
+  --space-4: 1.00rem;
+  --space-5: 1.50rem;
+  --space-6: 2.00rem;
+  --space-7: 3.00rem;
+  --space-8: 4.50rem;
+
+  /* Border Radius Scale (3 Values) */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  /* Unified Single Ambient Elevation Shadow */
+  --shadow-ambient: 0 1px 3px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --glass-shadow: var(--shadow-ambient);
+  --modal-shadow: var(--shadow-ambient);
+
+  /* Surface Configurations */
+  --modal-bg: #1E1D1B;
+  --modal-border: var(--border-strong);
+  --glass-bg: #1E1D1B;
+  --glass-border: var(--border-subtle);
 
   /* Terminal Config */
-  --term-bg: #030712;
-  --term-prompt: #10B981;
-  --term-text: #E5E7EB;
-  --term-error: #EF4444;
-  --term-success: #10B981;
+  --term-bg: #11100F;
+  --term-prompt: var(--accent-terracotta);
+  --term-text: var(--text-primary);
+  --term-error: var(--status-rose);
+  --term-success: var(--status-emerald);
 
-  /* Glow Filters */
-  --glow-emerald: 0 0 20px rgba(16, 185, 129, 0.35);
-  --glow-cyan: 0 0 20px rgba(6, 182, 212, 0.35);
-  --glow-violet: 0 0 20px rgba(139, 92, 246, 0.35);
-  --glow-amber: 0 0 20px rgba(245, 158, 11, 0.35);
-  --glow-blue: 0 0 20px rgba(59, 130, 246, 0.35);
-
-  /* Animation easing */
-  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  --fast: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Smooth Transition */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.22s ease;
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background-color: var(--bg-main);
-  color: var(--text-main);
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
   overflow: hidden;
   height: 100vh;
   width: 100vw;
 }
 
-/* ─── Premium Neon Scrollbar ─── */
+/* Accessibility Focus Management */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--border-focus) !important;
+  outline-offset: 2px !important;
+}
+
+/* Clean, Non-Neon Native Scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(3, 7, 18, 0.5);
-  border-radius: 4px;
+  background: var(--bg-canvas);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #38BDF8, #8B5CF6);
-  border-radius: 4px;
-  box-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
+  background: var(--border-strong);
+  border-radius: var(--radius-sm);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #7DD3FC, #A78BFA);
+  background: var(--text-muted);
 }
 
 .monospace {
-  font-family: 'Fira Code', 'Courier New', Courier, monospace;
+  font-family: 'JetBrains Mono', SFMono-Regular, Consolas, monospace;
 }

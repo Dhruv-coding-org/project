@@ -45,21 +45,33 @@ const GitDashboardBar: React.FC<{ gitState: GitState }> = ({ gitState }) => {
   return (
     <div className="git-dashboard-bar">
       <div className="dash-stat-item">
-        <span className="dash-label">🌿 BRANCH</span>
+        <span className="dash-label">
+          <svg className="dash-svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+          BRANCH
+        </span>
         <span className={`dash-val ${isDetached ? 'val-detached' : 'val-branch'}`}>
           {isDetached ? 'DETACHED' : gitState.activeBranch}
         </span>
       </div>
       <div className="dash-stat-item">
-        <span className="dash-label">📌 HEAD</span>
+        <span className="dash-label">
+          <svg className="dash-svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="1.05" y1="12" x2="7" y2="12"></line><line x1="17.01" y1="12" x2="22.96" y2="12"></line></svg>
+          HEAD
+        </span>
         <span className="dash-val val-hash">{gitState.headCommitHash}</span>
       </div>
       <div className="dash-stat-item">
-        <span className="dash-label">📦 STASH</span>
+        <span className="dash-label">
+          <svg className="dash-svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+          STASH
+        </span>
         <span className="dash-val val-stash">{stashSize}</span>
       </div>
       <div className="dash-stat-item">
-        <span className="dash-label">🏷️ TAGS</span>
+        <span className="dash-label">
+          <svg className="dash-svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+          TAGS
+        </span>
         <span className="dash-val val-tags">{tagCount}</span>
       </div>
     </div>
@@ -378,19 +390,14 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Ambient Floating Glow Mesh Background */}
-      <div className="ambient-glow-mesh">
-        <div className="glow-orb orb-cyan"></div>
-        <div className="glow-orb orb-violet"></div>
-        <div className="glow-orb orb-emerald"></div>
-      </div>
-
       {/* Top Navigation Bar */}
       <header className="app-header">
         <div className="brand">
-          <span className="brand-logo">🌳</span>
+          <span className="brand-logo" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><circle cx="18" cy="6" r="3"></circle><path d="M6 9v6"></path><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+          </span>
           <h1 className="brand-name">CommitTree</h1>
-          <span className="brand-subtitle font-sm-hidden">Interactive Git Simulator</span>
+          <span className="brand-subtitle font-sm-hidden">Git Laboratory &amp; State Simulator</span>
         </div>
 
         <div className="header-controls">
@@ -400,80 +407,91 @@ function App() {
             onClick={() => setShowProfileModal(true)}
             title="Switch Player Profile or View Achievements"
           >
-            <span className="profile-avatar-emoji">{activeProfile.avatar}</span>
             <span className="profile-name-text">{activeProfile.name}</span>
             <span className="profile-rank-pill">{activeProfile.title}</span>
           </button>
 
           {/* Mode Switcher */}
-          <div className="mode-toggle">
+          <div className="mode-toggle" role="tablist" aria-label="Workbench Mode Selector">
             <button
               className={`mode-btn ${mode === 'campaign' ? 'active' : ''}`}
               onClick={() => handleModeChange('campaign')}
+              title="Step-by-step Git curriculum"
             >
-              🏆 Campaign
+              <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H8c-.55 0-1 .45-1 1v1h10v-1c0-.55-.45-1-1-1h-1c-.55 0-1-.45-1-1v-2.34"></path><path d="M6 4h12v7a6 6 0 0 1-12 0V4Z"></path></svg>
+              <span>Campaign</span>
             </button>
             <button
               className={`mode-btn ${mode === 'sandbox' ? 'active' : ''}`}
               onClick={() => handleModeChange('sandbox')}
+              title="Unrestricted free play sandbox"
             >
-              🥪 Sandbox
+              <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>Sandbox</span>
             </button>
             <button
               className={`mode-btn ${mode === 'visualizer' ? 'active' : ''}`}
               onClick={() => handleModeChange('visualizer')}
+              title="3D Command Guide"
             >
-              🪐 3D Guide
+              <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.12 6.4-9-5a2 2 0 0 0-2 0l-9 5A2 2 0 0 0 1.12 8.16v7.68a2 2 0 0 0 1.12 1.76l9 5a2 2 0 0 0 2 0l9-5A2 2 0 0 0 22 15.84V8.16a2 2 0 0 0-.88-1.76z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              <span>Command 3D</span>
             </button>
             <button
               className={`mode-btn ${mode === 'speedrun' ? 'active' : ''}`}
               onClick={() => handleModeChange('speedrun')}
+              title="Time-trial challenges"
             >
-              ⚡ Speedrun
+              <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <span>Speedrun</span>
             </button>
             <button
               className={`mode-btn ${mode === 'studio' ? 'active' : ''}`}
               onClick={() => handleModeChange('studio')}
+              title="Level creation studio"
             >
-              🛠️ Studio
+              <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="21" y2="21"></line><line x1="4" x2="20" y1="14" y2="14"></line><line x1="4" x2="20" y1="7" y2="7"></line><circle cx="14" cy="21" r="2"></circle><circle cx="8" cy="14" r="2"></circle><circle cx="16" cy="7" r="2"></circle></svg>
+              <span>Studio</span>
             </button>
             <button
               className={`mode-btn ${mode === 'boss' ? 'active' : ''}`}
               onClick={() => handleModeChange('boss')}
+              title="Complex multi-branch crisis scenarios"
             >
-              🐉 Bosses
+              <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span>Bosses</span>
             </button>
           </div>
 
           <button
-            className="theme-shop-top-btn"
+            className="top-dock-btn"
             onClick={() => setShowThemeModal(true)}
-            title="Custom Graph Themes & Skins"
-            style={{ backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px', color: '#F8FAFC', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
+            title="Custom Graph Color Themes"
           >
-            🎨 Skins
+            <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>
+            <span>Themes</span>
           </button>
           <button
-            className="ai-mentor-top-btn"
+            className="top-dock-btn"
             onClick={() => {
               setAssistantError(null);
               setShowAssistantModal(true);
             }}
             title="Natural Language Git Assistant"
-            style={{ backgroundColor: 'rgba(59,130,246,0.15)', border: '1px solid #3B82F6', borderRadius: '8px', padding: '6px 12px', color: '#60A5FA', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
           >
-            🤖 AI Mentor
+            <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <span>Git Mentor</span>
           </button>
           <button
-            className="stash-top-btn"
+            className="top-dock-btn"
             onClick={() => setShowStashModal(true)}
             title="Stash Stack Manager"
-            style={{ backgroundColor: 'rgba(56,189,248,0.15)', border: '1px solid #38BDF8', borderRadius: '8px', padding: '6px 12px', color: '#7DD3FC', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
           >
-            📦 Stash ({activeGitState.stash?.length || 0})
+            <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+            <span>Stash ({activeGitState.stash?.length || 0})</span>
           </button>
           <button
-            className="bisect-top-btn"
+            className={`top-dock-btn ${activeGitState.bisect?.active ? 'active-accent' : ''}`}
             onClick={() => {
               if (!activeGitState.bisect?.active) {
                 handleExecuteCommand('git bisect start');
@@ -481,86 +499,71 @@ function App() {
               setShowBisectModal(true);
             }}
             title="Git Bisect Bug Hunt"
-            style={{ backgroundColor: activeGitState.bisect?.active ? 'rgba(245,158,11,0.25)' : 'rgba(245,158,11,0.15)', border: '1px solid #F59E0B', borderRadius: '8px', padding: '6px 12px', color: '#FCD34D', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px', boxShadow: activeGitState.bisect?.active ? '0 0 10px rgba(245,158,11,0.5)' : 'none' }}
           >
-            🐛 {activeGitState.bisect?.active ? 'Bisect Active' : 'Bisect'}
+            <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="8" height="14" x="8" y="6" rx="4"></rect><path d="m19 7-3 2"></path><path d="m5 7 3 2"></path><path d="m19 19-3-2"></path><path d="m5 19 3-2"></path><path d="M20 13h-4"></path><path d="M4 13h4"></path><path d="m10 4 1 2"></path><path d="m14 4-1 2"></path></svg>
+            <span>{activeGitState.bisect?.active ? 'Bisect Active' : 'Bisect'}</span>
           </button>
           <button
-            className="reflog-top-btn"
+            className="top-dock-btn"
             onClick={() => setShowReflogModal(true)}
             title="Reflog Time Machine"
-            style={{ backgroundColor: 'rgba(6,182,212,0.15)', border: '1px solid #06B6D4', borderRadius: '8px', padding: '6px 12px', color: '#22D3EE', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
           >
-            ⏳ Time Machine
+            <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline><path d="M3.05 11a9 9 0 0 1 1.5-3.5L2 6"></path></svg>
+            <span>Reflog</span>
           </button>
           <button
-            className="diff-top-btn"
+            className="top-dock-btn"
             onClick={() => {
               setDiffInitialHashA(undefined);
               setShowDiffModal(true);
             }}
             title="Visual Diff Viewer"
-            style={{ backgroundColor: 'rgba(16,185,129,0.15)', border: '1px solid #10B981', borderRadius: '8px', padding: '6px 12px', color: '#34D399', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
           >
-            🔍 Diff
+            <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+            <span>Diff</span>
           </button>
           <button
-            className="blame-top-btn"
+            className="top-dock-btn"
             onClick={() => setShowBlameModal(true)}
             title="Git Blame Inspector"
-            style={{ backgroundColor: 'rgba(139,92,246,0.15)', border: '1px solid #8B5CF6', borderRadius: '8px', padding: '6px 12px', color: '#A78BFA', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
           >
-            📜 Blame
+            <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>
+            <span>Blame</span>
           </button>
           <button
-            className="pr-top-btn"
+            className="top-dock-btn"
             onClick={() => setShowPRModal(true)}
-            title="Pull Request Studio & Code Review Hub"
-            style={{ backgroundColor: 'rgba(56,189,248,0.15)', border: '1px solid #38BDF8', borderRadius: '8px', padding: '6px 12px', color: '#38BDF8', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
+            title="Pull Request Studio &amp; Code Review Hub"
           >
-            🔄 Pull Requests
+            <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
+            <span>Pull Requests</span>
           </button>
           <button
-            className={`ci-status-pill ${ciStatus}`}
+            className={`top-dock-btn ci-status-pill ${ciStatus}`}
             onClick={() => setShowCIModal(true)}
             title="Continuous Integration Pipeline Status"
-            style={{
-              backgroundColor: ciStatus === 'failing' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.15)',
-              border: `1px solid ${ciStatus === 'failing' ? '#EF4444' : '#10B981'}`,
-              borderRadius: '20px',
-              padding: '6px 14px',
-              color: ciStatus === 'failing' ? '#FCA5A5' : '#34D399',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: '13px',
-              marginLeft: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: ciStatus === 'failing' ? '0 0 12px rgba(239,68,68,0.5)' : 'none',
-              animation: ciStatus === 'failing' ? 'pulseRed 1.5s infinite' : 'none',
-            }}
           >
-            <span>⚙️</span> CI: {ciStatus === 'failing' ? 'Broken ❌' : 'Passing ✅'}
+            <span className={`status-indicator-dot ${ciStatus === 'failing' ? 'dot-failing' : 'dot-passing'}`}></span>
+            <span>CI: {ciStatus === 'failing' ? 'Failed' : 'Passing'}</span>
           </button>
           <button
-            className="cheatsheet-top-btn"
+            className="top-dock-btn"
             onClick={() => setShowCheatSheetModal(true)}
-            title="Git Encyclopedia & Interactive Cheat-Sheet"
-            style={{ backgroundColor: 'rgba(245,158,11,0.15)', border: '1px solid #F59E0B', borderRadius: '8px', padding: '6px 12px', color: '#FBBF24', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
+            title="Git Command Reference"
           >
-            📖 Cheat-Sheet
+            <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path><path d="M6 6h10"></path><path d="M6 10h10"></path></svg>
+            <span>Cheat Sheet</span>
           </button>
           <button
-            className="teamlab-top-btn"
+            className="top-dock-btn"
             onClick={() => setShowTeamLabModal(true)}
-            title="Collaborative Team Lab & Remote Sync Simulator"
-            style={{ backgroundColor: 'rgba(16,185,129,0.15)', border: '1px solid #10B981', borderRadius: '8px', padding: '6px 12px', color: '#34D399', cursor: 'pointer', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}
+            title="Collaborative Team Lab &amp; Remote Sync Simulator"
           >
-            🌐 Team Lab
+            <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>Team Lab</span>
           </button>
           <button
-            className="sound-top-btn"
+            className="top-dock-btn"
             onClick={(e) => {
               if (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) {
                 setShowSoundModal(true);
@@ -572,38 +575,16 @@ function App() {
               e.preventDefault();
               setShowSoundModal(true);
             }}
-            title="Click to toggle Mute/Unmute. Right-click or Ctrl+Click to open Sound & Synth Studio!"
-            style={{
-              backgroundColor: isMuted ? 'rgba(239,68,68,0.2)' : 'rgba(56,189,248,0.15)',
-              border: `1px solid ${isMuted ? '#EF4444' : '#38BDF8'}`,
-              borderRadius: '20px',
-              padding: '6px 12px',
-              color: isMuted ? '#F87171' : '#38BDF8',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: '13px',
-              marginLeft: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
+            title="Toggle Audio Feedback"
           >
-            <span>{isMuted ? '🔇' : '🔊'}</span> {isMuted ? 'Muted' : 'Sound'}
-            <span
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowSoundModal(true);
-              }}
-              style={{ marginLeft: '4px', opacity: 0.8, fontSize: '11px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1px 5px', borderRadius: '4px', cursor: 'pointer' }}
-              title="Open Sound Settings Studio"
-            >
-              ⚙️
-            </span>
+            <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>{!isMuted && <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>}</svg>
+            <span>{isMuted ? 'Muted' : 'Audio'}</span>
           </button>
 
           {mode !== 'visualizer' && mode !== 'speedrun' && (
-            <button className="global-reset-btn" onClick={handleReset}>
-              🔄 Reset
+            <button className="top-dock-btn reset-btn" onClick={handleReset} title="Reset Repository State">
+              <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+              <span>Reset</span>
             </button>
           )}
         </div>
@@ -654,13 +635,15 @@ function App() {
                     className={`graph-tab-btn ${graphView === 'player' ? 'active' : ''}`}
                     onClick={() => setGraphView('player')}
                   >
-                    🌳 Your Graph
+                    <svg className="dock-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="3" x2="12" y2="9"></line><line x1="12" y1="15" x2="12" y2="21"></line></svg>
+                    <span>Working Tree</span>
                   </button>
                   <button
                     className={`graph-tab-btn ${graphView === 'goal' ? 'active' : ''}`}
                     onClick={() => setGraphView('goal')}
                   >
-                    🎯 Goal Graph
+                    <svg className="dock-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+                    <span>Target Goal</span>
                   </button>
                 </div>
               )}
@@ -682,19 +665,22 @@ function App() {
                   className={`mobile-nav-btn ${mobileTab === 'instructions' ? 'active' : ''}`}
                   onClick={() => setMobileTab('instructions')}
                 >
-                  📋 Objectives
+                  <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                  <span>Objectives</span>
                 </button>
                 <button
                   className={`mobile-nav-btn ${mobileTab === 'terminal' ? 'active' : ''}`}
                   onClick={() => setMobileTab('terminal')}
                 >
-                  💻 Terminal
+                  <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                  <span>Terminal</span>
                 </button>
                 <button
                   className={`mobile-nav-btn ${mobileTab === 'inspector' ? 'active' : ''}`}
                   onClick={() => setMobileTab('inspector')}
                 >
-                  🔍 Inspector ({selectedCommit ? '1' : '0'})
+                  <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  <span>Inspector ({selectedCommit ? '1' : '0'})</span>
                 </button>
               </div>
 
@@ -739,32 +725,35 @@ function App() {
                       className="open-3d-guide-btn"
                       onClick={() => handleModeChange('visualizer')}
                     >
-                      🪐 Open 3D Command Assistant & Guide
+                      <svg className="dock-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.12 6.4-9-5a2 2 0 0 0-2 0l-9 5A2 2 0 0 0 1.12 8.16v7.68a2 2 0 0 0 1.12 1.76l9 5a2 2 0 0 0 2 0l9-5A2 2 0 0 0 22 15.84V8.16a2 2 0 0 0-.88-1.76z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                      <span>Command 3D Guide</span>
                     </button>
                     <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
                       <button
                         className="open-3d-guide-btn"
-                        style={{ flex: 1, margin: 0, backgroundColor: '#3B82F6' }}
+                        style={{ flex: 1, margin: 0, backgroundColor: 'var(--border-strong)', color: 'var(--text-primary)' }}
                         onClick={() => {
                           const cmds = sandboxHistory.map(h => h.command).filter(Boolean);
                           const url = encodeSandboxUrl(cmds);
                           navigator.clipboard.writeText(url);
                           soundEngine.playSuccess();
-                          alert('🔗 Sandbox URL copied to clipboard!');
+                          alert('Sandbox URL copied to clipboard.');
                         }}
                       >
-                        🔗 Share URL
+                        <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                        <span>Share Sandbox</span>
                       </button>
                       <button
                         className="open-3d-guide-btn"
-                        style={{ flex: 1, margin: 0, backgroundColor: '#10B981', color: '#030712' }}
+                        style={{ flex: 1, margin: 0, backgroundColor: 'var(--accent-terracotta)', color: '#FFFFFF' }}
                         onClick={() => {
                           const cmds = sandboxHistory.map(h => h.command).filter(Boolean);
                           exportSandboxJson(cmds);
                           soundEngine.playSuccess();
                         }}
                       >
-                        📥 Export JSON
+                        <svg className="dock-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        <span>Export JSON</span>
                       </button>
                     </div>
                   </div>
@@ -803,7 +792,9 @@ function App() {
       {isLvlWon && (
         <div className="celebration-overlay">
           <div className="celebration-card">
-            <div className="celebration-badge">🏆</div>
+            <div className="celebration-badge">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H8c-.55 0-1 .45-1 1v1h10v-1c0-.55-.45-1-1-1h-1c-.55 0-1-.45-1-1v-2.34"></path><path d="M6 4h12v7a6 6 0 0 1-12 0V4Z"></path></svg>
+            </div>
             <h2>Level Completed!</h2>
             <p>You successfully matched the target Git tree structure.</p>
             <div className="celebration-actions">
