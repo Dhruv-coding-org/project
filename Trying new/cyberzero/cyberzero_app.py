@@ -20,75 +20,75 @@ st.set_page_config(
 
 def inject_theme_css(theme_name: str):
     if theme_name == "Matrix Green":
-        primary = "#00ff66"
-        bg = "#050f05"
-        card_bg = "rgba(0, 40, 10, 0.6)"
-        border = "#00ff66"
+        primary = "#10B981"
+        bg = "#080F0B"
+        card_bg = "#0E1C13"
+        border = "#1B3624"
     elif theme_name == "Solarized Dark":
-        primary = "#2aa198"
-        bg = "#002b36"
-        card_bg = "rgba(7, 54, 66, 0.8)"
-        border = "#268bd2"
+        primary = "#0D9488"
+        bg = "#0A171D"
+        card_bg = "#10232C"
+        border = "#1B3A48"
     elif theme_name == "High Contrast Gold":
-        primary = "#ffd700"
-        bg = "#111111"
-        card_bg = "rgba(40, 35, 10, 0.8)"
-        border = "#ffd700"
-    else:  # Cyberpunk Neon (Default)
-        primary = "#00ffcc"
-        bg = "#0a0a16"
-        card_bg = "rgba(20, 20, 40, 0.7)"
-        border = "#ff007f"
+        primary = "#D97706"
+        bg = "#0F0F10"
+        card_bg = "#18181B"
+        border = "#2E2E33"
+    else:  # Tactical Defense Dark (Default)
+        primary = "#0284C7"
+        bg = "#0C0E14"
+        card_bg = "#141824"
+        border = "#202638"
 
     css = f"""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
     /* Main Background */
     .stApp {{
         background-color: {bg};
-        background-image: radial-gradient(circle at 50% 10%, rgba(0, 255, 204, 0.08), transparent 70%);
-        color: #f0f0f0;
-        font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+        color: #EEF2F6;
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     }}
     
     /* Headers & Titles */
     h1, h2, h3 {{
-        color: {primary} !important;
+        color: #EEF2F6 !important;
         font-weight: 700;
-        text-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+        letter-spacing: -0.02em;
     }}
     
     /* Cards and Containers */
     div.stButton > button:first-child {{
-        background: linear-gradient(90deg, {primary}, #0088ff);
-        color: #000000;
-        font-weight: bold;
-        border: none;
-        border-radius: 8px;
+        background: {primary};
+        color: #FFFFFF;
+        font-weight: 600;
+        border: 1px solid {primary};
+        border-radius: 4px;
         padding: 0.5rem 1rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 0 12px rgba(0, 255, 204, 0.4);
+        transition: background 0.18s ease;
     }}
     
     div.stButton > button:first-child:hover {{
-        transform: translateY(-2px);
-        box-shadow: 0 0 20px rgba(0, 255, 204, 0.8);
-        color: #ffffff;
+        background: #0369A1;
+        border-color: #0369A1;
+        color: #FFFFFF;
     }}
     
     /* Expanders & Tabs */
     .streamlit-expanderHeader {{
         background-color: {card_bg};
         border: 1px solid {border};
-        border-radius: 8px;
-        color: {primary};
-        font-weight: bold;
+        border-radius: 4px;
+        color: #EEF2F6;
+        font-weight: 600;
     }}
     
     /* Metrics */
     [data-testid="stMetricValue"] {{
         color: {primary} !important;
-        font-family: 'Courier New', monospace;
-        font-weight: bold;
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
     }}
     </style>
     """

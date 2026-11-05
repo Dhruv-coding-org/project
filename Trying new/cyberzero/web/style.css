@@ -1,83 +1,83 @@
 /* ============================================================
-   CyberZero Neural Grid Design System
-   Version 3.0 — Full Expert Redesign
+   CyberZero Defense Console Design System
+   Cinema Tactical Workbench Architecture · Anti-Template Standards
    Breakpoints: 480 | 768 | 1024 | 1280
    ============================================================ */
 
 /* --- GOOGLE FONTS --- */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap');
 
 /* ============================================================
    DESIGN TOKENS & CSS VARIABLES
    ============================================================ */
 :root {
-  /* Color System — Obsidian Neural Theme */
-  --c-bg:          #030712;
-  --c-surface:     #0a1120;
-  --c-surface-2:   #0f1a2e;
-  --c-surface-3:   #162035;
-  --c-border:      #1a2744;
-  --c-border-sub:  #0f1a2e;
+  /* 5-Colour Tactical Defense Palette */
+  --c-bg:          #0C0E14; /* Deep obsidian tactical console base */
+  --c-surface:     #141824; /* Elevated slate navy surface */
+  --c-surface-2:   #191E2D;
+  --c-surface-3:   #202638;
+  --c-border:      #202638; /* Precision border */
+  --c-border-sub:  #171C2B;
 
-  /* Accent Colors */
-  --c-cyan:        #06b6d4;
-  --c-cyan-dim:    rgba(6, 182, 212, 0.12);
-  --c-cyan-glow:   0 0 20px rgba(6, 182, 212, 0.3);
-  --c-purple:      #8b5cf6;
-  --c-purple-dim:  rgba(139, 92, 246, 0.12);
-  --c-green:       #10b981;
+  /* Accent Colors (Restrained, Non-Neon) */
+  --c-cyan:        #0284C7;
+  --c-cyan-dim:    rgba(2, 132, 199, 0.12);
+  --c-cyan-glow:   none;
+  --c-purple:      #0284C7;
+  --c-purple-dim:  rgba(2, 132, 199, 0.12);
+  --c-green:       #10B981;
   --c-green-dim:   rgba(16, 185, 129, 0.12);
-  --c-red:         #f43f5e;
-  --c-red-dim:     rgba(244, 63, 94, 0.12);
-  --c-yellow:      #f59e0b;
+  --c-red:         #EF4444;
+  --c-red-dim:     rgba(239, 68, 68, 0.12);
+  --c-yellow:      #F59E0B;
   --c-yellow-dim:  rgba(245, 158, 11, 0.12);
-  --c-orange:      #f97316;
+  --c-orange:      #EA580C;
 
   /* Text Colors */
-  --c-text:        #e2e8f0;
-  --c-text-dim:    #64748b;
-  --c-text-muted:  #475569;
-  --c-text-code:   #86efac;
+  --c-text:        #EEF2F6;
+  --c-text-dim:    #94A3B8;
+  --c-text-muted:  #64748B;
+  --c-text-code:   #38BDF8;
 
-  /* Typography */
-  --font-ui:   'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-code: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+  /* Typography (Major Third - 1.250) */
+  --font-ui:   'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
 
-  /* Spacing */
+  /* Spacing Scale (8 steps, 4px base) */
   --sp-1: 4px;  --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
   --sp-5: 20px; --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px;
 
-  /* Border radius */
-  --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 20px; --r-full: 9999px;
+  /* Border radius (3 values) */
+  --r-sm: 4px; --r-md: 8px; --r-lg: 14px; --r-xl: 14px; --r-full: 9999px;
 
   /* Sidebar width */
   --sidebar-w: 250px;
 
-  /* Shadows */
-  --shadow-card:  0 4px 24px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4);
-  --shadow-glow:  0 0 30px rgba(6, 182, 212, 0.15);
+  /* Shadows (Single Ambient Definition) */
+  --shadow-card:  0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-glow:  none;
 
   /* Transitions */
-  --t-fast: 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-  --t-med:  0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  --t-slow: 0.4s  cubic-bezier(0.16, 1, 0.3, 1);
+  --t-fast: 0.15s cubic-bezier(0.2, 0, 0, 1);
+  --t-med:  0.22s cubic-bezier(0.2, 0, 0, 1);
+  --t-slow: 0.3s  cubic-bezier(0.2, 0, 0, 1);
 }
 
 /* Matrix Theme */
 [data-theme="matrix"] {
-  --c-bg: #020a04; --c-surface: #061409; --c-surface-2: #0a1e0d;
-  --c-surface-3: #0f2912; --c-border: #1a4525; --c-border-sub: #0f2912;
-  --c-cyan: #00ff66; --c-cyan-dim: rgba(0,255,102,0.1); --c-cyan-glow: 0 0 20px rgba(0,255,102,0.3);
-  --c-text: #d4ffd9; --c-text-dim: #3a8a4a; --c-text-code: #00ff66;
+  --c-bg: #080F0B; --c-surface: #0E1C13; --c-surface-2: #14281B;
+  --c-surface-3: #1B3624; --c-border: #1B3624; --c-border-sub: #14281B;
+  --c-cyan: #10B981; --c-cyan-dim: rgba(16, 185, 129, 0.12); --c-cyan-glow: none;
+  --c-text: #ECFDF5; --c-text-dim: #6EE7B7; --c-text-code: #A7F3D0;
 }
 
 /* Light Theme */
 [data-theme="light"] {
-  --c-bg: #f1f5f9; --c-surface: #ffffff; --c-surface-2: #f8fafc;
-  --c-surface-3: #f0f4f8; --c-border: #e2e8f0; --c-border-sub: #f0f4f8;
-  --c-cyan: #0284c7; --c-cyan-dim: rgba(2,132,199,0.08); --c-cyan-glow: 0 0 20px rgba(2,132,199,0.15);
-  --c-text: #0f172a; --c-text-dim: #64748b; --c-text-muted: #94a3b8; --c-text-code: #0369a1;
-  --shadow-card: 0 4px 24px rgba(0,0,0,0.06);
+  --c-bg: #F8FAFC; --c-surface: #FFFFFF; --c-surface-2: #F1F5F9;
+  --c-surface-3: #E2E8F0; --c-border: #CBD5E1; --c-border-sub: #E2E8F0;
+  --c-cyan: #0284C7; --c-cyan-dim: rgba(2, 132, 199, 0.08); --c-cyan-glow: none;
+  --c-text: #0F172A; --c-text-dim: #475569; --c-text-muted: #64748B; --c-text-code: #0369A1;
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 /* ============================================================
@@ -90,38 +90,16 @@ body {
   background: var(--c-bg);
   color: var(--c-text);
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.6;
   overflow-x: hidden;
   transition: background var(--t-med), color var(--t-med);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Neural Grid Background */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(6,182,212,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(6,182,212,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  z-index: 0;
-  pointer-events: none;
-}
-
-/* Scanline Overlay */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg, transparent, transparent 3px,
-    rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px
-  );
-  z-index: 0;
-  pointer-events: none;
-}
+/* Clean background without synthetic orbs or scanlines */
+body::before { display: none; }
+body::after { display: none; }
 
 /* Ensure content is above pseudo-elements */
 .app-shell { position: relative; z-index: 1; }

@@ -11,8 +11,24 @@
 CyberZero is designed with a dual-interface model that shares a single unified state file (`profile.json`):
 1. **Interactive Terminal RPG (`cyberzero_cli.py`)**: A command-line game built with Python's `rich` library for an authentic hacker terminal experience.
 2. **Visual Command Center (`cyberzero_app.py`)**: A Streamlit web dashboard with interactive sliders, charts, phishing email inspection, and visual trophy cabinets.
+3. **Standalone Web Academy (`web/index.html`)**: A lightweight client dashboard with interactive visual simulations, audio effects, and CyBot mentor.
 
-### 2.2 Engine Modules (`engine/`)
+### 2.2 Visual Identity & Design System Alignment (`.agents/design.md`)
+The visual interfaces across Streamlit and the web dashboard adhere strictly to the Tactical Defense Console standards defined in `../../.agents/design.md`:
+- **5-Colour Tactical Defense Palette**:
+  - Base Background: Deep obsidian tactical console base (`#0C0E14`)
+  - Elevated Container / Card: Subdued slate navy surface (`#141824`)
+  - Border / Contour: Precision engineering border (`#202638`)
+  - High Contrast Text: High-contrast paper white (`#EEF2F6`)
+  - Focused Accent: Tactical sky cyan (`#0284C7`; non-neon, WCAG AA compliant on dark backgrounds; hover `#0369A1`)
+- **Typography & Font Hierarchy**:
+  - Replaced generic system fonts and Outfit with `Plus Jakarta Sans` for UI elements and `JetBrains Mono` for code snippets, telemetry, and terminal streams.
+  - Scale adheres strictly to the Major Third ($1.250$) proportional progression.
+- **Anti-Template Enforcement**:
+  - Stripped glowing text shadows (`text-shadow: 0 0 10px...`), scanline overlays, neon gradient buttons, and radial background glow orbs from both the Streamlit app (`cyberzero_app.py`) and the web client (`web/style.css`, `web/index.html`).
+  - Replaced all emojis in navigation sidebars, headers, action buttons, and curriculum tabs with curated semantic SVGs.
+
+### 2.3 Engine Modules (`engine/`)
 - **[curriculum.py](./engine/curriculum.py)**:
   Contains the 22-module structured curriculum split across 5 progressive phases:
   - *Phase 1: Foundation & The Digital World* (IP addresses, packets, DNS, ports).
@@ -25,15 +41,15 @@ CyberZero is designed with a dual-interface model that shares a single unified s
 - **[cybot.py](./engine/cybot.py)**: AI mentor engine providing context-specific hints, ELI5 analogies, and encouragement.
 - **[progress.py](./engine/progress.py)**: State persistence manager serializing progress, XP, badges, and completed labs to `profile.json`.
 
-### 2.3 Command Line Interface (`cli/`)
+### 2.4 Command Line Interface (`cli/`)
 - **`commands.py`**: Command parser and handler for commands like `status`, `modules`, `lesson <N>`, `lab <N>`, `boss <N>`, `hint`, and `reset`.
 - **`ui.py`**: Terminal formatting, tables, color-coded status badges, and ASCII art headers.
 - **`cybot_cli.py`**: Terminal REPL interface for conversing with the CyBot assistant.
 
-### 2.4 Web Dashboard (`web/`)
+### 2.5 Web Dashboard (`web/`)
 - **`tabs_phase1.py` - `tabs_phase5.py`**: Modular Streamlit components rendering lesson slides, interactive quiz widgets, and practical labs.
 - **`dashboard.py`**: Overview page with radar skill charts, XP counters, and unlocked achievements.
-- **`style.css`**: Dark cyberpunk theme customized for beginner clarity.
+- **`style.css`**: Tactical defense console theme customized for beginner clarity.
 
 ---
 
@@ -47,6 +63,7 @@ CyberZero is designed with a dual-interface model that shares a single unified s
 | `audit-fix` | Atomic state serialization, unit test suite & tracking recovery | Replaced non-atomic file writes with PID-isolated temp files and atomic rename in `engine/progress.py`; created comprehensive unit test suite (`test_cyberzero.py`); restored Git tracking in root `.gitignore`. |
 | `sec-hardening` | Added .env.example & relative path documentation | Added environment configuration template for `PYTHONPATH` and converted absolute file URLs to relative links. |
 | `path-portability` | Anonymized absolute paths in docs and pyright | Replaced machine-specific Windows paths with portable relative paths in `BEGINNER_WALKTHROUGH.md` and `pyrightconfig.json`. |
+| `design-system-audit` | Anti-template overhaul & design system token adoption | Replaced generic fonts with `Plus Jakarta Sans` / `JetBrains Mono`; eliminated neon text shadows, scanline overlays, and glow orbs; replaced UI emojis in sidebar/header navigation with curated SVG icons; implemented 5-colour tactical defense palette (`#0C0E14`, `#141824`, `#191E2D`, `#202638`, `#EEF2F6`, `#0284C7`) complying with `.agents/design.md`. |
 
 ---
 

@@ -17,51 +17,89 @@
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <span class="brand-avatar" id="sidebar-avatar">🛡️</span>
+      <span class="brand-avatar" id="sidebar-avatar" style="color:var(--c-cyan);">
+        <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M8 1L2 3.5v5c0 3.5 2.5 5.5 6 6.5 3.5-1 6-3 6-6.5v-5L8 1z"/>
+        </svg>
+      </span>
       <div class="brand-text">
         <div class="brand-name">CYBERZERO</div>
-        <div class="brand-tagline">Neural Defense Grid</div>
+        <div class="brand-tagline">Tactical Defense Console</div>
       </div>
     </div>
 
     <nav class="sidebar-nav">
       <button class="nav-item active" data-view="home" onclick="switchView('home')" title="Home Base">
-        <span class="nav-icon">🏠</span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M2.5 6.5L8 2l5.5 4.5V14a1 1 0 01-1 1h-9a1 1 0 01-1-1V6.5z"/>
+          </svg>
+        </span>
         <span class="nav-label">Home Base</span>
       </button>
       <button class="nav-item" data-view="training" onclick="switchView('training')" title="Training Modules">
-        <span class="nav-icon">📡</span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="2" y="3" width="12" height="10" rx="1.5"/>
+            <path d="M5 7h6M5 10h4"/>
+          </svg>
+        </span>
         <span class="nav-label">Training Modules</span>
         <span class="nav-badge" id="nav-badge-training">22</span>
       </button>
       <button class="nav-item" data-view="arcade" onclick="switchView('arcade')" title="Cyber Arcade">
-        <span class="nav-icon">🎮</span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="2" y="4" width="12" height="8" rx="2"/>
+            <path d="M4 8h3M5.5 6.5v3M11 7h.01M12.5 9h.01"/>
+          </svg>
+        </span>
         <span class="nav-label">Cyber Arcade</span>
       </button>
       <button class="nav-item" data-view="terminal" onclick="switchView('terminal')" title="Hacker Terminal">
-        <span class="nav-icon">💻</span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="1.5" y="3" width="13" height="10" rx="1.5"/>
+            <path d="M4 7l2 1.5L4 10M8 10h4"/>
+          </svg>
+        </span>
         <span class="nav-label">Hacker Terminal</span>
       </button>
 
       <div class="sidebar-divider"></div>
 
       <button class="nav-item" data-view="profile" onclick="switchView('profile')" title="My Profile">
-        <span class="nav-icon">👤</span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="8" cy="5" r="3"/>
+            <path d="M2.5 14c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5"/>
+          </svg>
+        </span>
         <span class="nav-label">My Profile</span>
       </button>
       <button class="nav-item" data-view="trophies" onclick="switchView('trophies')" title="Trophy Room">
-        <span class="nav-icon">🏆</span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M4 2h8v5a4 4 0 01-8 0V2zM4 4H1.5a1.5 1.5 0 000 3H4M12 4h2.5a1.5 1.5 0 010 3H12M8 11v3M5 14h6"/>
+          </svg>
+        </span>
         <span class="nav-label">Trophy Room</span>
       </button>
     </nav>
 
     <div class="sidebar-footer">
       <button class="footer-btn cybot-btn" onclick="toggleCybot()" title="Open Cy-Bot">
-        <span>🤖</span>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <rect x="3" y="4" width="10" height="9" rx="2"/>
+          <path d="M8 1v3M1 8h2M13 8h2M6 8h.01M10 8h.01M6 10.5h4"/>
+        </svg>
         <span>Cy-Bot Mentor</span>
       </button>
       <button class="footer-btn" onclick="toggleSettings()" title="Settings">
-        <span>⚙️</span>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <circle cx="8" cy="8" r="2.5"/>
+          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M3 13l1.5-1.5M11.5 4.5L13 3"/>
+        </svg>
         <span>Settings</span>
       </button>
     </div>
@@ -72,9 +110,20 @@
 
   <!-- MOBILE HEADER -->
   <header class="mobile-header">
-    <button class="mobile-icon-btn" onclick="toggleSidebar()">☰</button>
+    <button class="mobile-icon-btn" onclick="toggleSidebar()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <line x1="2" y1="4" x2="14" y2="4"/>
+        <line x1="2" y1="8" x2="14" y2="8"/>
+        <line x1="2" y1="12" x2="14" y2="12"/>
+      </svg>
+    </button>
     <span class="mobile-header-title">CYBERZERO</span>
-    <button class="mobile-icon-btn" onclick="toggleCybot()">🤖</button>
+    <button class="mobile-icon-btn" onclick="toggleCybot()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="3" y="4" width="10" height="9" rx="2"/>
+        <path d="M8 1v3M1 8h2M13 8h2M6 8h.01M10 8h.01M6 10.5h4"/>
+      </svg>
+    </button>
   </header>
 
   <!-- ====================================================== -->
@@ -103,8 +152,19 @@
           </div>
         </div>
         <div style="display:flex; gap:12px; flex-wrap:wrap;">
-          <button class="btn btn-primary btn-lg" onclick="switchView('training')">▶ Continue Training</button>
-          <button class="btn btn-secondary" onclick="toggleCybot()">🤖 Ask Cy-Bot</button>
+          <button class="btn btn-primary btn-lg" onclick="switchView('training')">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style={{ marginRight: '4px' }}>
+              <polygon points="4 2 13 8 4 14"/>
+            </svg>
+            Continue Training
+          </button>
+          <button class="btn btn-secondary" onclick="toggleCybot()">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: '4px' }}>
+              <rect x="3" y="4" width="10" height="9" rx="2"/>
+              <path d="M8 1v3M1 8h2M13 8h2M6 8h.01M10 8h.01M6 10.5h4"/>
+            </svg>
+            Ask Cy-Bot
+          </button>
         </div>
       </div>
 
@@ -137,16 +197,16 @@
         <!-- Threat of the Day -->
         <div class="threat-card">
           <div class="threat-card-tag">
-            <span>🚨</span> Threat Intelligence Feed — Today
+            <span>Threat Intelligence Feed — Today</span>
           </div>
           <h3 id="threat-name">Loading threat data...</h3>
           <p id="threat-desc" style="margin-bottom:16px;"></p>
-          <button class="btn btn-secondary btn-sm" id="threat-module-btn" onclick="goToThreatModule()">→ Study Relevant Module</button>
+          <button class="btn btn-secondary btn-sm" id="threat-module-btn" onclick="goToThreatModule()">Study Relevant Module →</button>
         </div>
 
         <!-- Today's Mission -->
         <div class="mission-card">
-          <div style="font-size:0.72rem; font-weight:700; color:var(--c-cyan); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:12px;">📋 Today's Mission Brief</div>
+          <div style="font-size:0.72rem; font-weight:700; color:var(--c-cyan); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:12px;">Today's Mission Brief</div>
           <h3 id="mission-title" style="font-size:1.05rem; font-weight:700; color:var(--c-text); margin-bottom:10px;">Calculating mission...</h3>
           <p id="mission-desc" style="font-size:0.88rem; color:var(--c-text-dim); line-height:1.6; margin-bottom:20px;"></p>
           <button class="btn btn-primary btn-sm" onclick="switchView('training')">Launch Mission</button>
@@ -156,12 +216,12 @@
       <!-- Quick Actions -->
       <div class="section-title" style="margin-bottom:16px;">Quick Actions</div>
       <div class="row" style="flex-wrap:wrap;">
-        <button class="btn btn-secondary" onclick="switchView('training')">📡 Training Modules</button>
-        <button class="btn btn-secondary" onclick="switchView('arcade')">🎮 Cyber Arcade</button>
-        <button class="btn btn-secondary" onclick="switchView('terminal')">💻 Open Terminal</button>
-        <button class="btn btn-secondary" onclick="switchView('profile')">👤 My Profile</button>
-        <button class="btn btn-secondary" onclick="switchView('trophies')">🏆 Trophy Room</button>
-        <button class="btn btn-ghost btn-sm" onclick="openCommandPalette()">⌨️ <span class="kbd">Ctrl+K</span> Command Palette</button>
+        <button class="btn btn-secondary" onclick="switchView('training')">Training Modules</button>
+        <button class="btn btn-secondary" onclick="switchView('arcade')">Cyber Arcade</button>
+        <button class="btn btn-secondary" onclick="switchView('terminal')">Open Terminal</button>
+        <button class="btn btn-secondary" onclick="switchView('profile')">My Profile</button>
+        <button class="btn btn-secondary" onclick="switchView('trophies')">Trophy Room</button>
+        <button class="btn btn-ghost btn-sm" onclick="openCommandPalette()"><span class="kbd">Ctrl+K</span> Command Palette</button>
       </div>
     </div>
 
@@ -204,7 +264,7 @@
           </div>
           <div class="arena-nav-btns">
             <button class="btn btn-ghost btn-sm" onclick="navigateModule(-1)">← Prev</button>
-            <button class="btn btn-ghost btn-sm" id="arena-status-btn">🔒 Locked</button>
+            <button class="btn btn-ghost btn-sm" id="arena-status-btn">Locked</button>
             <button class="btn btn-ghost btn-sm" onclick="navigateModule(1)">Next →</button>
           </div>
         </div>
@@ -212,7 +272,7 @@
         <!-- Boss HUD (shown only during boss battles) -->
         <div class="boss-hud" id="boss-hud">
           <div class="boss-hud-row">
-            <div class="boss-hud-title">🚨 LIVE SIEGE — DEFEND YOUR CITADEL</div>
+            <div class="boss-hud-title">LIVE SIEGE — DEFEND YOUR CITADEL</div>
             <div class="boss-timer" id="boss-timer">30s</div>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:0.82rem; font-weight:600; color:var(--c-text-dim);">
@@ -224,19 +284,19 @@
 
         <!-- Arena Tabs -->
         <div class="arena-tabs">
-          <button class="arena-tab active" data-panel="concept" onclick="switchArenaTab('concept')">💡 Concept</button>
-          <button class="arena-tab" data-panel="lab" onclick="switchArenaTab('lab')">🧪 Lab</button>
-          <button class="arena-tab" data-panel="quiz" onclick="switchArenaTab('quiz')">🎯 Quiz</button>
+          <button class="arena-tab active" data-panel="concept" onclick="switchArenaTab('concept')">Concept</button>
+          <button class="arena-tab" data-panel="lab" onclick="switchArenaTab('lab')">Interactive Lab</button>
+          <button class="arena-tab" data-panel="quiz" onclick="switchArenaTab('quiz')">Knowledge Quiz</button>
         </div>
 
         <!-- PANEL: CONCEPT -->
         <div class="arena-panel active" id="panel-concept">
           <div class="concept-card">
-            <div class="concept-label">💡 Real-World Analogy (Zero Jargon)</div>
+            <div class="concept-label">Real-World Analogy (Zero Jargon)</div>
             <div class="concept-text" id="concept-text">Loading concept...</div>
 
             <div class="incident-card">
-              <div class="incident-label">⚠️ Real-World Incident</div>
+              <div class="incident-label">Real-World Incident Case Study</div>
               <div class="incident-text" id="incident-text">Loading incident...</div>
             </div>
           </div>
