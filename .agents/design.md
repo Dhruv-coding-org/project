@@ -98,3 +98,4 @@ When updating or building components across the workspace:
 2. **Dual-Viewport Inspection:** Inspect at desktop (1280px+) and mobile (375px) widths before expanding.
 3. **Defect Audit:** Verify text wrapping, overflow margins, interactive hit-targets (minimum 44x44px on mobile), and contrast ratios.
 4. **Iterative Extension:** Roll out tokens and layouts incrementally to adjacent views.
+
