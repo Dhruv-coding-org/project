@@ -16,10 +16,10 @@ const ALLOWED_MEDIA_TYPES = "video/*,audio/*,.mp4,.webm,.mkv,.mov,.avi,.flv,.wmv
 const ALLOWED_SUBTITLE_TYPES = ".vtt,.srt,.ass,.ssa,.sub,.txt,text/vtt,text/plain";
 
 const DEMO_STREAMS = [
-  { label: '🎬 Big Buck Bunny (1080p MP4)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
-  { label: '🚀 Tears of Steel (4K MP4)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4' },
-  { label: '🐘 Elephant Dream (HD MP4)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
-  { label: '🚗 For Bigger Blazes (720p MP4)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
+  { label: 'Big Buck Bunny (1080p MP4)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
+  { label: 'Tears of Steel (4K MP4)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4' },
+  { label: 'Elephant Dream (HD MP4)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
+  { label: 'For Bigger Blazes (720p MP4)', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
 ];
 
 function formatBytes(bytes: number): string {
@@ -30,15 +30,40 @@ function formatBytes(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
-function getMediaKind(filename: string): { label: string; icon: string } {
+function getMediaKind(filename: string): { label: string; icon: React.ReactNode } {
   const ext = filename.split('.').pop()?.toLowerCase() || '';
   if (['mp3', 'wav', 'flac', 'aac', 'm4a', 'ogg', 'opus', 'wma'].includes(ext)) {
-    return { label: `AUDIO (${ext.toUpperCase()})`, icon: '🎵' };
+    return {
+      label: `AUDIO (${ext.toUpperCase()})`,
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M6 13V3l7-1.5V11"/>
+          <circle cx="4" cy="13" r="2"/>
+          <circle cx="11" cy="11" r="2"/>
+        </svg>
+      )
+    };
   }
   if (['mkv', 'avi', 'mov', 'flv', 'wmv'].includes(ext)) {
-    return { label: `CONTAINER (${ext.toUpperCase()})`, icon: '📦' };
+    return {
+      label: `CONTAINER (${ext.toUpperCase()})`,
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <rect x="2" y="2" width="12" height="12" rx="2"/>
+          <path d="M2 6h12M6 2v4"/>
+        </svg>
+      )
+    };
   }
-  return { label: `VIDEO (${ext.toUpperCase() || 'MEDIA'})`, icon: '🎬' };
+  return {
+    label: `VIDEO (${ext.toUpperCase() || 'MEDIA'})`,
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="1.5" y="3" width="13" height="10" rx="1.5"/>
+        <path d="M6 6l5 2-5 2V6z"/>
+      </svg>
+    )
+  };
 }
 
 export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePickerProps) {
@@ -281,14 +306,21 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
             onClick={() => { setTab('url'); setError(''); }}
             id="source-tab-url"
           >
-            🌐 Stream URL / YouTube
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: '6px' }}>
+              <circle cx="8" cy="8" r="6"/>
+              <path d="M2 8h12M8 2c2 2.5 2 9.5 0 12M8 2c-2 2.5-2 9.5 0 12"/>
+            </svg>
+            Stream URL / YouTube
           </button>
           <button
             className={`source-tab ${tab === 'file' ? 'active' : ''}`}
             onClick={() => { setTab('file'); setError(''); }}
             id="source-tab-file"
           >
-            📁 Local File (Video / Audio)
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: '6px' }}>
+              <path d="M2 4a1 1 0 011-1h3.5l1.5 2H13a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V4z"/>
+            </svg>
+            Local File (Video / Audio)
           </button>
         </div>
 
@@ -383,13 +415,18 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
                 <strong>Supported Formats:</strong> MP4, WebM, MKV, MOV, AVI, FLV, WMV, M4V, 3GP, OGV, TS, MP3, WAV, FLAC, AAC, M4A, OGG, OPUS, WMA. (Plays seamlessly in-app with hardware acceleration and automatic transcoding).
               </p>
               {isUploading && (
-                <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(249, 115, 22, 0.12)', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.3)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#ff8800', fontWeight: 600, marginBottom: '4px' }}>
-                    <span>⚡ Preparing Universal Stream...</span>
+                <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'var(--accent-soft)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--accent-border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--accent)', fontWeight: 600, marginBottom: '4px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <polygon points="8 1 2 9 8 9 8 15 14 7 8 7 8 1"/>
+                      </svg>
+                      Preparing Universal Stream...
+                    </span>
                     <span>{uploadProgress !== null ? `${uploadProgress}%` : 'Processing...'}</span>
                   </div>
-                  <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
-                    <div style={{ width: `${uploadProgress || 0}%`, height: '100%', background: 'linear-gradient(90deg, #f97316, #ef4444)', transition: 'width 0.2s ease' }} />
+                  <div style={{ width: '100%', height: '4px', background: 'var(--bg-elevated)', borderRadius: '2px', overflow: 'hidden' }}>
+                    <div style={{ width: `${uploadProgress || 0}%`, height: '100%', background: 'var(--accent)', transition: 'width 0.2s ease' }} />
                   </div>
                 </div>
               )}

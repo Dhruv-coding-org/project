@@ -44,39 +44,39 @@ function saveRecentRoom(code: string) {
   }
 }
 
+function getInitialRoomParam(): { tab: Tab; code: string } {
+  try {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlRoom = params.get('room') || params.get('code');
+      if (urlRoom) {
+        return { tab: 'join', code: urlRoom.toUpperCase() };
+      }
+    }
+  } catch {
+    // Ignore
+  }
+  return { tab: 'create', code: '' };
+}
+
 export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
   const saved = getSavedProfile();
-  const [tab, setTab] = useState<Tab>('create');
+  const initialParam = getInitialRoomParam();
+  const [tab, setTab] = useState<Tab>(initialParam.tab);
   const [username, setUsername] = useState(saved.username || '');
   const [selectedAvatar, setSelectedAvatar] = useState(saved.avatar || '🍿');
   const [statusMessage, setStatusMessage] = useState(saved.statusMessage || '');
-  const [roomCode, setRoomCode] = useState('');
+  const [roomCode, setRoomCode] = useState(initialParam.code);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showSkeleton, setShowSkeleton] = useState(true);
-  const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
+  const [recentRooms, setRecentRooms] = useState<RecentRoom[]>(() => getRecentRooms());
   const [showFeaturesModal, setShowFeaturesModal] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [showServerModal, setShowServerModal] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSkeleton(false), 350);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRecentRooms(getRecentRooms());
-
-    try {
-      if (typeof window !== 'undefined') {
-        const params = new URLSearchParams(window.location.search);
-        const urlRoom = params.get('room') || params.get('code');
-        if (urlRoom) {
-          setTab('join');
-          setRoomCode(urlRoom.toUpperCase());
-        }
-      }
-    } catch (e) {
-      console.debug('Failed to parse URL room param:', e);
-    }
-
     return () => clearTimeout(timer);
   }, []);
 
@@ -93,6 +93,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
       } else {
         const cleanedCode = roomCode.trim().toUpperCase();
         saveRecentRoom(cleanedCode);
+        setRecentRooms(getRecentRooms());
         await onJoinRoom(username.trim(), cleanedCode, selectedAvatar, statusMessage.trim());
       }
     } catch (err: unknown) {
@@ -109,28 +110,17 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
 
   return (
     <div className="lobby">
-      {/* Background ambient light mesh & glowing orbs */}
-      <div className="lobby-orb lobby-orb-1" />
-      <div className="lobby-orb lobby-orb-2" />
-      <div className="lobby-orb lobby-orb-3" />
-
       {/* Top Landing Navigation Header */}
       <header className="lobby-navbar animate-slide-down">
         <div className="lobby-navbar-brand">
           <div className="lobby-navbar-logo">
-            <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
-              <circle cx="14" cy="14" r="13" stroke="url(#gl-nav)" strokeWidth="2"/>
-              <path d="M11 9.5L19 14L11 18.5V9.5Z" fill="url(#gl-nav)"/>
-              <defs>
-                <linearGradient id="gl-nav" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="var(--accent, #ff5722)"/>
-                  <stop offset="1" stopColor="var(--accent-cyan, #fbbf24)"/>
-                </linearGradient>
-              </defs>
+            <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
+              <circle cx="14" cy="14" r="13" stroke="currentColor" strokeWidth="2"/>
+              <path d="M11 9.5L19 14L11 18.5V9.5Z" fill="currentColor"/>
             </svg>
           </div>
           <span className="lobby-navbar-title">SyncStream</span>
-          <span className="badge badge-accent navbar-badge">PRO</span>
+          <span className="navbar-badge">STUDIO</span>
         </div>
 
         <div className="lobby-navbar-actions">
@@ -139,27 +129,43 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
               className="btn btn-ghost lobby-nav-btn"
               onClick={onOpenProfile}
             >
-              👤 Profile
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
+                <circle cx="8" cy="5" r="3"/>
+                <path d="M2.5 14c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5"/>
+              </svg>
+              <span>Profile</span>
             </button>
           )}
           <button
             className="btn btn-ghost lobby-nav-btn"
             onClick={() => setShowFeaturesModal(true)}
           >
-            ✨ Features
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
+              <rect x="2" y="3" width="12" height="10" rx="1.5"/>
+              <path d="M6 7l4 2.5L6 12V7z"/>
+            </svg>
+            <span>Features</span>
           </button>
           <button
             className="btn btn-ghost lobby-nav-btn"
             onClick={() => setShowShortcutsModal(true)}
           >
-            ⌨️ Shortcuts
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
+              <rect x="1.5" y="4" width="13" height="8" rx="1.5"/>
+              <path d="M4 7h1M7 7h1M10 7h2M4 9.5h8"/>
+            </svg>
+            <span>Shortcuts</span>
           </button>
           <button
             className="btn btn-ghost lobby-nav-btn"
             onClick={() => setShowServerModal(true)}
             title="Configure Server URL for global/cloud streaming"
           >
-            🌐 Server
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
+              <circle cx="8" cy="8" r="6"/>
+              <path d="M2 8h12M8 2c2 2.5 2 9.5 0 12M8 2c-2 2.5-2 9.5 0 12"/>
+            </svg>
+            <span>Server</span>
           </button>
           <ThemeToggle />
         </div>
@@ -168,24 +174,19 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
       {showSkeleton ? (
         <LobbyCardSkeleton />
       ) : (
-        <div className="lobby-card animate-scale-spring glass">
+        <div className="lobby-card animate-scale-spring">
           {/* Main Logo & Tagline */}
           <div className="lobby-logo">
             <div className="lobby-logo-icon">
-              <svg width="32" height="32" viewBox="0 0 28 28" fill="none">
-                <circle cx="14" cy="14" r="13" stroke="url(#gl)" strokeWidth="1.8"/>
-                <path d="M11 9.5L19 14L11 18.5V9.5Z" fill="url(#gl)"/>
-                <defs>
-                  <linearGradient id="gl" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#4f46e5"/><stop offset="1" stopColor="#818cf8"/>
-                  </linearGradient>
-                </defs>
+              <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                <circle cx="14" cy="14" r="13" stroke="currentColor" strokeWidth="2"/>
+                <path d="M11 9.5L19 14L11 18.5V9.5Z" fill="currentColor"/>
               </svg>
             </div>
             <div>
-              <h1 className="lobby-title lobby-logo-name">SyncStream</h1>
-              <p className="lobby-subtitle lobby-logo-tagline">
-                Ultra-low latency synchronized watch parties & voice chat
+              <h1 className="lobby-logo-name">SyncStream</h1>
+              <p className="lobby-logo-tagline">
+                Synchronized multimedia watch parties and real-time voice channel
               </p>
             </div>
           </div>
@@ -215,7 +216,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
           {/* Recent Rooms Quick Access */}
           {recentRooms.length > 0 && (
             <div className="lobby-recent-section animate-fade-in">
-              <span className="lobby-recent-label">Recent Rooms:</span>
+              <span className="lobby-recent-label">Recent Rooms</span>
               <div className="lobby-recent-chips">
                 {recentRooms.map((r) => (
                   <button
@@ -235,7 +236,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
 
           {/* Form */}
           <form className="lobby-form" onSubmit={handleSubmit}>
-            <div className="form-group lobby-field">
+            <div className="lobby-field">
               <label htmlFor="username-input" className="lobby-label">
                 Display Name <span className="required-star">*</span>
               </label>
@@ -243,7 +244,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                 id="username-input"
                 className="input"
                 type="text"
-                placeholder="e.g. Alex, CyberNaut…"
+                placeholder="e.g. Alex, Morgan"
                 value={username}
                 onChange={e => { setUsername(e.target.value); setError(''); }}
                 maxLength={20}
@@ -252,13 +253,13 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
               />
             </div>
 
-            <div className="form-group lobby-field">
+            <div className="lobby-field">
               <label htmlFor="status-input" className="lobby-label">Status Message (optional)</label>
               <input
                 id="status-input"
                 className="input"
                 type="text"
-                placeholder='e.g. "Watching Sci-Fi 🍿", "Ready!"'
+                placeholder='e.g. "Ready for movie night", "Headphones on"'
                 value={statusMessage}
                 onChange={e => setStatusMessage(e.target.value)}
                 maxLength={35}
@@ -266,7 +267,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
             </div>
 
             {/* Avatar Picker */}
-            <div className="form-group lobby-field">
+            <div className="lobby-field">
               <label className="lobby-label">Choose Avatar ({selectedAvatar})</label>
               <div className="lobby-avatar-picker">
                 {AVATAR_PRESETS.slice(0, 14).map(preset => (
@@ -284,7 +285,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
             </div>
 
             {tab === 'join' && (
-              <div className="form-group lobby-field animate-slide-up">
+              <div className="lobby-field animate-slide-up">
                 <label htmlFor="roomcode-input" className="lobby-label">Room Code</label>
                 <input
                   id="roomcode-input"
@@ -314,7 +315,11 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                     onClick={() => setShowServerModal(true)}
                     style={{ fontSize: '0.78rem', padding: '3px 8px', alignSelf: 'flex-end', textDecoration: 'underline' }}
                   >
-                    ⚙️ Check Server Connection ({getServerUrl().replace(/^https?:\/\//, '').split('/')[0]})
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ marginRight: '4px' }}>
+                      <circle cx="8" cy="8" r="3"/>
+                      <path d="M8 1v2M8 13v2M1 8h2M13 8h2"/>
+                    </svg>
+                    Check Server Connection ({getServerUrl().replace(/^https?:\/\//, '').split('/')[0]})
                   </button>
                 )}
               </div>
@@ -327,7 +332,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
               id="lobby-submit-btn"
             >
               {loading ? (
-                <span className="flex items-center gap-2">
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <span className="lobby-spinner" />
                   {tab === 'create' ? 'Initializing Room…' : 'Connecting to Room…'}
                 </span>
@@ -339,7 +344,30 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
 
           {/* Quick instructions & security badge */}
           <div className="lobby-footer">
-            <p>🔒 End-to-end P2P Audio • ⚡ Real-Time Latency Sync • 🍿 Up to 6 Watchers</p>
+            <span className="lobby-footer-item">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
+                <rect x="2" y="6" width="10" height="7" rx="1.5"/>
+                <path d="M4.5 6V4a2.5 2.5 0 015 0v2"/>
+              </svg>
+              P2P Audio Mesh
+            </span>
+            <span>•</span>
+            <span className="lobby-footer-item">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
+                <circle cx="7" cy="7" r="5.5"/>
+                <path d="M7 4v3.5l2 1.5"/>
+              </svg>
+              Sub-10ms Latency
+            </span>
+            <span>•</span>
+            <span className="lobby-footer-item">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
+                <circle cx="5" cy="5" r="2.5"/>
+                <circle cx="10" cy="6" r="2"/>
+                <path d="M1.5 12c0-2 1.8-3 3.5-3s3.5 1 3.5 3"/>
+              </svg>
+              Collaborative Queue
+            </span>
           </div>
         </div>
       )}
@@ -350,7 +378,11 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
           <div className="shortcuts-modal glass animate-scale-spring" onClick={e => e.stopPropagation()}>
             <div className="shortcuts-header">
               <div className="shortcuts-header-title">
-                <span className="shortcuts-icon">⚡</span>
+                <div className="feature-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                </div>
                 <div>
                   <h2>SyncStream Platform Features</h2>
                   <p>Next-generation synchronized media experience</p>
@@ -360,24 +392,53 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
             </div>
             <div className="features-grid">
               <div className="feature-card">
-                <span className="feature-icon">🎬</span>
+                <div className="feature-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <rect x="2" y="2" width="20" height="20" rx="2.18"/>
+                    <line x1="7" y1="2" x2="7" y2="22"/>
+                    <line x1="17" y1="2" x2="17" y2="22"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <line x1="2" y1="7" x2="7" y2="7"/>
+                    <line x1="2" y1="17" x2="7" y2="17"/>
+                    <line x1="17" y1="17" x2="22" y2="17"/>
+                    <line x1="17" y1="7" x2="22" y2="7"/>
+                  </svg>
+                </div>
                 <h3>Universal Video Playback</h3>
-                <p>Support for MP4/WebM direct URLs, YouTube, Vimeo, and local video files with zero server uploading needed.</p>
+                <p>Support for MP4/WebM direct URLs, YouTube, Vimeo, and local media files with zero server uploading needed.</p>
               </div>
               <div className="feature-card">
-                <span className="feature-icon">⏱️</span>
+                <div className="feature-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
                 <h3>Sub-10ms Sync Engine</h3>
-                <p>Automated drift compensation keeps playback in micro-second lockstep across all participants.</p>
+                <p>Automated drift compensation keeps playback in lockstep across all participants.</p>
               </div>
               <div className="feature-card">
-                <span className="feature-icon">🎙️</span>
+                <div className="feature-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+                    <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+                </div>
                 <h3>HD WebRTC Voice Grid</h3>
                 <p>Built-in noise suppression, live audio volume visualizers, active speaker aura indicators, and deafen controls.</p>
               </div>
               <div className="feature-card">
-                <span className="feature-icon">✨</span>
-                <h3>Ambilight & Theater Mode</h3>
-                <p>Dynamic back-glow canvas bleeding and 1-click immersive Cinema Theater Mode.</p>
+                <div className="feature-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
+                  </svg>
+                </div>
+                <h3>Cinema Theater Mode</h3>
+                <p>Focused widescreen player layout with collapsible sidebar for uninterrupted watching.</p>
               </div>
             </div>
             <div className="shortcuts-footer">

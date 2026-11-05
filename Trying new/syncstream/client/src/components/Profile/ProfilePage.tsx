@@ -71,7 +71,10 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
       <header className="profile-navbar glass">
         <div className="profile-navbar-brand">
           <button className="btn-icon profile-back-btn" onClick={onBack} title="Back to App">
-            ← Back
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M10 13L5 8l5-5"/>
+            </svg>
+            <span>Back</span>
           </button>
           <span className="profile-navbar-title">User Profile & Favorites Library</span>
         </div>
@@ -87,8 +90,18 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
             <h2>{profile.username || 'SyncStream Watcher'}</h2>
             <p className="profile-bio-text">{profile.bio || 'Lover of movies, streams, and synchronized watch parties.'}</p>
             <div className="profile-meta-chips">
-              <span className="badge badge-accent">⭐ {starredVideos.length} Starred Videos</span>
-              <span className="badge badge-success">⚡ Active Profile</span>
+              <span className="badge badge-accent">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" style={{ marginRight: '4px' }}>
+                  <path d="M8 1l2.5 5h5.5l-4.5 3.5 1.5 5.5-5-3.5-5 3.5 1.5-5.5L0 6h5.5z"/>
+                </svg>
+                {starredVideos.length} Starred Videos
+              </span>
+              <span className="badge badge-success">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ marginRight: '4px' }}>
+                  <polyline points="3 8 7 12 13 4"/>
+                </svg>
+                Active Profile
+              </span>
             </div>
           </div>
         </div>
@@ -99,13 +112,20 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
             className={`profile-tab ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setActiveTab('profile')}
           >
-            👤 Profile Settings
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: '6px' }}>
+              <circle cx="8" cy="5" r="3"/>
+              <path d="M2.5 14c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5"/>
+            </svg>
+            Profile Settings
           </button>
           <button
             className={`profile-tab ${activeTab === 'starred' ? 'active' : ''}`}
             onClick={() => setActiveTab('starred')}
           >
-            ⭐ Starred Library ({starredVideos.length})
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: '6px' }}>
+              <polygon points="8 1 10.5 6 16 6 11.5 9.5 13 15 8 11.5 3 15 4.5 9.5 0 6 5.5 6 8 1"/>
+            </svg>
+            Starred Library ({starredVideos.length})
           </button>
         </div>
 
@@ -181,7 +201,7 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
                     }}
                   >
                     <span className="theme-preview fiery-ember-preview" />
-                    <span className="theme-name">🔥 Inferno (Fiery Blaze)</span>
+                    <span className="theme-name">Inferno (Coral Cinema)</span>
                   </button>
                   <button
                     type="button"
@@ -192,7 +212,7 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
                     }}
                   >
                     <span className="theme-preview modern-dark-preview" />
-                    <span className="theme-name">🌙 Modern Dark (Obsidian)</span>
+                    <span className="theme-name">Modern Dark (Obsidian)</span>
                   </button>
                   <button
                     type="button"
@@ -203,7 +223,7 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
                     }}
                   >
                     <span className="theme-preview modern-light-preview" />
-                    <span className="theme-name">☀️ Modern Light (Clean Slate)</span>
+                    <span className="theme-name">Modern Light (Clean Slate)</span>
                   </button>
                 </div>
               </div>
@@ -211,7 +231,12 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
 
             <div className="profile-form-actions">
               <button type="submit" className="btn btn-primary profile-submit-btn">
-                💾 Save Profile Changes
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: '6px' }}>
+                  <path d="M13 14H3a1 1 0 01-1-1V3a1 1 0 011-1h7l4 4v7a1 1 0 01-1 1z"/>
+                  <polyline points="10 2 10 6 6 6"/>
+                  <rect x="5" y="9" width="6" height="5"/>
+                </svg>
+                Save Profile Changes
               </button>
             </div>
           </form>
@@ -232,16 +257,29 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
 
             {filteredStarred.length === 0 ? (
               <div className="profile-starred-empty glass">
-                <span className="empty-icon">⭐</span>
+                <span className="empty-icon">
+                  <svg width="24" height="24" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <polygon points="8 1 10.5 6 16 6 11.5 9.5 13 15 8 11.5 3 15 4.5 9.5 0 6 5.5 6 8 1"/>
+                  </svg>
+                </span>
                 <h3>No Starred Videos Saved Yet</h3>
-                <p>Click the ⭐ Star button on any video in a watch party to save it to your library for instant access anytime!</p>
+                <p>Click the Star button on any video in a watch party to save it to your library for instant access anytime.</p>
               </div>
             ) : (
               <div className="profile-starred-grid">
                 {filteredStarred.map(video => (
                   <div key={video.id} className="starred-video-card glass">
                     <div className="starred-card-icon">
-                      {video.sourceType === 'url' ? '🌐' : '📁'}
+                      {video.sourceType === 'url' ? (
+                        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <circle cx="8" cy="8" r="6"/>
+                          <path d="M2 8h12M8 2c2 2.5 2 9.5 0 12M8 2c-2 2.5-2 9.5 0 12"/>
+                        </svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M2 4a1 1 0 011-1h3.5l1.5 2H13a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V4z"/>
+                        </svg>
+                      )}
                     </div>
                     <div className="starred-card-info">
                       <h4 className="starred-title">{video.title}</h4>
@@ -257,7 +295,10 @@ export function ProfilePage({ onBack, onLaunchVideo }: ProfilePageProps) {
                           onClick={() => onLaunchVideo({ sourceType: video.sourceType, url: video.url, title: video.title })}
                           title="Play video in room"
                         >
-                          ▶️ Launch
+                          <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" style={{ marginRight: '4px' }}>
+                            <polygon points="4 2 13 8 4 14"/>
+                          </svg>
+                          Launch
                         </button>
                       )}
                       <button

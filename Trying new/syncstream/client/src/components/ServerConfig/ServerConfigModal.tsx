@@ -110,7 +110,12 @@ function ServerConfigModalContent({ onClose }: { onClose: () => void }) {
       <div className="server-modal glass animate-scale-spring" onClick={e => e.stopPropagation()}>
         <div className="server-modal-header">
           <div className="server-header-title">
-            <span className="server-header-icon">🌐</span>
+            <span className="server-header-icon">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="8" cy="8" r="6"/>
+                <path d="M2 8h12M8 2c2 2.5 2 9.5 0 12M8 2c-2 2.5-2 9.5 0 12"/>
+              </svg>
+            </span>
             <div>
               <h2>Backend Server Connection</h2>
               <p>Sync Desktop App and Website across devices</p>
@@ -130,7 +135,11 @@ function ServerConfigModalContent({ onClose }: { onClose: () => void }) {
                 onClick={() => handleSelectPreset(CLOUD_SERVER_URL)}
               >
                 <div className="preset-top">
-                  <span className="preset-icon">☁️</span>
+                  <span className="preset-icon">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M4 12h8a3 3 0 00.5-5.96A4.5 4.5 0 004.5 7.5 3 3 0 004 12z"/>
+                    </svg>
+                  </span>
                   <span className="preset-title">Cloud Server</span>
                   <span className="badge badge-accent">Sync Mode</span>
                 </div>
@@ -143,7 +152,12 @@ function ServerConfigModalContent({ onClose }: { onClose: () => void }) {
                 onClick={() => handleSelectPreset(LOCAL_SERVER_URL)}
               >
                 <div className="preset-top">
-                  <span className="preset-icon">💻</span>
+                  <span className="preset-icon">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <rect x="2" y="3" width="12" height="8" rx="1.5"/>
+                      <line x1="1" y1="13" x2="15" y2="13"/>
+                    </svg>
+                  </span>
                   <span className="preset-title">Localhost Server</span>
                 </div>
                 <p className="preset-desc">Runs strictly on this PC (offline / local development on port 3001).</p>
@@ -160,7 +174,16 @@ function ServerConfigModalContent({ onClose }: { onClose: () => void }) {
                 onClick={() => checkServerHealth(serverUrl)}
                 disabled={testingStatus === 'checking'}
               >
-                {testingStatus === 'checking' ? 'Testing…' : '🔄 Test Ping'}
+                {testingStatus === 'checking' ? 'Testing…' : (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M1 8a7 7 0 0113-3M15 8a7 7 0 01-13 3"/>
+                      <polyline points="14 2 14 5 11 5"/>
+                      <polyline points="2 14 2 11 5 11"/>
+                    </svg>
+                    Test Ping
+                  </span>
+                )}
               </button>
             </div>
             <input
@@ -179,25 +202,27 @@ function ServerConfigModalContent({ onClose }: { onClose: () => void }) {
           {/* Health Status Indicator */}
           <div className={`server-status-banner ${testingStatus}`}>
             {testingStatus === 'checking' && (
-              <span>⏳ Testing connection to server…</span>
+              <span>Testing connection to server…</span>
             )}
             {testingStatus === 'online' && (
               <span>
-                🟢 <strong>Server Online</strong> — {serverDetails?.activeRooms !== undefined ? `${serverDetails.activeRooms} active room(s) running` : 'Ready to sync rooms'}
+                <span className="status-indicator-dot online" style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981', marginRight: '6px' }} />
+                <strong>Server Online</strong> — {serverDetails?.activeRooms !== undefined ? `${serverDetails.activeRooms} active room(s) running` : 'Ready to sync rooms'}
               </span>
             )}
             {testingStatus === 'offline' && (
               <span>
-                🔴 <strong>Server Unreachable</strong> — Check URL or Render spin-up time.
+                <span className="status-indicator-dot offline" style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#EF4444', marginRight: '6px' }} />
+                <strong>Server Unreachable</strong> — Check URL or backend status.
               </span>
             )}
             {testingStatus === 'idle' && (
-              <span>ℹ️ Click "Test Ping" or save to connect.</span>
+              <span>Click "Test Ping" or save to connect.</span>
             )}
           </div>
 
           <div className="server-tip-box">
-            <p>💡 <strong>To connect Desktop App & Website together:</strong></p>
+            <p><strong>To connect Desktop App & Website together:</strong></p>
             <ul>
               <li>Both your Desktop App and the Live Website must be connected to the <strong>Cloud Server</strong>.</li>
               <li>When both use <code>{CLOUD_SERVER_URL}</code>, rooms created on the Desktop App are instantly accessible on the Website, and vice-versa!</li>

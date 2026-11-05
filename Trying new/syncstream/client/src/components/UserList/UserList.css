@@ -1,29 +1,28 @@
 /* ─────────────────────────────────────────────────────────
-   UserList v4.0 — MNC Grade Voice Cards & Participant Grid
+   UserList Component Styling — Cinema Dark System
+   Clean, Professional, Non-Template Aesthetics
    ───────────────────────────────────────────────────────── */
 
 .userlist {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 16px;
-  gap: 14px;
+  padding: 14px;
+  gap: 12px;
   overflow: hidden;
   background: transparent;
 }
 
 /* ── Voice Control Box ────────────────────────────────── */
 .voice-control-box {
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-border);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  backdrop-filter: blur(var(--blur-md));
-  -webkit-backdrop-filter: blur(var(--blur-md));
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), var(--glass-highlight);
+  box-shadow: var(--shadow-sm);
 }
 
 .voice-control-header {
@@ -34,133 +33,126 @@
 
 .voice-title {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
 .voice-status-badge {
   font-size: 9px;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 99px;
-  background: var(--bg-glass-2);
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-surface);
   color: var(--text-muted);
   letter-spacing: 0.05em;
-  border: 1px solid var(--glass-border-subtle);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
 }
 
 .voice-status-badge.active {
-  background: rgba(52, 211, 153, 0.18);
+  background: rgba(16, 185, 129, 0.15);
   color: var(--success);
-  border: 1px solid rgba(52, 211, 153, 0.35);
-  box-shadow: 0 0 10px rgba(52, 211, 153, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
 .voice-join-btn {
   width: 100%;
-  padding: 9px;
-  font-size: 13px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .voice-controls-active {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .voice-action-btn {
   flex: 1;
-  padding: 7px 10px;
-  font-size: 12px;
+  padding: 6px 10px;
+  font-size: 11px;
   font-weight: 600;
-  border-radius: var(--radius-sm);
-  background: var(--bg-glass-3);
-  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xs);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  box-shadow: var(--glass-highlight-subtle);
   transition: all var(--transition-fast);
 }
 
 .voice-action-btn:hover {
-  background: var(--bg-glass-hover);
-  border-color: var(--glass-border-light);
+  background: var(--bg-elevated);
+  border-color: var(--accent);
 }
 
 .voice-action-btn.muted {
-  background: rgba(248, 113, 113, 0.14);
-  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
   color: var(--error);
 }
 
-.voice-action-btn.deafened {
-  background: rgba(251, 191, 36, 0.14);
-  border-color: rgba(251, 191, 36, 0.35);
-  color: var(--warning);
-}
-
 .voice-disconnect-btn {
-  font-size: 11px;
   padding: 6px 10px;
-  color: var(--text-muted) !important;
+  font-size: 11px;
 }
 
-.voice-disconnect-btn:hover {
-  color: var(--error) !important;
-}
-
-/* ── Userlist Title Bar ───────────────────────────────── */
+/* ── User list title bar ──────────────────────────────── */
 .userlist-title-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--glass-border-subtle);
+  border-bottom: 1px solid var(--border);
 }
 
 .userlist-title-left {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
 .userlist-count-badge {
   font-size: 10px;
-  font-weight: 700;
-  background: var(--accent-soft);
-  color: var(--accent-bright);
-  padding: 2px 8px;
-  border-radius: 99px;
-  border: 1px solid var(--accent-border);
+  font-weight: 600;
+  background: var(--bg-elevated);
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
 }
 
 .userlist-copy-code-btn {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   font-family: var(--font-mono);
   color: var(--text-secondary);
-  background: var(--bg-glass-2);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
   padding: 3px 8px;
   border-radius: var(--radius-xs);
   cursor: pointer;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   transition: all var(--transition-fast);
 }
 
 .userlist-copy-code-btn:hover {
-  color: var(--accent-bright);
-  border-color: var(--accent-border);
-  background: var(--bg-glass-hover);
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--bg-surface);
 }
 
 /* ── Users List ───────────────────────────────────────── */
@@ -168,7 +160,7 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   overflow-y: auto;
   flex: 1;
   padding-right: 2px;
@@ -178,49 +170,40 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
-  background: var(--bg-glass-2);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: var(--glass-highlight-subtle);
+  padding: 8px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
-  animation: slideUp 0.3s var(--ease) both;
 }
 
 .userlist-user:hover {
-  background: var(--bg-glass-hover);
-  border-color: var(--accent-border);
-  transform: translateX(3px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), var(--glass-highlight);
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
 }
 
 .userlist-user.is-me {
-  background: var(--accent-soft);
   border-color: var(--accent-border);
-  box-shadow: 0 0 12px var(--accent-border), var(--glass-highlight);
+  background: var(--accent-soft);
 }
 
 .userlist-avatar {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--bg-elevated);
-  border: 1px solid var(--glass-border-light);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 15px;
   flex-shrink: 0;
-  position: relative;
   transition: all var(--transition-fast);
 }
 
 .speaking-aura {
-  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.45), 0 0 16px rgba(52, 211, 153, 0.4);
   border-color: var(--success);
-  animation: breathe 1.5s ease-in-out infinite;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.35);
 }
 
 .userlist-details {
@@ -242,7 +225,7 @@
 
 .userlist-username {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -251,18 +234,21 @@
 .userlist-you {
   font-size: 11px;
   font-weight: 600;
-  color: var(--accent-bright);
+  color: var(--accent);
 }
 
 .userlist-host-badge {
-  font-size: 10px;
-  font-weight: 800;
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.15);
-  border: 1px solid rgba(251, 191, 36, 0.35);
-  padding: 1px 6px;
-  border-radius: 99px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
   letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .userlist-status-msg {
@@ -284,6 +270,12 @@
   flex-shrink: 0;
 }
 
+.voice-status-tag {
+  display: flex;
+  align-items: center;
+  color: var(--error);
+}
+
 .user-ping-badge {
   display: inline-flex;
   align-items: center;
@@ -291,12 +283,10 @@
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-mono);
-  background: var(--bg-glass-2);
+  background: var(--bg-elevated);
   padding: 2px 6px;
   border-radius: var(--radius-xs);
-  border: 1px solid var(--glass-border-subtle);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid var(--border);
 }
 
 .ping-dot {
@@ -307,7 +297,7 @@
 
 .userlist-footer {
   padding-top: 8px;
-  border-top: 1px solid var(--glass-border-subtle);
+  border-top: 1px solid var(--border);
 }
 
 .userlist-footer-leave-btn {
@@ -315,9 +305,13 @@
   padding: 8px;
   font-size: 12px;
   color: var(--text-muted) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .userlist-footer-leave-btn:hover {
   color: var(--error) !important;
-  border-color: rgba(248, 113, 113, 0.3) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
 }

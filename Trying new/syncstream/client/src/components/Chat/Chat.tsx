@@ -44,7 +44,11 @@ function renderMessageWithTimestamps(text: string, onSeek?: (seconds: number) =>
           onClick={() => onSeek(seconds)}
           title={`Seek video to ${tsStr}`}
         >
-          ⏱️ {tsStr}
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="8" cy="8" r="7"/>
+            <polyline points="8 4 8 8 11 10"/>
+          </svg>
+          <span>{tsStr}</span>
         </button>
       );
     } else {
@@ -102,7 +106,7 @@ export function Chat({ messages, onSend, onSendReaction, onSeek, mySocketId }: C
 
       <div className="chat-messages" role="log" aria-label="Chat messages" aria-live="polite">
         {messages.length === 0 && (
-          <p className="chat-empty">No messages yet. Say hi! 👋</p>
+          <p className="chat-empty">No messages yet. Start the conversation.</p>
         )}
         {messages.map((msg, i) => {
           const isSystem = msg.senderId === 'system';
@@ -170,7 +174,11 @@ export function Chat({ messages, onSend, onSendReaction, onSeek, mySocketId }: C
           onClick={() => setShowEmojiKeyboard(prev => !prev)}
           title="Open Emoji Keyboard"
         >
-          😊
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="8" cy="8" r="7"/>
+            <path d="M5.5 6.5h.01M10.5 6.5h.01"/>
+            <path d="M5.5 10c.8 1 1.7 1.5 2.5 1.5s1.7-.5 2.5-1.5"/>
+          </svg>
         </button>
         <input
           id="chat-input"

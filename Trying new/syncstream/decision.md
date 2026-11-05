@@ -16,7 +16,23 @@ syncstream/
 └── dist-desktop/     # Packaged Windows installer (NSIS executable)
 ```
 
-### 2.2 Server Architecture (`server/`)
+### 2.2 Visual Identity & Design System Alignment (`.agents/design.md`)
+The client interface adheres to the Cinema Dark workbench standards codified in `../../.agents/design.md`:
+- **5-Colour Cinema Dark Palette**:
+  - Base Background: Deep obsidian cinema void (`#0B0C10`)
+  - Elevated Container: Subdued graphite panel (`#14171E`)
+  - Border / Contour: Discrete charcoal border (`#232732`)
+  - High Contrast Text: Crisp readable silver white (`#F1F3F7`)
+  - Focused Accent: Warm coral cinema accent (`#E05A47`)
+- **Typography & Proportional Hierarchy**:
+  - Replaced generic `Inter` with `Plus Jakarta Sans` for interface controls/headings and `JetBrains Mono` for room codes, timestamps, and data metrics.
+  - Scale conforms strictly to the Major Third ($1.250$) progression.
+- **Anti-Template Enforcement**:
+  - Stripped all floating ambient glowing orbs (`.lobby-orb`), rainbow text gradients, and multi-layer blurred frosted glassmorphism.
+  - Replaced all emojis in navigation headers, buttons, status badges, action tabs, modal dialogs, and video controls with curated semantic SVGs.
+  - Initialized query parameters directly in React state hooks, eliminating `set-state-in-effect` cascade renders and maintaining a 0-warning build.
+
+### 2.3 Server Architecture (`server/`)
 - **[server.js](./server/server.js)**: Central HTTP & WebSocket server. Runs on port `3001` or as a background service via PM2 / Docker.
 - **[src/services/roomManager.js](./server/src/services/roomManager.js)**:
   - Manages active watch party rooms, host permissions, participant lists, and playlist state.
@@ -29,7 +45,7 @@ syncstream/
 - **[src/handlers/webrtcHandler.js](./server/src/handlers/webrtcHandler.js)**: Acts as the WebRTC signaling exchange (SDP offers/answers and ICE candidates) for voice/video mesh rooms.
 - **[src/handlers/vlcHandler.js](./server/src/handlers/vlcHandler.js)**: Remote control bridge for local VLC media players.
 
-### 2.3 Client Architecture (`client/src/`)
+### 2.4 Client Architecture (`client/src/`)
 - **[components/VideoPlayer/VideoPlayer.tsx](./client/src/components/VideoPlayer/VideoPlayer.tsx)**:
   - Multi-source player supporting direct MP4/WebM/HLS URLs, YouTube embeds, and local files.
   - Custom subtitle engine supporting SRT, VTT, and native YouTube CC track switching.
@@ -38,11 +54,11 @@ syncstream/
 - **[components/Playlist/PlaylistModal.tsx](./client/src/components/Playlist/PlaylistModal.tsx)**:
   - Collaborative queue with drag-and-drop reordering.
   - Auto-plays the next queued video upon current video completion.
-- **[components/Lobby/Lobby.tsx](./client/src/components/Lobby/Lobby.tsx)**: Modern room creation and joining interface.
+- **[components/Lobby/Lobby.tsx](./client/src/components/Lobby/Lobby.tsx)**: Room creation and joining interface.
 - **[components/ServerConfig/ServerConfigModal.tsx](./client/src/components/ServerConfig/ServerConfigModal.tsx)**: Allows switching between cloud server URLs and local dev servers.
-- **[components/ThemeToggle/ThemeToggle.tsx](./client/src/components/ThemeToggle/ThemeToggle.tsx)**: Switch between fiery and dark/light UI modes.
+- **[components/ThemeToggle/ThemeToggle.tsx](./client/src/components/ThemeToggle/ThemeToggle.tsx)**: Switch between dark/light and cinema UI modes.
 
-### 2.4 Desktop Wrapper (`electron/`)
+### 2.5 Desktop Wrapper (`electron/`)
 - **[electron/main.js](./electron/main.js)**: Electron runtime setting up browser windows, handling user-agent modifications to avoid YouTube "Sign-in required to confirm you're not a bot" embed blocks, and registering hardware acceleration.
 - **[electron/preload.js](./electron/preload.js)**: Context isolation bridge providing safe IPC access for desktop features.
 
@@ -65,6 +81,7 @@ syncstream/
 | Hardening & Polish | Keyboard Accessibility & Connection Resilience | Added modifier key collision safeguards, keyboard seeking (Left/Right 5s, J/L 10s), volume up/down shortcuts (5%), ARIA player region semantics, updated shortcuts documentation, and handled socket connection error resilience in `useRoom.ts`. |
 | Privacy & Security | Anonymized Android package & runtime tunnel privacy | Changed Android applicationId/namespace to generic `com.syncstream.app`, untracked runtime tunnel state `syncstream_tunnel.json`, and sanitized documentation links. |
 | Diagnostics & Types | Fixed CSSProperties type import & modern Gradle buildDir syntax | Added `import type { CSSProperties } from 'react'` in `EmojiReactions.tsx` to fix missing namespace, created base `App.css`, and updated root `build.gradle` clean task to modern `rootProject.layout.buildDirectory`. |
+| `design-system-audit` | Anti-template overhaul & design system token adoption | Replaced generic Inter font with `Plus Jakarta Sans` / `JetBrains Mono`; removed floating glow mesh spheres, text gradient animations, and glassmorphism; replaced UI emojis in buttons/headers with curated SVG icons; implemented 5-colour cinema palette (`#0B0C10`, `#14171E`, `#1B1F2A`, `#232732`, `#F1F3F7`, `#E05A47`) complying with `.agents/design.md`. |
 
 ---
 

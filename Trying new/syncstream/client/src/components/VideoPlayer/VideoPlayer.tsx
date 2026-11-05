@@ -1744,7 +1744,7 @@ export function VideoPlayer({
                 </button>
               </div>
               <div className="vp-error-tip">
-                💡 <strong>Why does this happen?</strong><br />
+                <strong>Why does this happen?</strong><br />
                 Major music labels (such as T-Series, VEVO, and Sony) restrict their videos from playing in third-party embedded web players (YouTube Error 150/101).<br />
                 <strong>How to bypass:</strong><br />
                 1. <strong>SyncStream Desktop App</strong>: Use the Desktop App which has a native embed header bypass.<br />
@@ -1759,7 +1759,10 @@ export function VideoPlayer({
                   onClick={handleRetryForceTranscode}
                   title="Transcode video and audio to universal browser codecs in real-time"
                 >
-                  ⚡ Convert & Play In-App
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: '4px' }}>
+                    <polygon points="8 1 2 9 8 9 8 15 14 7 8 7 8 1"/>
+                  </svg>
+                  Convert & Play In-App
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={handleRetryForceMP4}>
                   Force Muted Play
@@ -1769,7 +1772,7 @@ export function VideoPlayer({
                 </button>
               </div>
               <div className="vp-error-tip">
-                💡 <strong>Universal Transcoder:</strong><br />
+                <strong>Universal Transcoder:</strong><br />
                 SyncStream automatically transcodes HEVC, MKV, AVI, and unsupported audio codecs in real-time for seamless in-app playback!
               </div>
             </>
@@ -1829,13 +1832,21 @@ export function VideoPlayer({
       {!isHost && isFile && !guestLocalFileUrl && (
         <div className="vp-guest-file-prompt animate-fade-in">
           <div className="vp-guest-prompt-box glass">
-            <div className="vp-prompt-icon">🍿</div>
+            <div className="vp-prompt-icon">
+              <svg width="24" height="24" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="1.5" y="3" width="13" height="10" rx="1.5"/>
+                <path d="M6 6l5 2-5 2V6z"/>
+              </svg>
+            </div>
             <div className="vp-prompt-text">
               <h3>Host selected local file: "{videoSource?.title || 'Video File'}"</h3>
               <p>For instant 1080p/4K playback from your PC, select your local copy of this file.</p>
             </div>
             <label className="btn btn-primary vp-select-local-btn">
-              📁 Select Local File Copy
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginRight: '6px' }}>
+                <path d="M2 4a1 1 0 011-1h3.5l1.5 2H13a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V4z"/>
+              </svg>
+              Select Local File Copy
               <input
                 type="file"
                 accept={ALLOWED_MEDIA_TYPES}
@@ -2083,7 +2094,10 @@ export function VideoPlayer({
               title="Picture-in-Picture Mode"
               aria-label="Picture-in-Picture"
             >
-              📺
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="1.5" y="3" width="13" height="10" rx="1.5"/>
+                <rect x="8.5" y="7.5" width="5" height="4" rx="1" fill="currentColor"/>
+              </svg>
             </button>
 
             {/* Auto Caption & Subtitles Options Button */}
@@ -2092,7 +2106,7 @@ export function VideoPlayer({
                 <button
                   className={`btn-icon vp-btn vp-autocc-btn ${autoCaptionEnabled ? 'active' : ''}`}
                   onClick={() => setShowCaptionMenu(prev => !prev)}
-                  title={autoCaptionEnabled ? "Auto Captions: ON (Click for options)" : "Enable Auto Captions & Subtitles ⚡"}
+                  title={autoCaptionEnabled ? "Auto Captions: ON (Click for options)" : "Enable Auto Captions & Subtitles"}
                   aria-label="Auto Captions and Subtitle Settings"
                   id="vp-autocc-btn"
                 >

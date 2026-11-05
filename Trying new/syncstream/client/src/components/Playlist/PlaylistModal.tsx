@@ -146,7 +146,10 @@ export function PlaylistModal({
         <div className="playlist-footer">
           {canControl && playlist.length > 0 && (
             <button className="btn btn-primary play-next-btn" onClick={onPlayNext}>
-              ▶ Play Next Item Now
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style={{ marginRight: '4px' }}>
+                <polygon points="4 2 13 8 4 14"/>
+              </svg>
+              Play Next Item Now
             </button>
           )}
           <button className="btn btn-ghost" onClick={onClose}>

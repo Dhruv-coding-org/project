@@ -19,10 +19,10 @@ interface UserListProps {
 }
 
 function getPingQuality(ping?: number) {
-  if (!ping || ping <= 0) return { color: '#34d399', label: 'Good', text: '< 20ms' };
-  if (ping < 70) return { color: '#34d399', label: 'Excellent', text: `${ping}ms` };
-  if (ping < 180) return { color: '#fbbf24', label: 'Fair', text: `${ping}ms` };
-  return { color: '#f87171', label: 'High Latency', text: `${ping}ms` };
+  if (!ping || ping <= 0) return { color: '#10B981', label: 'Good', text: '< 20ms' };
+  if (ping < 70) return { color: '#10B981', label: 'Excellent', text: `${ping}ms` };
+  if (ping < 180) return { color: '#F59E0B', label: 'Fair', text: `${ping}ms` };
+  return { color: '#EF4444', label: 'High Latency', text: `${ping}ms` };
 }
 
 export function UserList({
@@ -61,7 +61,13 @@ export function UserList({
       {/* Voice Chat Control Box */}
       <div className="voice-control-box">
         <div className="voice-control-header">
-          <span className="voice-title">🎙️ P2P Voice Channel</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M8 1a2.5 2.5 0 00-2.5 2.5v5a2.5 2.5 0 005 0v-5A2.5 2.5 0 008 1z"/>
+              <path d="M13 7v1.5a5 5 0 01-10 0V7M8 13.5v2M5.5 15.5h5"/>
+            </svg>
+            <span className="voice-title">P2P Voice Channel</span>
+          </div>
           <span className={`voice-status-badge ${voiceActive ? 'active' : ''}`}>
             {voiceActive ? 'CONNECTED' : 'OFFLINE'}
           </span>
@@ -69,7 +75,10 @@ export function UserList({
 
         {!voiceActive ? (
           <button className="btn btn-primary voice-join-btn" onClick={onJoinVoice}>
-            ⚡ Connect Voice Chat
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <polygon points="8 1 2 9 8 9 8 15 14 7 8 7 8 1"/>
+            </svg>
+            Connect Voice Channel
           </button>
         ) : (
           <div className="voice-controls-active">
@@ -78,14 +87,24 @@ export function UserList({
               onClick={onToggleMic}
               title={isMuted ? 'Unmute Mic' : 'Mute Mic'}
             >
-              {isMuted ? '🔇 Muted' : '🎙️ Mic On'}
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M8 1a2.5 2.5 0 00-2.5 2.5v5a2.5 2.5 0 005 0v-5A2.5 2.5 0 008 1z"/>
+                <path d="M13 7v1.5a5 5 0 01-10 0V7M8 13.5v2M5.5 15.5h5"/>
+                {isMuted && <line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" strokeWidth="1.8"/>}
+              </svg>
+              <span>{isMuted ? 'Muted' : 'Mic On'}</span>
             </button>
             <button
               className={`btn-icon voice-action-btn ${isDeafened ? 'deafened' : 'active'}`}
               onClick={onToggleDeafen}
               title={isDeafened ? 'Undeafen' : 'Deafen Audio'}
             >
-              {isDeafened ? '🚫 Deafened' : '🎧 Audio On'}
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M2 9a6 6 0 0112 0v4a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 011-1h3"/>
+                <path d="M2 13a1 1 0 001 1h2a1 1 0 001-1v-3a1 1 0 00-1-1H2v4z"/>
+                {isDeafened && <line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" strokeWidth="1.8"/>}
+              </svg>
+              <span>{isDeafened ? 'Deafened' : 'Audio On'}</span>
             </button>
             <button
               className="btn btn-ghost btn-sm voice-disconnect-btn"
@@ -109,7 +128,11 @@ export function UserList({
           onClick={copyCode}
           title="Copy Room Code"
         >
-          📋 {roomCode}
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2">
+            <rect x="4" y="4" width="8" height="8" rx="1.5"/>
+            <path d="M2 10V2h8"/>
+          </svg>
+          <span>{roomCode}</span>
         </button>
       </div>
 
@@ -137,7 +160,10 @@ export function UserList({
                   {isMe && <span className="userlist-you"> (You)</span>}
                   {isHost && (
                     <span className="userlist-host-badge" title="Room Host">
-                      👑 Host
+                      <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 1l2.5 5h5.5l-4.5 3.5 1.5 5.5-5-3.5-5 3.5 1.5-5.5L0 6h5.5z"/>
+                      </svg>
+                      Host
                     </span>
                   )}
                 </div>
@@ -149,8 +175,24 @@ export function UserList({
               </div>
 
               <div className="userlist-right-meta">
-                {user.isMuted && <span className="voice-status-tag" title="Muted">🔇</span>}
-                {user.isDeafened && <span className="voice-status-tag" title="Deafened">🎧🚫</span>}
+                {user.isMuted && (
+                  <span className="voice-status-tag" title="Muted">
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
+                      <path d="M8 1a2.5 2.5 0 00-2.5 2.5v5a2.5 2.5 0 005 0v-5A2.5 2.5 0 008 1z"/>
+                      <path d="M13 7v1.5a5 5 0 01-10 0V7M8 13.5v2M5.5 15.5h5"/>
+                      <line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" strokeWidth="1.6"/>
+                    </svg>
+                  </span>
+                )}
+                {user.isDeafened && (
+                  <span className="voice-status-tag" title="Deafened">
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
+                      <path d="M2 9a6 6 0 0112 0v4a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 011-1h3"/>
+                      <path d="M2 13a1 1 0 001 1h2a1 1 0 001-1v-3a1 1 0 00-1-1H2v4z"/>
+                      <line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" strokeWidth="1.6"/>
+                    </svg>
+                  </span>
+                )}
 
                 {/* Real-time Ping Meter */}
                 <span
@@ -170,7 +212,10 @@ export function UserList({
       {/* UserList Footer */}
       <div className="userlist-footer">
         <button className="btn btn-ghost userlist-footer-leave-btn" onClick={onLeave} title="Leave Room">
-          🚪 Leave Watch Party
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
+            <path d="M9 13H3a1 1 0 01-1-1V4a1 1 0 011-1h6M11 11l3-3-3-3M6 8h8"/>
+          </svg>
+          Leave Watch Party
         </button>
       </div>
     </div>

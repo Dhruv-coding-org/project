@@ -35,7 +35,12 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
       >
         <div className="shortcuts-header">
           <div className="shortcuts-header-title">
-            <span className="shortcuts-icon">⌨️</span>
+            <span className="shortcuts-icon">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="1.5" y="4" width="13" height="8" rx="1.5"/>
+                <path d="M4 7h1M7 7h1M10 7h2M4 9.5h8"/>
+              </svg>
+            </span>
             <div>
               <h2 id="shortcuts-title">Keyboard Shortcuts</h2>
               <p>Quick controls for seamless navigation</p>

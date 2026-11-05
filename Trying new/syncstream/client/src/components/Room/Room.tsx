@@ -274,21 +274,36 @@ export function Room({
                 onClick={toggleMic}
                 title={isMuted ? 'Unmute Mic' : 'Mute Mic'}
               >
-                {isMuted ? '🎙️ Muted' : '🎙️ Mic On'}
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M8 1a2.5 2.5 0 00-2.5 2.5v5a2.5 2.5 0 005 0v-5A2.5 2.5 0 008 1z"/>
+                  <path d="M13 7v1.5a5 5 0 01-10 0V7M8 13.5v2M5.5 15.5h5"/>
+                  {isMuted && <line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" strokeWidth="1.8"/>}
+                </svg>
+                <span>{isMuted ? 'Muted' : 'Mic On'}</span>
               </button>
               <button
                 className={`btn btn-ghost btn-sm ${isCameraActive ? 'active' : ''}`}
                 onClick={toggleCamera}
                 title={isCameraActive ? 'Turn Off Camera' : 'Turn On Camera'}
               >
-                {isCameraActive ? '📹 Cam On' : '📹 Cam Off'}
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="1.5" y="3.5" width="9.5" height="9" rx="1.5"/>
+                  <path d="M11 7l3.5-2.5v7L11 9V7z"/>
+                  {!isCameraActive && <line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" strokeWidth="1.8"/>}
+                </svg>
+                <span>{isCameraActive ? 'Cam On' : 'Cam Off'}</span>
               </button>
               <button
                 className={`btn btn-ghost btn-sm ${isDeafened ? 'deafened' : ''}`}
                 onClick={toggleDeafen}
                 title={isDeafened ? 'Undeafen' : 'Deafen Room Audio'}
               >
-                {isDeafened ? '🎧 Deafened' : '🎧 Audio'}
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M2 9a6 6 0 0112 0v4a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 011-1h3"/>
+                  <path d="M2 13a1 1 0 001 1h2a1 1 0 001-1v-3a1 1 0 00-1-1H2v4z"/>
+                  {isDeafened && <line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" strokeWidth="1.8"/>}
+                </svg>
+                <span>{isDeafened ? 'Deafened' : 'Audio'}</span>
               </button>
             </div>
           )}
@@ -299,7 +314,11 @@ export function Room({
             onClick={() => setIsTheaterMode(prev => !prev)}
             title="Toggle Theater / Cinema Mode (Alt+T)"
           >
-            🎬 {isTheaterMode ? 'Exit Theater' : 'Theater Mode'}
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="1.5" y="3" width="13" height="10" rx="1.5"/>
+              <line x1="1.5" y1="6" x2="14.5" y2="6"/>
+            </svg>
+            <span>{isTheaterMode ? 'Exit Theater' : 'Theater Mode'}</span>
           </button>
 
           {/* Shortcuts Modal Trigger */}
@@ -308,7 +327,11 @@ export function Room({
             onClick={() => setShowShortcutsModal(true)}
             title="Keyboard Shortcuts (?)"
           >
-            ⌨️ Shortcuts
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="1.5" y="4" width="13" height="8" rx="1.5"/>
+              <path d="M4 7h1M7 7h1M10 7h2M4 9.5h8"/>
+            </svg>
+            <span>Shortcuts</span>
           </button>
 
           {/* Theme Toggle Button */}
@@ -320,7 +343,11 @@ export function Room({
             onClick={() => setShowProfileModal(true)}
             title="Profile Settings"
           >
-            👤 Profile
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="8" cy="5" r="3"/>
+              <path d="M2.5 14c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5"/>
+            </svg>
+            <span>Profile</span>
           </button>
 
           {/* Playlist Queue Button */}
@@ -329,7 +356,12 @@ export function Room({
             onClick={() => setShowPlaylistModal(true)}
             title="View Queue / Playlist (Alt+Q)"
           >
-            📜 Queue ({state.playlist?.length || 0})
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <line x1="2.5" y1="4" x2="13.5" y2="4"/>
+              <line x1="2.5" y1="8" x2="13.5" y2="8"/>
+              <line x1="2.5" y1="12" x2="9.5" y2="12"/>
+            </svg>
+            <span>Queue ({state.playlist?.length || 0})</span>
           </button>
 
           {/* Permissions toggle (host-only) */}
@@ -418,14 +450,23 @@ export function Room({
                 onClick={() => setActiveSidebarTab('chat')}
                 title="Chat Panel (Alt+C)"
               >
-                💬 Chat
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M2.5 3h11a1 1 0 011 1v7a1 1 0 01-1 1H6L2.5 15V4a1 1 0 011-1z"/>
+                </svg>
+                <span>Chat</span>
               </button>
               <button
                 className={`room-sidebar-tab ${activeSidebarTab === 'users' ? 'active' : ''}`}
                 onClick={() => setActiveSidebarTab('users')}
                 title="Watchers & Voice Panel (Alt+U)"
               >
-                👥 Watchers ({state.users.length})
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="6" cy="5" r="2.5"/>
+                  <circle cx="11.5" cy="6" r="2"/>
+                  <path d="M2 13.5c0-2.2 2-3.5 4-3.5s4 1.3 4 3.5"/>
+                  <path d="M10.5 10c1.5 0 3.5.8 3.5 2.5"/>
+                </svg>
+                <span>Watchers ({state.users.length})</span>
               </button>
             </div>
 
