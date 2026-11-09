@@ -20,18 +20,16 @@
   width: 100%;
   max-width: min(500px, calc(100vw - 24px));
   max-height: calc(100svh - 32px);
-  background: var(--bg-glass-modal);
-  backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
-  -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
-  border: 1px solid var(--glass-border-light);
-  border-radius: var(--radius-xl);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   padding: clamp(16px, 3vw, 24px);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), var(--shadow-glow), var(--glass-highlight-glow);
+  box-shadow: var(--shadow-xl);
   display: flex;
   flex-direction: column;
   gap: 1rem;
   overflow-y: auto;
-  animation: scaleSpring 0.4s var(--ease-spring) both;
+  animation: fadeIn 0.15s var(--ease) both;
 }
 
 .profile-header {
@@ -102,15 +100,11 @@
 .avatar-option:hover {
   background: var(--accent-soft);
   border-color: var(--accent-border);
-  transform: scale(1.15);
-  box-shadow: 0 0 8px var(--accent-border);
 }
 
 .avatar-option.selected {
   background: var(--accent-soft);
   border-color: var(--accent);
-  box-shadow: 0 0 12px var(--accent-border), var(--glass-highlight);
-  transform: scale(1.15);
 }
 
 .avatar-emoji {

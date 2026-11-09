@@ -1863,13 +1863,8 @@ export function VideoPlayer({
         <div className="vp-placeholder">
           <div className="vp-placeholder-icon">
             <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-              <circle cx="28" cy="28" r="26" stroke="url(#gvp)" strokeWidth="1.5" strokeDasharray="4 4"/>
-              <path d="M21 18l18 10-18 10V18z" fill="url(#gvp)"/>
-              <defs>
-                <linearGradient id="gvp" x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#4f46e5"/><stop offset="1" stopColor="#818cf8"/>
-                </linearGradient>
-              </defs>
+              <circle cx="28" cy="28" r="26" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4"/>
+              <path d="M21 18l18 10-18 10V18z" fill="currentColor"/>
             </svg>
           </div>
           <p className="vp-placeholder-text">
@@ -1883,13 +1878,8 @@ export function VideoPlayer({
         <div className="vp-placeholder">
           <div className="vp-placeholder-icon">
             <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="20" stroke="url(#gvp2)" strokeWidth="1.5"/>
-              <path d="M24 14v10l6 6" stroke="url(#gvp2)" strokeWidth="2" strokeLinecap="round"/>
-              <defs>
-                <linearGradient id="gvp2" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#4f46e5"/><stop offset="1" stopColor="#818cf8"/>
-                </linearGradient>
-              </defs>
+              <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M24 14v10l6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </div>
           <p className="vp-placeholder-text">Connecting to host's stream…</p>

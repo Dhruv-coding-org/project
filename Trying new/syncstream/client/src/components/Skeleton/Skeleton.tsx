@@ -191,20 +191,15 @@ export function SplashScreen() {
       <div className="splash-content animate-scale-spring">
         <div className="splash-logo-icon">
           <svg width="40" height="40" viewBox="0 0 28 28" fill="none">
-            <circle cx="14" cy="14" r="13" stroke="url(#splash-g)" strokeWidth="2"/>
-            <path d="M10 9.5L20 14L10 18.5V9.5Z" fill="url(#splash-g)"/>
-            <defs>
-              <linearGradient id="splash-g" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#4f46e5"/><stop offset="1" stopColor="#818cf8"/>
-              </linearGradient>
-            </defs>
+            <circle cx="14" cy="14" r="13" stroke="currentColor" strokeWidth="2"/>
+            <path d="M10 9.5L20 14L10 18.5V9.5Z" fill="currentColor"/>
           </svg>
         </div>
         <h1 className="splash-name">SyncStream</h1>
         <div className="splash-loader">
           <div className="splash-loader-bar" />
         </div>
-        <p className="splash-subtitle">Preparing your experience…</p>
+        <p className="splash-subtitle">Connecting…</p>
       </div>
     </div>
   );

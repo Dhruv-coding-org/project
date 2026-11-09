@@ -40,8 +40,8 @@
   --accent-teal:   #34D399;
   --accent-cyan:   #38BDF8;
   --accent-cyan-2: #60A5FA;
-  --accent-glow:   rgba(224, 90, 71, 0.16);
-  --accent-glow-2: rgba(224, 90, 71, 0.08);
+  --accent-glow:   transparent;
+  --accent-glow-2: transparent;
   --accent-soft:   rgba(224, 90, 71, 0.12);
   --accent-border: rgba(224, 90, 71, 0.32);
   --accent-grad:   #E05A47;
@@ -107,8 +107,8 @@
   --accent-teal:   #10B981;
   --accent-cyan:   #38BDF8;
   --accent-cyan-2: #60A5FA;
-  --accent-glow:   rgba(62, 130, 247, 0.16);
-  --accent-glow-2: rgba(62, 130, 247, 0.08);
+  --accent-glow:   transparent;
+  --accent-glow-2: transparent;
   --accent-soft:   rgba(62, 130, 247, 0.12);
   --accent-border: rgba(62, 130, 247, 0.32);
   --accent-grad:   #3E82F7;
@@ -173,8 +173,8 @@
   --accent-teal:   #0D9488;
   --accent-cyan:   #0284C7;
   --accent-cyan-2: #0369A1;
-  --accent-glow:   rgba(212, 78, 59, 0.12);
-  --accent-glow-2: rgba(212, 78, 59, 0.06);
+  --accent-glow:   transparent;
+  --accent-glow-2: transparent;
   --accent-soft:   rgba(212, 78, 59, 0.08);
   --accent-border: rgba(212, 78, 59, 0.25);
   --accent-grad:   #D44E3B;
@@ -229,13 +229,13 @@
   --space-7: 32px;
   --space-8: 40px;
 
-  /* ── Border Radius Scale (3 values) ───────────────────── */
-  --radius-xs: 4px;
+  /* ── Border Radius Scale (Disciplined nested geometry) ─ */
+  --radius-xs: 3px;
   --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 14px;
-  --radius-xl: 14px;
-  --radius-2xl: 14px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 12px;
 
   /* Status Colors */
   --success:   #10B981;
@@ -378,10 +378,9 @@ h1, h2, h3, h4 {
 .btn-primary:hover {
   background: var(--accent-light);
   border-color: var(--accent-light);
-  transform: translateY(-1px);
 }
 .btn-primary:active {
-  transform: translateY(0);
+  transform: translateY(1px);
 }
 
 .btn-ghost {
@@ -394,10 +393,9 @@ h1, h2, h3, h4 {
   background: var(--bg-glass-hover);
   color: var(--text-primary);
   border-color: var(--border-strong);
-  transform: translateY(-1px);
 }
 .btn-ghost:active {
-  transform: translateY(0);
+  transform: translateY(1px);
 }
 
 .btn-icon {

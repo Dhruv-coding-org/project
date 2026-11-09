@@ -43,7 +43,7 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
             </span>
             <div>
               <h2 id="shortcuts-title">Keyboard Shortcuts</h2>
-              <p>Quick controls for seamless navigation</p>
+              <p>Global playback and interface controls</p>
             </div>
           </div>
           <button className="btn-icon shortcuts-close-btn" onClick={onClose} aria-label="Close modal">

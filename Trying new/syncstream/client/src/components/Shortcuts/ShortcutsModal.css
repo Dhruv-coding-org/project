@@ -22,23 +22,23 @@
   max-height: calc(100svh - 32px);
   background: var(--bg-glass-modal);
   backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
-  -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
-  border: 1px solid var(--glass-border-light);
-  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   padding: clamp(16px, 3vw, 24px);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), var(--shadow-glow), var(--glass-highlight-glow);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-xl);
   display: flex;
   flex-direction: column;
   gap: 16px;
   overflow-y: auto;
-  animation: scaleSpring 0.4s var(--ease-spring) both;
+  animation: fadeIn 0.15s var(--ease) both;
 }
 
 .shortcuts-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--glass-border-subtle);
+  border-bottom: 1px solid var(--border);
   padding-bottom: 12px;
   flex-shrink: 0;
 }
@@ -53,9 +53,9 @@
   font-size: 20px;
   background: var(--accent-soft);
   padding: 6px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xs);
   border: 1px solid var(--accent-border);
-  box-shadow: 0 0 12px var(--accent-glow);
+  color: var(--accent);
 }
 
 .shortcuts-header h2 {

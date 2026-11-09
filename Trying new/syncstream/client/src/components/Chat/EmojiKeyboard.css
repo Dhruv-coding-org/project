@@ -4,18 +4,16 @@
 
 .emoji-keyboard {
   width: 320px;
-  padding: 14px;
-  border-radius: var(--radius-lg);
-  background: var(--bg-glass-modal);
-  backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
-  -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
-  border: 1px solid var(--glass-border-light);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), var(--shadow-glow), var(--glass-highlight);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-xl);
   display: flex;
   flex-direction: column;
   gap: 10px;
   z-index: 50;
-  animation: scaleSpring 0.35s var(--ease-spring) both;
+  animation: fadeIn 0.15s var(--ease) both;
 }
 
 .emoji-keyboard-header {
@@ -60,8 +58,7 @@
 
 .emoji-tab.active {
   background: var(--accent-soft);
-  border-color: var(--accent-border);
-  box-shadow: 0 0 10px var(--accent-glow);
+  border-color: var(--accent);
 }
 
 .emoji-grid {
@@ -77,7 +74,7 @@
   font-size: 19px;
   background: none;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   padding: 6px;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -89,6 +86,4 @@
 .emoji-item:hover {
   background: var(--accent-soft);
   border-color: var(--accent-border);
-  transform: scale(1.25);
-  box-shadow: 0 2px 8px var(--accent-border);
 }

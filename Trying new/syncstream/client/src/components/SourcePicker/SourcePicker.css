@@ -20,28 +20,15 @@
   width: 100%;
   max-width: min(520px, calc(100vw - 24px));
   max-height: calc(100svh - 32px);
-  background: var(--bg-glass-modal);
-  backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
-  -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), var(--shadow-glow), var(--glass-highlight-glow);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-xl);
   overflow-y: auto;
   overflow-x: hidden;
-  border: 1px solid var(--glass-border-light);
-  border-radius: var(--radius-xl);
-  animation: scaleSpring 0.4s var(--ease-spring) both;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  animation: fadeIn 0.15s var(--ease) both;
   display: flex;
   flex-direction: column;
-}
-
-/* animated gradient border on top */
-.source-modal::before {
-  content: '';
-  display: block;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--accent), var(--accent-bright), var(--accent), transparent);
-  background-size: 200% auto;
-  animation: border-flow 3s linear infinite;
-  flex-shrink: 0;
 }
 
 /* ── Header ───────────────────────────────────────── */
@@ -95,10 +82,9 @@
   background: var(--bg-glass-hover);
 }
 .source-tab.active {
-  color: var(--accent-bright);
+  color: var(--accent);
   background: var(--accent-soft);
   border-color: var(--accent-border);
-  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 /* ── Form ─────────────────────────────────────────── */
@@ -235,9 +221,9 @@
   padding: 8px;
   background: var(--accent-soft);
   border: 1px solid var(--accent-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   flex-shrink: 0;
-  box-shadow: 0 0 12px var(--accent-glow);
+  color: var(--accent);
 }
 
 .source-file-meta {

@@ -220,13 +220,8 @@ export function Room({
         >
           <div className="room-logo-icon">
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-              <circle cx="10" cy="10" r="9" stroke="url(#gh)" strokeWidth="1.5"/>
-              <path d="M7.5 6.5L14 10L7.5 13.5V6.5Z" fill="url(#gh)"/>
-              <defs>
-                <linearGradient id="gh" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#4f46e5"/><stop offset="1" stopColor="#818cf8"/>
-                </linearGradient>
-              </defs>
+              <circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M7.5 6.5L14 10L7.5 13.5V6.5Z" fill="currentColor"/>
             </svg>
           </div>
           <span className="room-header-name">SyncStream</span>

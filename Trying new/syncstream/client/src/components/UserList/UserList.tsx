@@ -69,7 +69,7 @@ export function UserList({
             <span className="voice-title">P2P Voice Channel</span>
           </div>
           <span className={`voice-status-badge ${voiceActive ? 'active' : ''}`}>
-            {voiceActive ? 'CONNECTED' : 'OFFLINE'}
+            {voiceActive ? 'Connected' : 'Offline'}
           </span>
         </div>
 

@@ -120,7 +120,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
             </svg>
           </div>
           <span className="lobby-navbar-title">SyncStream</span>
-          <span className="navbar-badge">STUDIO</span>
+          <span className="navbar-badge">v2.4</span>
         </div>
 
         <div className="lobby-navbar-actions">
@@ -186,7 +186,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
             <div>
               <h1 className="lobby-logo-name">SyncStream</h1>
               <p className="lobby-logo-tagline">
-                Synchronized multimedia watch parties and real-time voice channel
+                Synchronized video playback with real-time voice channels
               </p>
             </div>
           </div>
@@ -334,10 +334,10 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
               {loading ? (
                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <span className="lobby-spinner" />
-                  {tab === 'create' ? 'Initializing Room…' : 'Connecting to Room…'}
+                  {tab === 'create' ? 'Initializing…' : 'Connecting…'}
                 </span>
               ) : (
-                tab === 'create' ? 'Launch Watch Party' : 'Enter Watch Party'
+                tab === 'create' ? 'Create Room' : 'Join Room'
               )}
             </button>
           </form>
@@ -349,7 +349,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                 <rect x="2" y="6" width="10" height="7" rx="1.5"/>
                 <path d="M4.5 6V4a2.5 2.5 0 015 0v2"/>
               </svg>
-              P2P Audio Mesh
+              P2P Audio
             </span>
             <span>•</span>
             <span className="lobby-footer-item">
@@ -357,7 +357,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                 <circle cx="7" cy="7" r="5.5"/>
                 <path d="M7 4v3.5l2 1.5"/>
               </svg>
-              Sub-10ms Latency
+              Sub-10ms Drift
             </span>
             <span>•</span>
             <span className="lobby-footer-item">
@@ -366,7 +366,7 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                 <circle cx="10" cy="6" r="2"/>
                 <path d="M1.5 12c0-2 1.8-3 3.5-3s3.5 1 3.5 3"/>
               </svg>
-              Collaborative Queue
+              Shared Queue
             </span>
           </div>
         </div>
@@ -384,11 +384,11 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                   </svg>
                 </div>
                 <div>
-                  <h2>SyncStream Platform Features</h2>
-                  <p>Next-generation synchronized media experience</p>
+                  <h2>Platform features</h2>
+                  <p>Synchronized media playback and audio channels</p>
                 </div>
               </div>
-              <button className="btn-icon shortcuts-close-btn" onClick={() => setShowFeaturesModal(false)}>✕</button>
+              <button className="btn-icon shortcuts-close-btn" onClick={() => setShowFeaturesModal(false)} aria-label="Close">✕</button>
             </div>
             <div className="features-grid">
               <div className="feature-card">
@@ -404,8 +404,8 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                     <line x1="17" y1="7" x2="22" y2="7"/>
                   </svg>
                 </div>
-                <h3>Universal Video Playback</h3>
-                <p>Support for MP4/WebM direct URLs, YouTube, Vimeo, and local media files with zero server uploading needed.</p>
+                <h3>Multi-source playback</h3>
+                <p>Support for MP4/WebM URLs, YouTube, Vimeo, and local media files without server uploads.</p>
               </div>
               <div className="feature-card">
                 <div className="feature-icon">
@@ -414,8 +414,8 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                     <polyline points="12 6 12 12 16 14"/>
                   </svg>
                 </div>
-                <h3>Sub-10ms Sync Engine</h3>
-                <p>Automated drift compensation keeps playback in lockstep across all participants.</p>
+                <h3>Millisecond sync</h3>
+                <p>Automated drift compensation maintains lockstep playback for all connected peers.</p>
               </div>
               <div className="feature-card">
                 <div className="feature-icon">
@@ -426,8 +426,8 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                     <line x1="8" y1="23" x2="16" y2="23"/>
                   </svg>
                 </div>
-                <h3>HD WebRTC Voice Grid</h3>
-                <p>Built-in noise suppression, live audio volume visualizers, active speaker aura indicators, and deafen controls.</p>
+                <h3>Voice channels</h3>
+                <p>Peer-to-peer audio mesh with mute, deafen, and real-time audio activity indicators.</p>
               </div>
               <div className="feature-card">
                 <div className="feature-icon">
@@ -437,12 +437,12 @@ export function Lobby({ onCreateRoom, onJoinRoom, onOpenProfile }: LobbyProps) {
                     <line x1="12" y1="17" x2="12" y2="21"/>
                   </svg>
                 </div>
-                <h3>Cinema Theater Mode</h3>
-                <p>Focused widescreen player layout with collapsible sidebar for uninterrupted watching.</p>
+                <h3>Theater layout</h3>
+                <p>Distraction-free widescreen player layout with collapsible sidebar panels.</p>
               </div>
             </div>
             <div className="shortcuts-footer">
-              <button className="btn btn-primary" onClick={() => setShowFeaturesModal(false)}>Explore SyncStream</button>
+              <button className="btn btn-primary" onClick={() => setShowFeaturesModal(false)}>Close</button>
             </div>
           </div>
         </div>

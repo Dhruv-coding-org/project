@@ -283,13 +283,8 @@ export function SourcePicker({ onConfirm, onSubtitlesLoaded, onClose }: SourcePi
         <div className="source-modal-header">
           <h2 className="source-modal-title">
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <rect x="1" y="3" width="16" height="12" rx="2" stroke="url(#gs)" strokeWidth="1.5"/>
-              <path d="M7 6.5l4 2.5-4 2.5V6.5z" fill="url(#gs)"/>
-              <defs>
-                <linearGradient id="gs" x1="0" y1="0" x2="18" y2="18" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#4f46e5"/><stop offset="1" stopColor="#818cf8"/>
-                </linearGradient>
-              </defs>
+              <rect x="1" y="3" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M7 6.5l4 2.5-4 2.5V6.5z" fill="currentColor"/>
             </svg>
             Choose Media Source
           </h2>

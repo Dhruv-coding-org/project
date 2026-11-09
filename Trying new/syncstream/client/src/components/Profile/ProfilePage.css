@@ -62,12 +62,10 @@
   align-items: center;
   gap: 20px;
   padding: clamp(18px, 3vw, 26px);
-  border-radius: var(--radius-xl);
-  background: var(--bg-glass-card);
-  backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
-  -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(1.4);
-  border: 1px solid var(--glass-border-light);
-  box-shadow: var(--shadow-xl), var(--shadow-glow), var(--glass-highlight);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
 }
 
 .profile-avatar-large {
@@ -81,7 +79,6 @@
   justify-content: center;
   font-size: 32px;
   flex-shrink: 0;
-  box-shadow: 0 0 24px var(--accent-glow), var(--glass-highlight-subtle);
 }
 
 .profile-banner-info {
@@ -141,9 +138,8 @@
 
 .profile-tab.active {
   color: #fff;
-  background: var(--accent-grad);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 2px 14px var(--accent-glow), var(--glass-highlight);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 /* ── Form ───────────────────────────────────────────── */
@@ -213,8 +209,6 @@
 .profile-avatar-item.selected {
   background: var(--accent-soft);
   border-color: var(--accent);
-  transform: scale(1.15);
-  box-shadow: 0 0 12px var(--accent-border);
 }
 
 /* ── Theme Switcher Grid ────────────────────────────── */
@@ -230,41 +224,39 @@
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: var(--bg-glass-2);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   transition: all var(--transition-fast);
 }
 
 .theme-card:hover,
 .theme-card.selected {
   border-color: var(--accent);
-  background: var(--accent-soft);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), var(--glass-highlight);
+  background: var(--bg-elevated);
 }
 
 .theme-preview {
   width: 100%;
   height: 36px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border);
 }
 
 .fiery-ember-preview {
-  background: linear-gradient(135deg, #0c0605 0%, #d84315 50%, #ff9800 100%);
-  box-shadow: inset 0 0 12px rgba(255, 87, 34, 0.4);
+  background: #0B0C10;
+  border-left: 8px solid #E05A47;
 }
 
 .modern-dark-preview {
-  background: linear-gradient(135deg, #090a0f, #4f46e5);
+  background: #0B0C10;
+  border-left: 8px solid #3E82F7;
 }
 
 .modern-light-preview {
-  background: linear-gradient(135deg, #f8fafc, #4f46e5);
+  background: #F6F7FA;
+  border-left: 8px solid #D44E3B;
 }
 
 .theme-name {
@@ -345,10 +337,10 @@
   font-size: 20px;
   padding: 8px;
   background: var(--accent-soft);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xs);
   border: 1px solid var(--accent-border);
   flex-shrink: 0;
-  box-shadow: 0 0 12px var(--accent-glow);
+  color: var(--accent);
 }
 
 .starred-card-info {

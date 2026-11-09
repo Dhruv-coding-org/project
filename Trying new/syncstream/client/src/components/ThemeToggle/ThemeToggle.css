@@ -21,13 +21,11 @@
 
 .theme-toggle-btn:hover {
   background: var(--bg-glass-hover);
-  border-color: var(--glass-border-light);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm), var(--glass-highlight);
+  border-color: var(--border-strong);
 }
 
 .theme-toggle-btn:active {
-  transform: translateY(0);
+  transform: translateY(1px);
 }
 
 .theme-toggle-icon {
@@ -36,11 +34,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.2s var(--ease);
 }
 
 .theme-toggle-btn:hover .theme-toggle-icon {
-  transform: rotate(20deg) scale(1.15);
+  transform: rotate(15deg);
 }
 
 .theme-toggle-text {
@@ -57,16 +55,14 @@
 
 /* ── Fiery Theme Toggle Variant ───────────────────────── */
 .theme-toggle-btn.theme-fire {
-  border-color: rgba(255, 87, 34, 0.32);
-  background: rgba(255, 87, 34, 0.08);
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
 }
 
 .theme-toggle-btn.theme-fire:hover {
-  border-color: rgba(255, 110, 50, 0.55);
-  background: rgba(255, 87, 34, 0.15);
-  box-shadow: 0 0 18px rgba(255, 87, 34, 0.28), var(--glass-highlight);
+  border-color: var(--accent);
 }
 
 .theme-toggle-btn.theme-fire .theme-toggle-icon {
-  filter: drop-shadow(0 0 6px rgba(255, 87, 34, 0.75));
+  color: var(--accent);
 }
