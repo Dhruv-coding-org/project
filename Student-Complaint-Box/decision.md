@@ -50,6 +50,7 @@
 | `548707f` | UI responsiveness & complaint lifecycle enhancements | Refined status badge workflows, evidence file previewing, and anonymous display logic. |
 | `audit-fix` | Server resilience, JWT safety, package cleanup & UI polish | Cleaned corrupted null-bytes and bloated deps in `package.json`; removed startup `process.exit(1)` crash on missing Mongo; added safe JWT fallback resolver (`utils/jwt.js`); removed plaintext passwords from server boot logs; upgraded CSS design system with WCAG AA contrast badges. |
 | `sec-hardening` | Environment hardening & admin seed parameterization | Added sanitized `.env.example`, converted absolute file URLs to portable relative links, and parameterized admin setup seed credentials via `ADMIN_*` environment variables. |
+| `dependency-repair` | Updated Firebase dependencies and enabled local MongoDB | Upgraded Firebase packages to resolve audit findings and registered the existing local-only MongoDB service; verified a Mongoose connection to `127.0.0.1:27017`. |
 
 ---
 

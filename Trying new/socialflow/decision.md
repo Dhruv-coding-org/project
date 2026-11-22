@@ -50,6 +50,7 @@
 | `audit-fix` | Suspense boundary on `/accounts`, upload validation & responsive navigation | Wrapped `useSearchParams()` in `<Suspense>` resolving Next.js 14 prerender failure; added video format and size checks in `/api/upload`; added mobile header, bottom dock, and responsive drawer in `Sidebar.tsx`. |
 | `privacy-docs` | Sanitized documentation links | Converted absolute file URLs to portable relative links for GitHub and local environment portability. |
 | `design-system` | Professional Design System & Anti-Template Overhaul | Replaced generic `Inter` with `Plus Jakarta Sans` & `JetBrains Mono`; removed banned violet-to-indigo gradient and text clips; implemented 5-colour Creator palette (`#0D0F12`, `#13171F`, `#181D26`, `#232936`, `#F1F4F9`, `#3B82F6`); replaced all emojis in navigation, stats, and actions with semantic inline SVGs; added `.eslintrc.json` and verified Next.js 14 static build (`18/18` pages) and zero ESLint errors. |
+| `dependency-repair` | Upgraded Next.js, Google APIs, UUID, and ESLint | Applied security-driven upgrades, repaired generated build-folder permissions, and verified the Next.js 16 production compilation. |
 
 ---
 

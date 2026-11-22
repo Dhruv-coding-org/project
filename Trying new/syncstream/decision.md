@@ -75,6 +75,7 @@ The client interface adheres to the Cinema Dark workbench standards codified in 
 | `54d5201` | YouTube subtitle toggling & CC track picker | Added closed-caption track selection directly inside the synced player interface. |
 | `2e0d5e0` | Guest subtitle controls & queue autoplay | Allowed participants to toggle subtitles independently when unlocked and added automatic playback of the next queued video. |
 | `716bd96` | Strict typing in VideoPlayer | Eliminated implicit and explicit `any` types to prevent runtime errors during media event handling. |
+| `dependency-repair` | Refreshed desktop and server dependency manifests | Applied available audit upgrades and rebuilt generated Node dependency folders after OneDrive hydration conflicts. Further Electron Builder and LocalTunnel remediation remains tracked in the Notion handoff. |
 | `280f57d` | Render loop fix in `ServerConfigModal` | Eliminated cascading `setState` calls in `useEffect` hook that caused high CPU usage. |
 | `c840b77` | Theme update | Introduced dynamic fiery accent effects across the UI. |
 | `c4a262f`, `052b3ff`, `5290eb4` | Video playback & sync engine stabilization | Fixed sync race conditions, seek jitter, and video pause event synchronization across multiple peers. |
